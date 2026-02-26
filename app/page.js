@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, where, updateDoc, arrayUnion, writeBatch, getDocs, arrayRemove } from "firebase/firestore";
-import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult, browserSessionPersistence, setPersistence } from "firebase/auth";
+import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "firebase/auth";
 
 // --- Firebase Config ---
 const firebaseConfig = {
@@ -67,7 +67,6 @@ export default function Home() {
   const [charIndex, setCharIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [friendIdInput, setFriendIdInput] = useState("");
-  const [loginError, setLoginError] = useState(null);
   
   const [selectedChatFriend, setSelectedChatFriend] = useState(null); 
   const [friendsList, setFriendsList] = useState([]);
@@ -86,6 +85,7 @@ export default function Home() {
   const currentChar = CHARACTERS[charIndex];
   const currentTheme = THEMES[themeIndex];
 
+  // 達成度別メッセージ
   const characterMessage = useMemo(() => {
     if (percent === 0) return "さあ、これから一緒に頑張っていきましょう。";
     if (percent < 30) return "まずは一歩ずつですね。応援しています。";
@@ -146,19 +146,13 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // リダイレクト後の結果処理
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          setUser(result.user);
-        }
-      })
-      .catch((error) => {
-        console.error("Auth error:", error);
-        setLoginError(error.message);
-      });
-
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      // リダイレクト後の結果を確認
+      const result = await getRedirectResult(auth);
+      if (result) {
+         // ログイン成功時の処理があればここに記載（基本はonAuthStateChangedでOK）
+      }
+
       setUser(u);
       if (u) {
         const docRef = doc(db, "users", u.uid);
@@ -200,16 +194,23 @@ export default function Home() {
     return () => clearInterval(timerRef.current);
   }, [isTimerActive, timeLeft]);
 
-  const handleGoogleLogin = async () => {
-    setLoginError(null);
-    const provider = new GoogleAuthProvider();
-    try {
-      // セッションの持続性を設定（念のため）
-      await setPersistence(auth, browserSessionPersistence);
-      await signInWithRedirect(auth, provider);
-    } catch (e) {
-      setLoginError(e.message);
+  useEffect(() => {
+    if (selectedChatFriend && user) {
+      const chatId = [myDisplayId, selectedChatFriend.shortId].sort().join("_");
+      const unreadMsgs = userMessages.filter(m => m.chatId === chatId && m.fromId !== myDisplayId && !m.read);
+      if (unreadMsgs.length > 0) {
+        const updatedMessages = userMessages.map(m => 
+          (m.chatId === chatId && m.fromId !== myDisplayId) ? { ...m, read: true } : m
+        );
+        updateDoc(doc(db, "users", user.uid), { messageHistory: updatedMessages });
+      }
     }
+  }, [selectedChatFriend, userMessages, user, myDisplayId]);
+
+  const handleGoogleLogin = () => {
+    const provider = new GoogleAuthProvider();
+    // アプリ内ブラウザ対策でリダイレクト方式を使用
+    signInWithRedirect(auth, provider);
   };
 
   const toggleCheck = (id) => {
@@ -289,50 +290,22 @@ export default function Home() {
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-black animate-pulse">読み込み中...</div>;
 
   if (!user) return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 transition-all bg-gray-950 text-white">
-       <h1 className="text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400 text-center mb-10">ROUTINE MASTER</h1>
+    <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 transition-all bg-gray-950">
+       <h1 className="text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400 text-center">ROUTINE MASTER</h1>
        
-       <div className="bg-white/5 p-8 rounded-[3rem] border border-white/10 w-full max-w-sm shadow-2xl space-y-8 flex flex-col items-center">
-         <button 
-           onClick={handleGoogleLogin} 
-           className="w-full bg-white text-black py-5 rounded-full font-black shadow-lg active:scale-95 text-sm tracking-widest uppercase transition-all flex items-center justify-center gap-3"
-         >
-           <span className="text-lg">G</span> Googleでログイン
-         </button>
-
-         {loginError && (
-           <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-center">
-             <p className="text-[10px] text-red-400 font-bold leading-relaxed">
-               エラーが発生しました。<br/>
-               標準のChromeまたはSafariで開いているか確認してください。
-             </p>
-           </div>
-         )}
-
-         <div className="space-y-6 w-full">
-           <div className="flex items-center gap-4">
-             <div className="h-[1px] bg-white/10 flex-1"></div>
-             <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest text-center">Recommended</p>
-             <div className="h-[1px] bg-white/10 flex-1"></div>
-           </div>
-           
-           <div className="space-y-4">
-             <div className="bg-blue-500/10 p-5 rounded-2xl border border-blue-500/20 text-center">
-                <p className="text-[11px] font-bold text-blue-300 leading-relaxed mb-3">
-                  アクセスが難しい場合ブラウザ（Google Chrome等）へ切り替えてください。
-                </p>
-                <div className="flex justify-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xs">🧭</div>
-                  <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xs">⋯</div>
-                  <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xs">↗️</div>
-                </div>
-             </div>
-             
-             <p className="text-[9px] text-gray-500 font-medium text-center px-4">
-               Googleのセキュリティポリシーにより、アプリ内の簡易ブラウザからのログインが制限されています。
-             </p>
-           </div>
-         </div>
+       <button 
+         onClick={handleGoogleLogin} 
+         className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest uppercase transition-all hover:bg-gray-200"
+       >
+         Googleでログイン
+       </button>
+       
+       <div className="mt-8 bg-white/5 p-4 rounded-2xl border border-white/10 max-w-xs text-center">
+         <p className="text-[10px] font-bold text-gray-500 leading-relaxed">
+           ※ LINEやMessengerからお越しの方へ<br/>
+           エラーが出る場合は、右上のメニューから<br/>
+           <span className="text-white">「ブラウザで開く」</span>を選択してください。
+         </p>
        </div>
     </div>
   );
