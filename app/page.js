@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, where, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, where, updateDoc, arrayUnion } from "firebase/firestore";
 import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
-// --- Firebase Config (Your credentials) ---
+// --- Firebase Config ---
 const firebaseConfig = {
   apiKey: "AIzaSyDNkvB6F_niXtk3SmmgTVm1wK418Fq7t9Q",
   authDomain: "routine-app-94afe.firebaseapp.com",
@@ -56,6 +56,7 @@ const THEMES = [
 export default function Home() {
   const today = new Date().toISOString().split('T')[0];
   const [activeTab, setActiveTab] = useState("main"); 
+  const [socialSubTab, setSocialSubTab] = useState("list");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [tasks, setTasks] = useState({ morning: [], afternoon: [], night: [] });
   const [checks, setChecks] = useState({});
@@ -69,6 +70,7 @@ export default function Home() {
   const [friendIdInput, setFriendIdInput] = useState("");
   const [friendsList, setFriendsList] = useState([]);
   const [friendsData, setFriendsData] = useState([]);
+  const [userMessages, setUserMessages] = useState([]);
   const [incomingMsg, setIncomingMsg] = useState(null);
 
   const [timeLeft, setTimeLeft] = useState(1500);
@@ -99,7 +101,7 @@ export default function Home() {
     return days;
   }, [history]);
 
-  // --- Auto Save & Sync ---
+  // --- Auto Save ---
   const saveToFirebase = async (updatedData = {}) => {
     if (!user) return;
     const currentTasks = updatedData.tasks || tasks;
@@ -142,6 +144,7 @@ export default function Home() {
             setFriendsList(d.friends || []);
             setThemeIndex(d.themeIndex || 0);
             setCharIndex(d.charIndex || 0);
+            setUserMessages(d.messageHistory || []);
             if (d.lastCheckDate === today) setChecks(d.checks || {});
             if (d.message) {
               setIncomingMsg(d.message);
@@ -198,15 +201,25 @@ export default function Home() {
   const addFriend = async () => {
     if (!friendIdInput || friendIdInput === myDisplayId) return;
     if (friendsList.includes(friendIdInput)) { alert("すでに追加されています"); return; }
+    
     const q = query(collection(db, "users"), where("shortId", "==", friendIdInput));
-    onSnapshot(q, (s) => {
-      if (s.empty) alert("ユーザーが見つかりません");
-      else { 
+    onSnapshot(q, async (s) => {
+      if (s.empty) {
+        alert("ユーザーが見つかりません");
+      } else {
+        const targetUserDoc = s.docs[0];
+        const targetUid = targetUserDoc.id;
+
         const nextList = [...friendsList, friendIdInput];
-        setFriendsList(nextList); 
-        setFriendIdInput(""); 
+        setFriendsList(nextList);
         saveToFirebase({ friendsList: nextList });
-        alert("フレンドを追加しました！"); 
+
+        await updateDoc(doc(db, "users", targetUid), {
+          friends: arrayUnion(myDisplayId)
+        });
+
+        setFriendIdInput("");
+        alert("フレンドを相互登録しました！");
       }
     }, {onlyOnce: true});
   };
@@ -219,10 +232,17 @@ export default function Home() {
   };
 
   const sendMessage = async (uid, name) => {
-    const msg = window.prompt(`${name}さんへメッセージを送る`, "今日も頑張ろう！");
-    if (msg) {
+    const msgText = window.prompt(`${name}さんへメッセージを送る`, "今日も頑張ろう！");
+    if (msgText) {
+      const msgObj = {
+        id: Date.now(),
+        from: user.displayName,
+        text: msgText,
+        time: new Date().toLocaleString('ja-JP', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'}),
+      };
       await updateDoc(doc(db, "users", uid), {
-        message: { from: user.displayName, text: msg, time: Date.now() }
+        message: msgObj,
+        messageHistory: arrayUnion(msgObj)
       });
       alert("送信しました！");
     }
@@ -254,7 +274,7 @@ export default function Home() {
       {/* --- Sidebar --- */}
       <div className={`fixed inset-0 z-40 transition-opacity duration-500 ${isSidebarOpen ? "bg-black/60 backdrop-blur-sm opacity-100" : "bg-transparent opacity-0 pointer-events-none"}`} onClick={() => setIsSidebarOpen(false)}></div>
       <aside className={`fixed left-0 top-0 h-full w-80 z-50 transition-transform duration-500 bg-black/40 backdrop-blur-2xl border-r border-white/10 p-6 flex flex-col ${isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}>
-        <div className="flex justify-between items-center mb-10"><p className="text-[10px] font-black tracking-[0.4em] text-gray-500">ARCHIVE</p><button onClick={() => setIsSidebarOpen(false)} className="text-xl">✕</button></div>
+        <div className="flex justify-between items-center mb-10"><p className="text-[10px] font-black tracking-[0.4em] text-gray-500 uppercase">Archive</p><button onClick={() => setIsSidebarOpen(false)} className="text-xl">✕</button></div>
         <section className="bg-white/5 p-4 rounded-[2rem] border border-white/10 mb-8 text-center">
           <p className="text-[10px] font-black mb-4 opacity-50 uppercase tracking-widest">{new Date().toLocaleString('default', { month: 'long' })}</p>
           <div className="grid grid-cols-7 gap-1 mb-2">{['S','M','T','W','T','F','S'].map(d => <span key={d} className="text-[8px] font-black text-gray-600">{d}</span>)}</div>
@@ -267,7 +287,7 @@ export default function Home() {
           </div>
         </section>
         <section className="flex-1 overflow-y-auto scrollbar-hide space-y-4">
-          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">RECENT HISTORY</p>
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Recent History</p>
           {history.slice(-10).reverse().map((h, i) => (
             <div key={i} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5"><span className="text-xs font-bold text-gray-400">{h.date}</span><span className="text-xs font-black">{h.percent}%</span></div>
           ))}
@@ -276,7 +296,6 @@ export default function Home() {
 
       {/* --- Main --- */}
       <main className="flex-1 overflow-y-auto h-screen scrollbar-hide p-4 relative">
-        {/* Message Toast */}
         {incomingMsg && (
           <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm bg-white text-black p-4 rounded-3xl shadow-2xl animate-slideIn flex items-center gap-4">
             <div className="text-2xl">📩</div>
@@ -301,7 +320,7 @@ export default function Home() {
 
           {activeTab === "main" ? (
             <>
-              {/* Hero Section */}
+              {/* Hero */}
               <div className="bg-white/5 p-6 sm:p-8 rounded-[3.5rem] border border-white/10 mb-6 flex flex-col items-center relative shadow-2xl">
                 <div className="w-full flex flex-col items-center mb-8 bg-black/20 p-4 rounded-[2.5rem] border border-white/5">
                     <div className="flex gap-2 mb-3">
@@ -312,7 +331,6 @@ export default function Home() {
                       <button onClick={() => setIsTimerActive(!isTimerActive)} className={`px-6 py-2 text-[10px] font-black rounded-full transition-all ${isTimerActive ? "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]" : "bg-white text-black"}`}>{isTimerActive ? "STOP" : "START"}</button>
                     </div>
                 </div>
-
                 <div className="relative mb-6">
                   <div className={`w-32 h-32 rounded-full ${currentChar.color} shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col items-center justify-center animate-bounce-rich relative overflow-hidden`}>
                       <div className="flex gap-7 mb-2 animate-blink">
@@ -320,24 +338,22 @@ export default function Home() {
                         <div className="w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center"><div className="w-1.5 h-1.5 bg-black rounded-full"></div></div>
                       </div>
                       <div className={`w-4 h-2 bg-black/20 rounded-full animate-mouth ${percent > 50 ? 'h-3 rounded-b-full bg-white/30' : ''}`}></div>
-                      <div className="absolute top-4 left-6 w-6 h-3 bg-white/20 rounded-full rotate-[-30deg]"></div>
                   </div>
                   <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-20 h-3 bg-black/20 rounded-full blur-md"></div>
                 </div>
-                
                 <p className="mt-4 text-[11px] font-black bg-white text-black px-5 py-2.5 rounded-2xl shadow-xl">{percent}%達成{currentChar.suffix}</p>
               </div>
 
-              {/* Stats & Graph */}
+              {/* Stats */}
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-white/5 p-5 rounded-[2.5rem] border border-white/10 text-center flex flex-col justify-center items-center">
+                <div className="bg-white/5 p-5 rounded-[2.5rem] border border-white/10 text-center flex flex-col justify-center items-center shadow-lg">
                   <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${currentRank.bg} ${currentRank.color} mb-2`}>{currentRank.name}</span>
                   <div className="text-4xl font-black mt-1 tracking-tighter">{percent}%</div>
                 </div>
-                <div className="bg-white/5 p-3 rounded-[2.5rem] border border-white/10 h-32 overflow-hidden">
+                <div className="bg-white/5 p-3 rounded-[2.5rem] border border-white/10 h-32 overflow-hidden shadow-lg">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData}>
-                      <XAxis dataKey="displayDate" hide={false} stroke="#444" fontSize={8} fontWeight="bold" />
+                      <XAxis dataKey="displayDate" stroke="#444" fontSize={8} fontWeight="bold" tickLine={false} axisLine={false} />
                       <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
@@ -351,7 +367,7 @@ export default function Home() {
                   <div className="space-y-4">
                     {tasks[time].map((task, index) => (
                       <div key={index} className="flex items-center group/item transition-all">
-                        <button onClick={() => toggleCheck(time + task)} className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none shadow-lg" : "bg-black/20"}`}>
+                        <button onClick={() => toggleCheck(time + task)} className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none shadow-lg shadow-emerald-500/30" : "bg-black/20"}`}>
                           {checks[time + task] && <span className="text-[10px] font-black">✓</span>}
                         </button>
                         <span className={`flex-1 text-sm font-bold ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>
@@ -362,28 +378,31 @@ export default function Home() {
                     ))}
                   </div>
                   <div className="flex mt-6 gap-2">
-                    <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }} className={`w-11 h-11 rounded-xl flex items-center justify-center border-2 transition-all ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
+                    <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }} className={`w-11 h-11 rounded-xl flex items-center justify-center border-2 transition-all ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300 shadow-lg" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
                     <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })} className="flex-1 bg-black/40 text-xs p-3 rounded-xl border border-white/5 outline-none" placeholder="新しいタスク..." />
-                    <button onClick={() => addTask(time)} className="bg-white text-black px-5 rounded-xl font-black text-[10px] active:scale-90">ADD</button>
+                    <button onClick={() => addTask(time)} className="bg-white text-black px-5 rounded-xl font-black text-[10px] active:scale-95 transition-all">ADD</button>
                   </div>
                 </div>
               ))}
-              <div className="w-full py-5 text-gray-600 text-[10px] font-black text-center tracking-widest uppercase opacity-40 italic">Synced with cloud</div>
+              <div className="w-full py-5 text-gray-600 text-[10px] font-black text-center tracking-widest uppercase opacity-40 italic">Everything is saved automatically</div>
             </>
           ) : (
             <div className="space-y-6">
-              {friendsData.length === 0 ? <p className="text-center text-gray-500 py-20 font-bold">友達をIDで追加しよう！</p> : friendsData.map((f, i) => {
-                const fChar = CHARACTERS[f.charIndex || 0];
-                const fRank = RANK_LIST.find(r => r.name === f.rank) || RANK_LIST[4];
-                return (
+              <div className="flex gap-8 mb-6 justify-center">
+                <button onClick={() => setSocialSubTab("list")} className={`text-[11px] font-black tracking-widest transition-all ${socialSubTab === 'list' ? 'text-white border-b-2 border-white pb-1' : 'text-gray-500'}`}>FRIENDS</button>
+                <button onClick={() => setSocialSubTab("msgs")} className={`text-[11px] font-black tracking-widest transition-all ${socialSubTab === 'msgs' ? 'text-white border-b-2 border-white pb-1' : 'text-gray-500'}`}>MESSAGES</button>
+              </div>
+
+              {socialSubTab === "list" ? (
+                friendsData.length === 0 ? <p className="text-center text-gray-500 py-20 font-bold">友達をIDで追加しよう！</p> : friendsData.map((f, i) => (
                   <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 shadow-xl relative group">
-                    <button onClick={() => removeFriend(f.shortId)} className="absolute top-6 right-6 text-gray-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">✕</button>
+                    <button onClick={() => removeFriend(f.shortId)} className="absolute top-6 right-6 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">✕</button>
                     <div className="flex items-center gap-4 mb-6">
-                      <div className={`w-14 h-14 rounded-full ${fChar.color} flex items-center justify-center animate-bounce-rich shadow-lg`}><div className="flex gap-1.5"><div className="w-1.5 h-1.5 bg-white rounded-full"></div><div className="w-1.5 h-1.5 bg-white rounded-full"></div></div></div>
+                      <div className={`w-14 h-14 rounded-full ${CHARACTERS[f.charIndex || 0].color} flex items-center justify-center animate-bounce-rich shadow-lg`}><div className="flex gap-1.5"><div className="w-1.5 h-1.5 bg-white rounded-full"></div><div className="w-1.5 h-1.5 bg-white rounded-full"></div></div></div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-black tracking-tight">{f.displayName}</h3>
-                          <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${fRank.bg} ${fRank.color}`}>{f.rank}</span>
+                          <h3 className="text-sm font-black">{f.displayName}</h3>
+                          <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${RANK_LIST.find(r=>r.name===f.rank)?.bg} ${RANK_LIST.find(r=>r.name===f.rank)?.color}`}>{f.rank}</span>
                         </div>
                         <div className="text-2xl font-black">{f.percent}%</div>
                       </div>
@@ -395,8 +414,24 @@ export default function Home() {
                       ))}
                     </div>
                   </div>
-                )
-              })}
+                ))
+              ) : (
+                <div className="space-y-3">
+                  {(!userMessages || userMessages.length === 0) ? (
+                    <p className="text-center text-gray-500 py-20 font-bold">メッセージはまだありません</p>
+                  ) : (
+                    [...userMessages].reverse().map((m, i) => (
+                      <div key={i} className="bg-white/5 p-5 rounded-[2rem] border border-white/5 shadow-md">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="text-[10px] font-black text-blue-400 uppercase tracking-tighter">FROM: {m.from}</span>
+                          <span className="text-[8px] font-bold text-gray-600">{m.time}</span>
+                        </div>
+                        <p className="text-sm font-bold text-gray-200">{m.text}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -410,22 +445,22 @@ export default function Home() {
             <div className="flex justify-between items-center mb-10"><h2 className="text-xl font-black italic text-gray-500">SETTINGS</h2><button onClick={() => setIsMenuOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center">✕</button></div>
             <div className="space-y-12">
               <section className="bg-white/5 p-8 rounded-[2.5rem] text-center border border-white/10 shadow-inner">
-                <p className="text-[10px] font-black text-gray-500 uppercase mb-3 tracking-widest">My Personal ID</p>
-                <p className="text-4xl font-black tracking-tighter text-white select-all">{myDisplayId}</p>
-                <p className="text-[9px] text-gray-600 mt-2 font-bold italic">Tap to copy and share with friends</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-3 tracking-widest">My ID</p>
+                <p className="text-5xl font-black tracking-tighter text-white select-all">{myDisplayId}</p>
+                <p className="text-[9px] text-gray-600 mt-3 font-bold italic">Tap to copy and share with friends</p>
               </section>
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Add New Friend</p>
                 <div className="flex gap-2">
-                  <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value.substring(0,8))} className="flex-1 bg-black/40 text-xs p-4 rounded-2xl border border-white/5 outline-none" placeholder="Enter 8-digit ID..." />
-                  <button onClick={addFriend} className="bg-white text-black px-6 rounded-2xl font-black text-[10px] active:scale-95 transition-all">ADD</button>
+                  <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value.substring(0,8))} className="flex-1 bg-black/40 text-xs p-4 rounded-2xl border border-white/5 outline-none" placeholder="Enter ID..." />
+                  <button onClick={addFriend} className="bg-white text-black px-6 rounded-2xl font-black text-[10px] active:scale-95 transition-all shadow-lg">ADD</button>
                 </div>
               </section>
               <section>
-                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Character Select</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Character</p>
                 <div className="grid grid-cols-2 gap-3">
                   {CHARACTERS.map((c, i) => (
-                    <button key={i} onClick={() => { setCharIndex(i); saveToFirebase({ charIndex: i }); }} className={`p-4 rounded-[2rem] border-2 transition-all flex flex-col items-center ${charIndex === i ? 'border-white bg-white/10' : 'border-transparent opacity-30'}`}>
+                    <button key={i} onClick={() => { setCharIndex(i); saveToFirebase({ charIndex: i }); }} className={`p-4 rounded-[2rem] border-2 transition-all flex flex-col items-center ${charIndex === i ? 'border-white bg-white/10 shadow-lg' : 'border-transparent opacity-30'}`}>
                       <div className={`w-8 h-8 rounded-full ${c.color} mb-2 shadow-lg`}></div>
                       <p className="text-[9px] font-black">{c.name}</p>
                     </button>
@@ -435,7 +470,7 @@ export default function Home() {
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Theme</p>
                 <div className="grid grid-cols-4 gap-3">
-                  {THEMES.map((t, i) => <button key={i} onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }} className={`w-10 h-10 rounded-full border-2 transition-all ${themeIndex === i ? 'border-white scale-110' : 'border-transparent'}`} style={{ backgroundColor: t.color }}></button>)}
+                  {THEMES.map((t, i) => <button key={i} onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }} className={`w-10 h-10 rounded-full border-2 transition-all ${themeIndex === i ? 'border-white scale-110 shadow-lg' : 'border-transparent'}`} style={{ backgroundColor: t.color }}></button>)}
                 </div>
               </section>
               <section>
@@ -449,7 +484,7 @@ export default function Home() {
                   ))}
                 </div>
               </section>
-              <button onClick={() => signOut(auth)} className="w-full py-4 bg-red-500/10 text-red-500 rounded-[1.5rem] font-black text-xs border border-red-500/20 active:bg-red-500 transition-all">LOGOUT</button>
+              <button onClick={() => signOut(auth)} className="w-full py-4 bg-red-500/10 text-red-500 rounded-[1.5rem] font-black text-xs border border-red-500/20 active:bg-red-500 active:text-white transition-all">LOGOUT</button>
             </div>
           </div>
         </div>
