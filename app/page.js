@@ -20,8 +20,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// アラーム音の設定
+// アラーム音の設定 (ループ対応)
 const alarmSound = typeof Audio !== "undefined" ? new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3") : null;
+if (alarmSound) alarmSound.loop = true;
 
 // --- 定数 ---
 const CHARACTERS = [
@@ -78,6 +79,7 @@ export default function Home() {
 
   // タイマー用ステート
   const [timeLeft, setTimeLeft] = useState(300); 
+  const [baseTime, setBaseTime] = useState(300); // リセット用
   const [isTimerActive, setIsTimerActive] = useState(false);
   const endTimeRef = useRef(null);
   const timerRef = useRef(null);
@@ -188,7 +190,7 @@ export default function Home() {
     return () => unsub();
   }, [friendsList, user]);
 
-  // タイマー：画面オフ対策とアラーム順序
+  // タイマー：アラームループ対応とリセットロジック
   useEffect(() => {
     if (isTimerActive) {
       endTimeRef.current = Date.now() + timeLeft * 1000;
@@ -198,13 +200,24 @@ export default function Home() {
           setIsTimerActive(false);
           setTimeLeft(0);
           clearInterval(timerRef.current);
+          
+          // ループ再生開始
           if (alarmSound) {
+            alarmSound.currentTime = 0;
             alarmSound.play().catch(e => console.log("Audio play failed:", e));
           }
           if (typeof navigator !== "undefined" && navigator.vibrate) {
-            navigator.vibrate([500, 200, 500]);
+            navigator.vibrate([500, 200, 500, 200, 500]);
           }
-          setTimeout(() => alert("時間です！"), 100); 
+
+          // OKを押すまで音を鳴らし続ける
+          setTimeout(() => {
+            alert("時間です！");
+            if (alarmSound) {
+              alarmSound.pause();
+              alarmSound.currentTime = 0;
+            }
+          }, 100); 
         } else {
           setTimeLeft(remaining);
         }
@@ -339,7 +352,7 @@ export default function Home() {
       `}</style>
 
       {/* --- サイドバー --- */}
-      <aside className={`fixed left-0 top-0 h-full w-80 z-50 transition-transform duration-500 bg-black/40 backdrop-blur-2xl border-r border-white/10 p-6 flex flex-col ${isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}>
+      <aside className={`fixed left-0 top-0 h-full w-80 z-[100] transition-transform duration-500 bg-black/40 backdrop-blur-2xl border-r border-white/10 p-6 flex flex-col ${isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}>
         <div className="flex justify-between items-center mb-10"><p className="text-[10px] font-black tracking-[0.4em] text-gray-500 uppercase">記録・履歴</p><button onClick={() => setIsSidebarOpen(false)} className="text-xl">✕</button></div>
         
         <section className="bg-white/5 p-4 rounded-[2rem] border border-white/10 mb-8 text-center">
@@ -354,7 +367,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* --- ライブラリ振り分け改善 --- */}
         <section className="mb-8">
           <p className="text-[10px] font-black text-gray-500 tracking-widest mb-4 uppercase">タスクライブラリ（振分）</p>
           <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide pr-2">
@@ -389,9 +401,9 @@ export default function Home() {
       </aside>
 
       {/* --- メイン --- */}
-      <main className="flex-1 overflow-y-auto min-h-screen scrollbar-hide relative">
-        {/* ヘッダー固定 */}
-        <header className={`sticky top-0 z-40 w-full px-4 py-4 flex justify-between items-center bg-transparent backdrop-blur-md`}>
+      <main className="flex-1 overflow-y-auto min-h-screen scrollbar-hide relative pt-20">
+        {/* 固定ヘッダーの修正: z-indexを上げ、背景色を指定 */}
+        <header className={`fixed top-0 left-0 right-0 z-[50] w-full px-4 py-4 flex justify-between items-center bg-black/20 backdrop-blur-xl border-b border-white/5`}>
           <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90 font-black text-xs px-4">MENU</button>
           <h1 className={`text-xl font-black italic bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.accent}`}>ROUTINE MASTER</h1>
           <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90">⚙️</button>
@@ -450,14 +462,17 @@ export default function Home() {
                       </ResponsiveContainer>
                     </div>
                   </div>
-                  {/* タイマー：1分追加 */}
+                  {/* タイマー：リセットボタン追加 */}
                   <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center justify-around shadow-lg">
                     <div className="text-center">
                       <p className="text-[28px] font-mono font-black tabular-nums">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
-                      <button onClick={() => setIsTimerActive(!isTimerActive)} className={`mt-1 px-5 py-1.5 text-[9px] font-black rounded-full transition-all ${isTimerActive ? "bg-red-500" : "bg-white text-black"}`}>{isTimerActive ? "停止" : "集中開始"}</button>
+                      <div className="flex gap-2 mt-1">
+                        <button onClick={() => setIsTimerActive(!isTimerActive)} className={`px-4 py-1.5 text-[9px] font-black rounded-full transition-all ${isTimerActive ? "bg-red-500" : "bg-white text-black"}`}>{isTimerActive ? "停止" : "開始"}</button>
+                        <button onClick={() => { setIsTimerActive(false); setTimeLeft(baseTime); }} className="px-4 py-1.5 text-[9px] font-black rounded-full bg-white/10 border border-white/10 hover:bg-white/20 transition-all">リセット</button>
+                      </div>
                     </div>
                     <div className="grid grid-cols-3 gap-1.5">
-                      {[1, 5, 15, 25, 45].map(m => <button key={m} onClick={() => { setIsTimerActive(false); setTimeLeft(m*60); }} className="text-[8px] font-black border border-white/10 w-10 py-2 rounded-xl hover:bg-white hover:text-black transition-all">{m}分</button>)}
+                      {[1, 5, 15, 25, 45].map(m => <button key={m} onClick={() => { setIsTimerActive(false); setTimeLeft(m*60); setBaseTime(m*60); }} className={`text-[8px] font-black border border-white/10 w-10 py-2 rounded-xl transition-all ${baseTime === m*60 ? "bg-white text-black" : "hover:bg-white hover:text-black"}`}>{m}分</button>)}
                     </div>
                   </div>
                 </div>
@@ -495,7 +510,6 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* ソーシャル等 */}
               <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex gap-2">
                 <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value)} className="flex-1 bg-black/40 text-[11px] p-4 rounded-xl border border-white/5 outline-none focus:border-white/20" placeholder="友達のIDを入力..." />
                 <button onClick={addFriend} className="bg-white text-black px-6 rounded-xl font-black text-[10px] active:scale-95 transition-all shadow-lg">追加</button>
@@ -530,9 +544,9 @@ export default function Home() {
         </div>
       </main>
 
-      {/* --- 個別トーク画面・設定画面等のモーダルは維持 --- */}
+      {/* モーダル類 */}
       {selectedChatFriend && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSelectedChatFriend(null)}></div>
           <div className="relative w-full max-w-xl h-[85vh] bg-[#111] rounded-[3rem] border border-white/10 flex flex-col overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
@@ -556,7 +570,7 @@ export default function Home() {
       )}
 
       {isMenuOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsMenuOpen(false)}></div>
           <div className="relative w-full max-w-lg bg-[#0a0a0a] rounded-[3rem] border border-white/10 p-8 shadow-2xl max-h-[80vh] overflow-y-auto scrollbar-hide">
             <div className="flex justify-between items-center mb-6">
