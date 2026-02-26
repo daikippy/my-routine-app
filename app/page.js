@@ -31,11 +31,11 @@ const CHARACTERS = [
 ];
 
 const RANK_LIST = [
-  { name: "LEGEND", min: 100, color: "text-yellow-400", bg: "bg-yellow-400/20", desc: "完璧。神の領域。" },
-  { name: "PLATINUM", min: 80, color: "text-blue-300", bg: "bg-blue-300/20", desc: "超一流。尊敬の的。" },
-  { name: "GOLD", min: 50, color: "text-yellow-600", bg: "bg-yellow-600/20", desc: "安定。習慣の達人。" },
-  { name: "SILVER", min: 20, color: "text-gray-400", bg: "bg-gray-400/20", desc: "見習い。一歩ずつ前へ。" },
-  { name: "BEGINNER", min: 0, color: "text-gray-500", bg: "bg-gray-500/10", desc: "挑戦者。ここから始まる。" }
+  { name: "LEGEND", min: 100, color: "text-yellow-400", bg: "bg-yellow-400/20", desc: "完璧. 神の領域." },
+  { name: "PLATINUM", min: 80, color: "text-blue-300", bg: "bg-blue-300/20", desc: "超一流. 尊敬の的." },
+  { name: "GOLD", min: 50, color: "text-yellow-600", bg: "bg-yellow-600/20", desc: "安定. 習慣の達人." },
+  { name: "SILVER", min: 20, color: "text-gray-400", bg: "bg-gray-400/20", desc: "見習い. 一歩ずつ前へ." },
+  { name: "BEGINNER", min: 0, color: "text-gray-500", bg: "bg-gray-500/10", desc: "挑戦者. ここから始まる." }
 ];
 
 const THEMES = [
@@ -56,6 +56,7 @@ const THEMES = [
 export default function Home() {
   const today = new Date().toISOString().split('T')[0];
   
+  const [activeTab, setActiveTab] = useState("main"); // "main" or "social"
   const [tasks, setTasks] = useState({ morning: [], afternoon: [], night: [] });
   const [checks, setChecks] = useState({});
   const [history, setHistory] = useState([]);
@@ -141,10 +142,19 @@ export default function Home() {
   const saveProgress = async () => {
     if (!user) return;
     const newHistory = [...history.filter(h => h.date !== today), { date: today, percent }];
+    
+    // セクションごとの達成率もフレンド用に保存
+    const sectionStats = {
+      morning: tasks.morning.length === 0 ? 0 : Math.round((tasks.morning.filter(t => checks["morning" + t]).length / tasks.morning.length) * 100),
+      afternoon: tasks.afternoon.length === 0 ? 0 : Math.round((tasks.afternoon.filter(t => checks["afternoon" + t]).length / tasks.afternoon.length) * 100),
+      night: tasks.night.length === 0 ? 0 : Math.round((tasks.night.filter(t => checks["night" + t]).length / tasks.night.length) * 100)
+    };
+
     await setDoc(doc(db, "users", user.uid), { 
       tasks, checks, lastCheckDate: today, history: newHistory, 
       displayName: user.displayName, shortId: myDisplayId,
       rank: currentRank.name, percent, friends: friendsList,
+      sectionStats,
       themeIndex, charIndex, lastActive: Date.now()
     }, { merge: true });
     alert("保存しました！");
@@ -202,117 +212,163 @@ export default function Home() {
           <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90 transition-all">⚙️</button>
         </header>
 
-        {/* --- Timer & Character Hero --- */}
-        <div className="bg-white/5 p-6 sm:p-8 rounded-[3.5rem] border border-white/10 mb-6 flex flex-col items-center relative overflow-hidden shadow-2xl">
-          <div className="w-full flex flex-col items-center mb-6 bg-black/20 p-4 rounded-[2.5rem] border border-white/5">
-              <div className="flex gap-2 mb-3">
-                {[5, 15, 25, 45].map(m => (
-                  <button key={m} onClick={() => setTimerMinutes(m)} className="text-[10px] font-black border border-white/10 px-3 py-1 rounded-full hover:bg-white hover:text-black transition-all">
-                    {m === 5 ? "5m⚡" : `${m}m`}
-                  </button>
-                ))}
+        {/* --- Tab Switcher --- */}
+        <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 mb-6 mx-auto w-fit">
+          <button onClick={() => setActiveTab("main")} className={`px-8 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === "main" ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-white"}`}>MAIN</button>
+          <button onClick={() => setActiveTab("social")} className={`px-8 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === "social" ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-white"}`}>SOCIAL</button>
+        </div>
+
+        {activeTab === "main" ? (
+          <>
+            {/* --- Timer & Character Hero --- */}
+            <div className="bg-white/5 p-6 sm:p-8 rounded-[3.5rem] border border-white/10 mb-6 flex flex-col items-center relative overflow-hidden shadow-2xl">
+              <div className="w-full flex flex-col items-center mb-6 bg-black/20 p-4 rounded-[2.5rem] border border-white/5">
+                  <div className="flex gap-2 mb-3">
+                    {[5, 15, 25, 45].map(m => (
+                      <button key={m} onClick={() => setTimerMinutes(m)} className="text-[10px] font-black border border-white/10 px-3 py-1 rounded-full hover:bg-white hover:text-black transition-all">
+                        {m === 5 ? "5m⚡" : `${m}m`}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <p className="text-4xl font-mono font-black tabular-nums tracking-tighter">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
+                    <button onClick={() => setIsTimerActive(!isTimerActive)} className={`px-6 py-2 text-[10px] font-black rounded-full uppercase transition-all ${isTimerActive ? "bg-red-500 text-white shadow-lg shadow-red-500/30" : "bg-white text-black"}`}>
+                      {isTimerActive ? "STOP" : "START"}
+                    </button>
+                  </div>
               </div>
-              <div className="flex items-center gap-4">
-                <p className="text-4xl font-mono font-black tabular-nums tracking-tighter">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
-                <button onClick={() => setIsTimerActive(!isTimerActive)} className={`px-6 py-2 text-[10px] font-black rounded-full uppercase transition-all ${isTimerActive ? "bg-red-500 text-white shadow-lg shadow-red-500/30" : "bg-white text-black"}`}>
-                  {isTimerActive ? "STOP" : "START"}
-                </button>
-              </div>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="bg-white text-black text-[11px] font-black p-3 rounded-2xl mb-6 animate-float-rich relative shadow-xl">
-                {percent === 100 ? "完璧すぎるよ！" : (percent > 80 ? "あとちょっとだね！" : "一緒にやろう！")}{currentChar.suffix}
-                <div className="absolute left-1/2 -bottom-2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-t-white border-l-transparent border-r-transparent -translate-x-1/2"></div>
-            </div>
-            <div className={`w-32 h-32 rounded-full ${currentChar.color} shadow-[0_25px_60px_rgba(0,0,0,0.4)] flex items-center justify-center animate-bounce-rich relative`}>
-                <div className="flex gap-6 animate-blink-rich">
-                  <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div>
-                  <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div>
+              <div className="flex flex-col items-center">
+                <div className="bg-white text-black text-[11px] font-black p-3 rounded-2xl mb-6 animate-float-rich relative shadow-xl">
+                    {percent === 100 ? "完璧すぎるよ！" : (percent > 80 ? "あとちょっとだね！" : "一緒にやろう！")}{currentChar.suffix}
+                    <div className="absolute left-1/2 -bottom-2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-t-white border-l-transparent border-r-transparent -translate-x-1/2"></div>
                 </div>
+                <div className={`w-32 h-32 rounded-full ${currentChar.color} shadow-[0_25px_60px_rgba(0,0,0,0.4)] flex items-center justify-center animate-bounce-rich relative`}>
+                    <div className="flex gap-6 animate-blink-rich">
+                      <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div>
+                      <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div>
+                    </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* --- Stats & Graph --- */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-white/5 p-5 rounded-[2.5rem] border border-white/10 text-center flex flex-col justify-center items-center shadow-lg">
-            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${currentRank.bg} ${currentRank.color} mb-2 border border-current`}>{currentRank.name}</span>
-            <div className="text-4xl font-black mt-1 tracking-tighter">{percent}%</div>
-          </div>
-          <div className="bg-white/5 p-3 rounded-[2.5rem] border border-white/10 h-32 overflow-hidden shadow-lg">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="displayDate" axisLine={false} tickLine={false} tick={{fontSize: 8, fill: '#666', fontWeight: 'bold'}} />
-                <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+            {/* --- Stats & Graph --- */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-white/5 p-5 rounded-[2.5rem] border border-white/10 text-center flex flex-col justify-center items-center shadow-lg">
+                <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${currentRank.bg} ${currentRank.color} mb-2 border border-current`}>{currentRank.name}</span>
+                <div className="text-4xl font-black mt-1 tracking-tighter">{percent}%</div>
+              </div>
+              <div className="bg-white/5 p-3 rounded-[2.5rem] border border-white/10 h-32 overflow-hidden shadow-lg">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="displayDate" axisLine={false} tickLine={false} tick={{fontSize: 8, fill: '#666', fontWeight: 'bold'}} />
+                    <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
 
-        {/* --- Activity Calendar --- */}
-        <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 mb-6 flex flex-col items-center shadow-md">
-          <p className="text-[8px] font-black text-gray-500 uppercase mb-4 tracking-[0.4em]">Activity Calendar</p>
-          <div className="grid grid-cols-7 gap-2">
-            {[...Array(28)].map((_, i) => {
-              const d = new Date(); d.setDate(d.getDate() - (27 - i));
-              const dStr = d.toISOString().split('T')[0];
-              const h = history.find(entry => entry.date === dStr);
-              return <div key={i} className={`w-6 h-6 rounded-[6px] border border-white/5 transition-all duration-700 ${h?.percent === 100 ? 'bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.6)]' : h?.percent > 0 ? `bg-blue-500/${Math.max(20, h.percent)}` : 'bg-white/5'}`} />
-            })}
-          </div>
-        </div>
+            {/* --- Friends Activity (Mini List) --- */}
+            {friendsData.length > 0 && (
+              <div className="bg-white/5 p-6 rounded-[2.5rem] mb-6 border border-white/10 shadow-xl overflow-hidden">
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-5 tracking-[0.3em] text-center">Friends Quick View</p>
+                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                  {friendsData.map((f, i) => {
+                    const fChar = CHARACTERS[f.charIndex || 0];
+                    return (
+                      <div key={i} className="flex flex-col items-center min-w-[80px] bg-white/5 p-4 rounded-3xl border border-white/5">
+                        <div className={`w-10 h-10 rounded-full ${fChar.color} mb-2 shadow-lg flex items-center justify-center`}>
+                          <div className="flex gap-2"><div className="w-1 h-1 bg-white rounded-full"></div><div className="w-1 h-1 bg-white rounded-full"></div></div>
+                        </div>
+                        <p className="text-[10px] font-black truncate w-full text-center mb-1">{f.displayName?.split(' ')[0]}</p>
+                        <p className={`text-[8px] font-black ${RANK_LIST.find(r => r.name === f.rank)?.color}`}>{f.percent}%</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-        {/* --- Friends Activity --- */}
-        {friendsData.length > 0 && (
-          <div className="bg-white/5 p-6 rounded-[2.5rem] mb-6 border border-white/10 shadow-xl overflow-hidden">
-            <p className="text-[10px] font-black text-gray-500 uppercase mb-5 tracking-[0.3em] text-center">Friends Status</p>
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-              {friendsData.map((f, i) => {
+            {/* --- Task Lists --- */}
+            {["morning", "afternoon", "night"].map(time => (
+              <div key={time} className="bg-white/5 p-6 rounded-[2.5rem] mb-6 border border-white/10 shadow-xl group relative">
+                <h2 className="text-[10px] font-black text-gray-500 uppercase mb-5 tracking-[0.3em] text-center opacity-40">{time}</h2>
+                <div className="space-y-4">
+                  {tasks[time].map((task, index) => (
+                    <div key={index} className="flex items-center group/item transition-all hover:translate-x-1">
+                      <button onClick={() => setChecks(prev => ({ ...prev, [time + task]: !prev[time + task] }))} className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none scale-110 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-black/20"}`}>
+                        {checks[time + task] && <span className="text-[10px] font-black">✓</span>}
+                      </button>
+                      <span className={`flex-1 text-sm font-bold transition-all ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>
+                        {task.startsWith('!') ? <span className="text-orange-400">🌟 {task.substring(1)}</span> : task}
+                      </span>
+                      <button onClick={() => { const nl = [...tasks[time]]; nl.splice(index,1); setTasks({...tasks, [time]: nl}); }} className="opacity-0 group-hover/item:opacity-100 text-red-500 transition-all p-2 text-sm">✕</button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex mt-6 gap-2">
+                  <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }} className={`w-11 h-11 rounded-xl flex items-center justify-center border-2 transition-all shadow-lg ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300 scale-105" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
+                  <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })} className="flex-1 bg-black/40 text-xs p-3 rounded-xl border border-white/5 outline-none focus:border-white/20 transition-all" placeholder="新しいタスク..." />
+                  <button onClick={() => { if (!newTasks[time]) return; setTasks({...tasks, [time]: [...tasks[time], newTasks[time]]}); setNewTasks({...newTasks, [time]: ""}); }} className="bg-white text-black px-5 rounded-xl font-black text-[10px] shadow-lg active:scale-90">ADD</button>
+                </div>
+              </div>
+            ))}
+            <button onClick={saveProgress} className={`w-full py-5 bg-gradient-to-r ${currentTheme.accent} text-gray-950 rounded-[2.5rem] font-black shadow-2xl active:scale-95 transition-all uppercase tracking-[0.2em] text-sm mt-4`}>Save Progress</button>
+          </>
+        ) : (
+          /* --- SOCIAL TAB CONTENT --- */
+          <div className="space-y-6">
+            {friendsData.length === 0 ? (
+              <div className="bg-white/5 p-12 rounded-[3.5rem] border border-white/10 text-center">
+                <p className="text-gray-500 font-bold text-sm">フレンドがまだいません。<br/>設定からIDで友達を追加しよう！</p>
+              </div>
+            ) : (
+              friendsData.map((f, i) => {
                 const fChar = CHARACTERS[f.charIndex || 0];
+                const fRank = RANK_LIST.find(r => r.name === f.rank) || RANK_LIST[4];
                 return (
-                  <div key={i} className="flex flex-col items-center min-w-[80px] bg-white/5 p-4 rounded-3xl border border-white/5">
-                    <div className={`w-10 h-10 rounded-full ${fChar.color} mb-2 shadow-lg flex items-center justify-center`}>
-                      <div className="flex gap-2">
-                        <div className="w-1 h-1 bg-white rounded-full"></div>
-                        <div className="w-1 h-1 bg-white rounded-full"></div>
+                  <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 shadow-xl transition-all hover:border-white/20">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className={`w-16 h-16 rounded-full ${fChar.color} shadow-lg flex items-center justify-center animate-bounce-rich`}>
+                        <div className="flex gap-2"><div className="w-1.5 h-1.5 bg-white rounded-full"></div><div className="w-1.5 h-1.5 bg-white rounded-full"></div></div>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-black tracking-tight">{f.displayName}</h3>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${fRank.bg} ${fRank.color}`}>{f.rank}</span>
+                          <span className="text-xl font-black tracking-tighter">{f.percent}%</span>
+                        </div>
                       </div>
                     </div>
-                    <p className="text-[10px] font-black truncate w-full text-center mb-1">{f.displayName?.split(' ')[0]}</p>
-                    <p className={`text-[8px] font-black ${RANK_LIST.find(r => r.name === f.rank)?.color}`}>{f.percent}%</p>
+                    
+                    {/* Detailed Progress Bars */}
+                    <div className="space-y-3 bg-black/20 p-5 rounded-3xl">
+                      {[
+                        { label: "Morning", val: f.sectionStats?.morning || 0, color: "bg-blue-400" },
+                        { label: "Afternoon", val: f.sectionStats?.afternoon || 0, color: "bg-orange-400" },
+                        { label: "Night", val: f.sectionStats?.night || 0, color: "bg-indigo-400" }
+                      ].map((sec, si) => (
+                        <div key={si}>
+                          <div className="flex justify-between text-[8px] font-black uppercase mb-1 opacity-50">
+                            <span>{sec.label}</span>
+                            <span>{sec.val}%</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <div className={`h-full ${sec.color} transition-all duration-1000 shadow-[0_0_8px_rgba(255,255,255,0.2)]`} style={{ width: `${sec.val}%` }}></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <p className="text-[8px] text-gray-500 font-black mt-4 text-center uppercase tracking-widest italic leading-relaxed">
+                      " {fRank.desc} "
+                    </p>
                   </div>
-                );
-              })}
-            </div>
+                )
+              })
+            )}
           </div>
         )}
-
-        {/* --- Task Lists --- */}
-        {["morning", "afternoon", "night"].map(time => (
-          <div key={time} className="bg-white/5 p-6 rounded-[2.5rem] mb-6 border border-white/10 shadow-xl group relative">
-            <h2 className="text-[10px] font-black text-gray-500 uppercase mb-5 tracking-[0.3em] text-center opacity-40">{time}</h2>
-            <div className="space-y-4">
-              {tasks[time].map((task, index) => (
-                <div key={index} className="flex items-center group/item transition-all hover:translate-x-1">
-                  <button onClick={() => setChecks(prev => ({ ...prev, [time + task]: !prev[time + task] }))} className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none scale-110 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-black/20"}`}>
-                    {checks[time + task] && <span className="text-[10px] font-black">✓</span>}
-                  </button>
-                  <span className={`flex-1 text-sm font-bold transition-all ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>
-                    {task.startsWith('!') ? <span className="text-orange-400">🌟 {task.substring(1)}</span> : task}
-                  </span>
-                  <button onClick={() => { const nl = [...tasks[time]]; nl.splice(index,1); setTasks({...tasks, [time]: nl}); }} className="opacity-0 group-hover/item:opacity-100 text-red-500 transition-all p-2 text-sm">✕</button>
-                </div>
-              ))}
-            </div>
-            <div className="flex mt-6 gap-2">
-              <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }} className={`w-11 h-11 rounded-xl flex items-center justify-center border-2 transition-all shadow-lg ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300 scale-105" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
-              <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })} className="flex-1 bg-black/40 text-xs p-3 rounded-xl border border-white/5 outline-none focus:border-white/20 transition-all" placeholder="新しいタスク..." />
-              <button onClick={() => { if (!newTasks[time]) return; setTasks({...tasks, [time]: [...tasks[time], newTasks[time]]}); setNewTasks({...newTasks, [time]: ""}); }} className="bg-white text-black px-5 rounded-xl font-black text-[10px] shadow-lg active:scale-90">ADD</button>
-            </div>
-          </div>
-        ))}
-
-        <button onClick={saveProgress} className={`w-full py-5 bg-gradient-to-r ${currentTheme.accent} text-gray-950 rounded-[2.5rem] font-black shadow-2xl active:scale-95 transition-all uppercase tracking-[0.2em] text-sm mt-4`}>Save Progress</button>
       </div>
 
       {/* --- Settings Menu --- */}
@@ -326,14 +382,12 @@ export default function Home() {
             </div>
             
             <div className="space-y-12 pb-10">
-              {/* My ID Section */}
               <section className="bg-white/5 p-6 rounded-[2rem] border border-white/10 text-center">
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-2 tracking-widest">My Routine ID</p>
                 <p className="text-2xl font-mono font-black tracking-widest text-white mb-2">{myDisplayId}</p>
                 <p className="text-[8px] text-gray-500">このIDを友達に教えてね！</p>
               </section>
 
-              {/* Add Friend Section */}
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Add Friend</p>
                 <div className="flex gap-2">
@@ -342,7 +396,6 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* Character Select */}
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Character Select</p>
                 <div className="grid grid-cols-2 gap-3">
@@ -355,26 +408,12 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* Visual Themes */}
-              <section>
-                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Visual Themes</p>
-                <div className="grid grid-cols-4 gap-3">
-                  {THEMES.map((t, i) => (
-                    <button key={i} onClick={() => setThemeIndex(i)} className={`w-10 h-10 rounded-full border-2 transition-all ${themeIndex === i ? 'border-white scale-110' : 'border-transparent'}`} style={{ backgroundColor: t.color }}></button>
-                  ))}
-                </div>
-              </section>
-
-              {/* Rank System with Descriptions */}
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Rank System</p>
                 <div className="space-y-2.5">
                   {RANK_LIST.map((r, i) => (
                     <div key={i} className={`p-4 rounded-[1.5rem] border transition-all ${percent >= r.min ? 'bg-white/10 border-white/20 shadow-lg' : 'border-white/5 opacity-20'}`}>
-                      <div className="flex justify-between font-black text-[10px] mb-1.5">
-                        <span className={r.color}>● {r.name}</span>
-                        <span className="opacity-50">{r.min}%+</span>
-                      </div>
+                      <div className="flex justify-between font-black text-[10px] mb-1.5"><span className={r.color}>● {r.name}</span><span className="opacity-50">{r.min}%+</span></div>
                       <p className="text-[9px] text-gray-400 font-bold italic">{r.desc}</p>
                     </div>
                   ))}
