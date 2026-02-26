@@ -1,10 +1,4 @@
-export default function RootLayout({ children }) {
-  return (
-    <html lang="ja">
-      <body>{children}</body>
-    </html>
-  );
-}
+export const metadata = {
   title: "ROUTINE MASTER",
   description: "Manage your daily routines",
 };
