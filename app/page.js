@@ -77,9 +77,8 @@ export default function Home() {
   const [friendsData, setFriendsData] = useState([]);
   const [userMessages, setUserMessages] = useState([]);
 
-  // タイマー用ステート
   const [timeLeft, setTimeLeft] = useState(300); 
-  const [baseTime, setBaseTime] = useState(300); // リセット用
+  const [baseTime, setBaseTime] = useState(300); 
   const [isTimerActive, setIsTimerActive] = useState(false);
   const endTimeRef = useRef(null);
   const timerRef = useRef(null);
@@ -92,7 +91,6 @@ export default function Home() {
   const currentChar = CHARACTERS[charIndex];
   const currentTheme = THEMES[themeIndex];
 
-  // タスクライブラリ
   const taskLibrary = useMemo(() => {
     const all = [...tasks.morning, ...tasks.afternoon, ...tasks.night];
     return Array.from(new Set(all)).filter(t => t !== "");
@@ -190,7 +188,6 @@ export default function Home() {
     return () => unsub();
   }, [friendsList, user]);
 
-  // タイマー：アラームループ対応とリセットロジック
   useEffect(() => {
     if (isTimerActive) {
       endTimeRef.current = Date.now() + timeLeft * 1000;
@@ -200,8 +197,6 @@ export default function Home() {
           setIsTimerActive(false);
           setTimeLeft(0);
           clearInterval(timerRef.current);
-          
-          // ループ再生開始
           if (alarmSound) {
             alarmSound.currentTime = 0;
             alarmSound.play().catch(e => console.log("Audio play failed:", e));
@@ -209,8 +204,6 @@ export default function Home() {
           if (typeof navigator !== "undefined" && navigator.vibrate) {
             navigator.vibrate([500, 200, 500, 200, 500]);
           }
-
-          // OKを押すまで音を鳴らし続ける
           setTimeout(() => {
             alert("時間です！");
             if (alarmSound) {
@@ -351,7 +344,10 @@ export default function Home() {
         .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* --- サイドバー --- */}
+      {/* --- MENUサイドバーの外部クリック対応 --- */}
+      {isSidebarOpen && (
+        <div className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)}></div>
+      )}
       <aside className={`fixed left-0 top-0 h-full w-80 z-[100] transition-transform duration-500 bg-black/40 backdrop-blur-2xl border-r border-white/10 p-6 flex flex-col ${isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}>
         <div className="flex justify-between items-center mb-10"><p className="text-[10px] font-black tracking-[0.4em] text-gray-500 uppercase">記録・履歴</p><button onClick={() => setIsSidebarOpen(false)} className="text-xl">✕</button></div>
         
@@ -377,7 +373,8 @@ export default function Home() {
                   {['朝', '昼', '晩'].map((label, idx) => {
                     const timeKey = idx === 0 ? 'morning' : idx === 1 ? 'afternoon' : 'night';
                     return (
-                      <button key={label} onClick={() => {
+                      <button key={label} onClick={(e) => {
+                        e.stopPropagation();
                         const nextTasks = {...tasks, [timeKey]: [...tasks[timeKey], t]};
                         setTasks(nextTasks);
                         saveToFirebase({ tasks: nextTasks });
@@ -400,9 +397,7 @@ export default function Home() {
         </section>
       </aside>
 
-      {/* --- メイン --- */}
       <main className="flex-1 overflow-y-auto min-h-screen scrollbar-hide relative pt-20">
-        {/* 固定ヘッダーの修正: z-indexを上げ、背景色を指定 */}
         <header className={`fixed top-0 left-0 right-0 z-[50] w-full px-4 py-4 flex justify-between items-center bg-black/20 backdrop-blur-xl border-b border-white/5`}>
           <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90 font-black text-xs px-4">MENU</button>
           <h1 className={`text-xl font-black italic bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.accent}`}>ROUTINE MASTER</h1>
@@ -462,7 +457,6 @@ export default function Home() {
                       </ResponsiveContainer>
                     </div>
                   </div>
-                  {/* タイマー：リセットボタン追加 */}
                   <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center justify-around shadow-lg">
                     <div className="text-center">
                       <p className="text-[28px] font-mono font-black tabular-nums">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
@@ -544,7 +538,6 @@ export default function Home() {
         </div>
       </main>
 
-      {/* モーダル類 */}
       {selectedChatFriend && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSelectedChatFriend(null)}></div>
