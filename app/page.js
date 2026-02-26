@@ -71,7 +71,6 @@ export default function Home() {
   const [friendsList, setFriendsList] = useState([]);
   const [friendsData, setFriendsData] = useState([]);
   const [userMessages, setUserMessages] = useState([]);
-  const [incomingMsg, setIncomingMsg] = useState(null);
 
   const [timeLeft, setTimeLeft] = useState(300); // 初期5分
   const [isTimerActive, setIsTimerActive] = useState(false);
@@ -110,16 +109,6 @@ export default function Home() {
     }
     return days;
   }, [history]);
-
-  useEffect(() => {
-    if (activeTab === "social" && socialSubTab === "msgs" && user) {
-      const hasUnread = userMessages.some(m => !m.read && m.from !== user.displayName);
-      if (hasUnread) {
-        const updatedMsgs = userMessages.map(m => (m.from !== user.displayName ? { ...m, read: true } : m));
-        updateDoc(doc(db, "users", user.uid), { messageHistory: updatedMsgs });
-      }
-    }
-  }, [activeTab, socialSubTab, userMessages, user]);
 
   const saveToFirebase = async (updatedData = {}) => {
     if (!user) return;
@@ -166,10 +155,6 @@ export default function Home() {
             setCharIndex(d.charIndex || 0);
             setUserMessages(d.messageHistory || []);
             if (d.lastCheckDate === today) setChecks(d.checks || {});
-            if (d.message) {
-              setIncomingMsg(d.message);
-              setTimeout(() => updateDoc(docRef, { message: null }), 5000);
-            }
           }
         });
       }
@@ -190,7 +175,7 @@ export default function Home() {
       timerRef.current = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     } else if (timeLeft === 0) {
       setIsTimerActive(false);
-      alert("時間です！");
+      alert("時間です！集中できましたか？");
     }
     return () => clearInterval(timerRef.current);
   }, [isTimerActive, timeLeft]);
@@ -222,8 +207,7 @@ export default function Home() {
     const q = query(collection(db, "users"), where("shortId", "==", friendIdInput));
     onSnapshot(q, async (s) => {
       if (s.empty) { alert("ユーザーが見つかりません"); } else {
-        const targetUserDoc = s.docs[0];
-        const targetUid = targetUserDoc.id;
+        const targetUid = s.docs[0].id;
         if (friendsList.includes(friendIdInput)) return;
         const nextList = [...friendsList, friendIdInput];
         setFriendsList(nextList);
@@ -235,39 +219,28 @@ export default function Home() {
     }, {onlyOnce: true});
   };
 
-  const removeFriend = async (fid) => {
-    if (!window.confirm("友達解除しますか？")) return;
-    const nextList = friendsList.filter(id => id !== fid);
-    setFriendsList(nextList);
-    saveToFirebase({ friendsList: nextList });
-  };
-
   const sendMessage = async (targetUid, targetName) => {
-    const msgText = window.prompt(`${targetName}さんへ応援メッセージ`, "お疲れ様！応援してるよ！");
+    const msgText = window.prompt(`${targetName}さんへ応援メッセージ`, "お疲れ様！");
     if (msgText) {
       const msgObj = {
-        id: Date.now() + Math.random(),
-        from: user.displayName,
-        to: targetName,
-        text: msgText,
+        id: Date.now(), from: user.displayName, to: targetName, text: msgText,
         time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        date: new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }),
         read: false
       };
       const batch = writeBatch(db);
-      batch.update(doc(db, "users", targetUid), { message: msgObj, messageHistory: arrayUnion(msgObj) });
+      batch.update(doc(db, "users", targetUid), { messageHistory: arrayUnion(msgObj) });
       batch.update(doc(db, "users", user.uid), { messageHistory: arrayUnion(msgObj) });
       await batch.commit();
-      alert("メッセージを送りました！");
+      alert("送信しました！");
     }
   };
 
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-black animate-pulse">読み込み中...</div>;
 
   if (!user) return (
-    <div className={`min-h-screen w-full flex flex-col items-center justify-center px-6 transition-all ${currentTheme.bg}`}>
-       <h1 className={`text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.accent}`}>ROUTINE MASTER</h1>
-       <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest">はじめる</button>
+    <div className={`min-h-screen w-full flex flex-col items-center justify-center px-6 transition-all bg-gray-950`}>
+       <h1 className={`text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400`}>ROUTINE MASTER</h1>
+       <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest uppercase">ログインして始める</button>
     </div>
   );
 
@@ -277,19 +250,17 @@ export default function Home() {
         @keyframes bounce-rich { 0%, 100% { transform: translateY(0) scale(1, 1); } 50% { transform: translateY(-15px) scale(0.95, 1.05); } }
         @keyframes blink { 0%, 90%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
         @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(234, 179, 8, 0); } 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); } }
-        @keyframes mouth-move { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3, 0.7); } }
         .animate-bounce-rich { animation: bounce-rich 2s infinite ease-in-out; }
         .animate-blink { animation: blink 4s infinite; }
         .animate-gold { animation: pulse-gold 1.5s infinite; }
-        .animate-mouth { animation: mouth-move 2s infinite ease-in-out; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
 
       {/* --- サイドバー --- */}
       <aside className={`fixed left-0 top-0 h-full w-80 z-50 transition-transform duration-500 bg-black/40 backdrop-blur-2xl border-r border-white/10 p-6 flex flex-col ${isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}>
-        <div className="flex justify-between items-center mb-10"><p className="text-[10px] font-black tracking-[0.4em] text-gray-500 uppercase">これまでの記録</p><button onClick={() => setIsSidebarOpen(false)} className="text-xl">✕</button></div>
+        <div className="flex justify-between items-center mb-10"><p className="text-[10px] font-black tracking-[0.4em] text-gray-500 uppercase">記録の保管庫</p><button onClick={() => setIsSidebarOpen(false)} className="text-xl">✕</button></div>
         <section className="bg-white/5 p-4 rounded-[2rem] border border-white/10 mb-8 text-center">
-          <p className="text-[10px] font-black mb-4 opacity-50 tracking-widest">{new Date().getMonth() + 1}月</p>
+          <p className="text-[10px] font-black mb-4 opacity-50 tracking-widest">{new Date().getMonth() + 1}月のカレンダー</p>
           <div className="grid grid-cols-7 gap-1 mb-2 text-[8px] font-black text-gray-600">
             {['日','月','火','水','木','金','土'].map(d => <span key={d}>{d}</span>)}
           </div>
@@ -302,14 +273,14 @@ export default function Home() {
           </div>
         </section>
         <section className="flex-1 overflow-y-auto scrollbar-hide space-y-4">
-          <p className="text-[10px] font-black text-gray-500 tracking-widest">直近の達成率</p>
+          <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase">最近の履歴</p>
           {history.slice(-10).reverse().map((h, i) => (
             <div key={i} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5"><span className="text-xs font-bold text-gray-400">{h.date}</span><span className="text-xs font-black">{h.percent}%</span></div>
           ))}
         </section>
       </aside>
 
-      {/* --- メインコンテンツ --- */}
+      {/* --- メイン --- */}
       <main className="flex-1 overflow-y-auto min-h-screen scrollbar-hide p-4 relative">
         <div className="max-w-4xl mx-auto pb-32">
           <header className="flex justify-between items-center py-4 mb-4">
@@ -319,33 +290,31 @@ export default function Home() {
           </header>
 
           <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 mb-8 mx-auto w-fit">
-            <button onClick={() => setActiveTab("main")} className={`px-8 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === "main" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>メイン</button>
-            <button onClick={() => setActiveTab("social")} className={`px-8 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === "social" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>フレンド</button>
+            <button onClick={() => setActiveTab("main")} className={`px-8 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === "main" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>ホーム</button>
+            <button onClick={() => setActiveTab("social")} className={`px-8 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === "social" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>交流</button>
           </div>
 
           {activeTab === "main" ? (
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-                {/* キャラクターカード */}
+                {/* キャラクター */}
                 <div className="bg-white/5 p-8 rounded-[3.5rem] border border-white/10 flex flex-col items-center justify-center relative shadow-2xl overflow-hidden min-h-[350px]">
-                  <div className={`w-36 h-36 rounded-full ${currentChar.color} shadow-2xl flex flex-col items-center justify-center animate-bounce-rich relative overflow-hidden transition-all duration-700 ${percent === 100 ? 'animate-gold' : ''}`}>
-                    {/* 表情ロジック */}
+                  <div className={`w-36 h-36 rounded-full ${currentChar.color} shadow-2xl flex flex-col items-center justify-center animate-bounce-rich relative transition-all duration-700 ${percent === 100 ? 'animate-gold' : ''}`}>
                     <div className="flex gap-8 mb-4 animate-blink">
                       {percent === 100 ? ( <><span className="text-3xl">🔥</span><span className="text-3xl">🔥</span></> ) :
                        percent >= 80 ? ( <><span className="text-2xl">✨</span><span className="text-2xl">✨</span></> ) :
                        percent <= 20 ? ( <><div className="w-5 h-1.5 bg-black/40 rounded-full rotate-12"></div><div className="w-5 h-1.5 bg-black/40 rounded-full -rotate-12"></div></> ) :
                        ( <><div className="w-5 h-5 bg-white rounded-full flex items-center justify-center"><div className="w-2.5 h-2.5 bg-black rounded-full"></div></div><div className="w-5 h-5 bg-white rounded-full flex items-center justify-center"><div className="w-2.5 h-2.5 bg-black rounded-full"></div></div></> )}
                     </div>
-                    <div className={`transition-all duration-500 animate-mouth ${percent >= 50 ? 'w-10 h-6 bg-white/30 rounded-b-full' : 'w-8 h-1 bg-black/20 rounded-full'}`}></div>
-                    {percent >= 70 && <div className="absolute inset-x-0 bottom-10 flex justify-between px-6 opacity-40"><div className="w-5 h-2 bg-pink-300 rounded-full blur-sm"></div><div className="w-5 h-2 bg-pink-300 rounded-full blur-sm"></div></div>}
+                    <div className={`transition-all duration-500 ${percent >= 50 ? 'w-10 h-6 bg-white/30 rounded-b-full' : 'w-8 h-1 bg-black/20 rounded-full'}`}></div>
                   </div>
                   <div className="mt-8 text-center space-y-2">
-                    <p className="text-[13px] font-black bg-white text-black px-8 py-3 rounded-2xl shadow-2xl inline-block hover:scale-110 transition-transform">{percent}% 達成！{currentChar.suffix}</p>
-                    <p className="text-[10px] font-bold text-gray-400 italic block">継続中: {streakCount}日間 🔥</p>
+                    <p className="text-[13px] font-black bg-white text-black px-8 py-3 rounded-2xl shadow-2xl inline-block hover:scale-110 transition-transform">{percent}% 達成中{currentChar.suffix}</p>
+                    <p className="text-[10px] font-bold text-gray-400 italic block">継続日数: {streakCount}日 🔥</p>
                   </div>
                 </div>
 
-                {/* ランク説明 & ステータス */}
+                {/* ステータス & ランク */}
                 <div className="flex flex-col gap-4">
                   <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex-1 flex flex-col justify-between">
                     <div className="flex justify-between items-start mb-4">
@@ -354,17 +323,16 @@ export default function Home() {
                          <h2 className="text-3xl font-black mt-1">{percent}%</h2>
                        </div>
                        <div className="text-right">
-                         <p className="text-[8px] font-black text-gray-500 tracking-widest">ランク一覧</p>
+                         <p className="text-[8px] font-black text-gray-500 tracking-widest uppercase">ランク一覧</p>
                          <div className="mt-1 space-y-0.5">
                             {RANK_LIST.map(r => (
                               <div key={r.name} className={`flex items-center gap-2 text-[7px] font-bold ${percent >= r.min ? 'opacity-100' : 'opacity-20'}`}>
                                 <div className={`w-1.5 h-1.5 rounded-full ${r.color.replace('text','bg')}`}></div>
-                                <span>{r.name} ({r.min}%〜)</span>
-                                <span className="text-gray-600 hidden lg:inline">- {r.desc}</span>
+                                <span>{r.name} ({r.min}+)</span>
                               </div>
                             ))}
                          </div>
-                    </div>
+                       </div>
                     </div>
                     <div className="h-28 w-full bg-black/20 rounded-2xl p-2">
                       <ResponsiveContainer width="100%" height="100%">
@@ -380,7 +348,7 @@ export default function Home() {
                   <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center justify-around shadow-lg">
                     <div className="text-center">
                       <p className="text-[28px] font-mono font-black tabular-nums">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
-                      <button onClick={() => setIsTimerActive(!isTimerActive)} className={`mt-1 px-5 py-1.5 text-[9px] font-black rounded-full transition-all ${isTimerActive ? "bg-red-500" : "bg-white text-black"}`}>{isTimerActive ? "停止" : "開始"}</button>
+                      <button onClick={() => setIsTimerActive(!isTimerActive)} className={`mt-1 px-5 py-1.5 text-[9px] font-black rounded-full transition-all ${isTimerActive ? "bg-red-500" : "bg-white text-black"}`}>{isTimerActive ? "停止" : "集中開始"}</button>
                     </div>
                     <div className="grid grid-cols-2 gap-1.5">
                       {[5, 15, 25, 45].map(m => <button key={m} onClick={() => { setIsTimerActive(false); setTimeLeft(m*60); }} className="text-[8px] font-black border border-white/10 w-10 py-2 rounded-xl hover:bg-white hover:text-black transition-all">{m}分</button>)}
@@ -389,108 +357,72 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* タスクエリア（最小高さを無くし可変に） */}
+              {/* タスクセクション */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
                 {["morning", "afternoon", "night"].map(time => (
                   <div key={time} className="bg-white/5 p-7 rounded-[3rem] border border-white/10 shadow-xl flex flex-col h-auto">
-                    <h2 className="text-[11px] font-black text-gray-500 uppercase mb-4 tracking-[0.4em] text-center opacity-30">{time === 'morning' ? '朝' : time === 'afternoon' ? '昼' : '夜'}</h2>
+                    <h2 className="text-[11px] font-black text-gray-500 uppercase mb-4 tracking-[0.4em] text-center opacity-30">{time === 'morning' ? '午前' : time === 'afternoon' ? '午後' : '夜'}</h2>
                     <div className="space-y-4">
                       {tasks[time].map((task, index) => (
                         <div key={index} className="flex items-center group/item">
                           <button onClick={() => toggleCheck(time + task)} className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none scale-110 shadow-lg" : "bg-black/20"}`}>
                             {checks[time + task] && <span className="text-[10px] font-black text-white">✓</span>}
                           </button>
-                          <span className={`flex-1 text-sm font-bold ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>
-                            {task.startsWith('!') ? <span className="text-orange-400 font-black">🌟 {task.substring(1)}</span> : task}
-                          </span>
-                          <button onClick={() => removeTask(time, index)} className="opacity-0 group-hover/item:opacity-100 text-red-500 p-1 transition-all">✕</button>
+                          <span className={`flex-1 text-sm font-bold ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>{task}</span>
+                          <button onClick={() => removeTask(time, index)} className="opacity-0 group-hover/item:opacity-100 text-red-500 p-1">✕</button>
                         </div>
                       ))}
                     </div>
                     <div className="mt-6 flex flex-col gap-2">
-                      <div className="flex gap-2">
-                        <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }} className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
-                        <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })} className="flex-1 bg-black/40 text-[11px] p-3 rounded-xl border border-white/5 outline-none focus:border-white/20" placeholder="タスクを入力..." />
-                      </div>
-                      <button onClick={() => addTask(time)} className="w-full bg-white text-black py-3 rounded-xl font-black text-[10px] active:scale-95 transition-all shadow-lg">追加する</button>
+                      <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })} className="bg-black/40 text-[11px] p-3 rounded-xl border border-white/5 outline-none focus:border-white/20" placeholder="新しい習慣..." />
+                      <button onClick={() => addTask(time)} className="w-full bg-white text-black py-3 rounded-xl font-black text-[10px] active:scale-95 transition-all shadow-lg">習慣を追加</button>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            /* ソーシャルビュー (LINE風) */
+            /* ソーシャル */
             <div className="space-y-6">
                <div className="flex gap-8 mb-6 justify-center">
                 <button onClick={() => setSocialSubTab("list")} className={`text-[11px] font-black tracking-widest transition-all ${socialSubTab === 'list' ? 'text-white border-b-2 border-white pb-1' : 'text-gray-500'}`}>友達リスト</button>
-                <button onClick={() => setSocialSubTab("msgs")} className={`text-[11px] font-black tracking-widest transition-all relative ${socialSubTab === 'msgs' ? 'text-white border-b-2 border-white pb-1' : 'text-gray-500'}`}>
-                  トーク
-                  {userMessages.some(m => !m.read && m.from !== user.displayName) && <span className="absolute -top-1 -right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-black animate-pulse"></span>}
-                </button>
+                <button onClick={() => setSocialSubTab("msgs")} className={`text-[11px] font-black tracking-widest transition-all ${socialSubTab === 'msgs' ? 'text-white border-b-2 border-white pb-1' : 'text-gray-500'}`}>トークルーム</button>
               </div>
 
               {socialSubTab === "list" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {friendsData.map((f, i) => (
-                    <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 relative group overflow-hidden shadow-2xl hover:bg-white/[0.07] transition-all">
+                    <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 relative group shadow-2xl overflow-hidden hover:bg-white/[0.07] transition-all">
                       <div className={`absolute top-0 left-0 w-1.5 h-full ${CHARACTERS[f.charIndex || 0].accent} bg-gradient-to-b`}></div>
-                      <div className="flex items-center gap-4 mb-5">
+                      <div className="flex items-center gap-4">
                         <div className={`w-16 h-16 rounded-full ${CHARACTERS[f.charIndex || 0].color} flex items-center justify-center animate-bounce-rich shadow-lg`}>
                           <div className="flex gap-1.5"><div className="w-2 h-2 bg-white rounded-full"></div><div className="w-2 h-2 bg-white rounded-full"></div></div>
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-sm font-black flex items-center gap-2">{f.displayName}<span className={`text-[7px] px-2 py-0.5 rounded-full ${RANK_LIST.find(r=>r.name===f.rank)?.bg} ${RANK_LIST.find(r=>r.name===f.rank)?.color}`}>{f.rank}</span></h3>
+                          <h3 className="text-sm font-black">{f.displayName}</h3>
                           <div className="flex items-end gap-3 mt-1">
                             <span className="text-3xl font-black">{f.percent}%</span>
-                            <span className="text-[10px] font-black text-orange-400 mb-1.5">🔥 {f.streak || 0}日間</span>
+                            <span className="text-[10px] font-black text-orange-400 mb-1.5">🔥 {f.streak || 0}日</span>
                           </div>
                         </div>
-                        <button onClick={() => sendMessage(f.uid, f.displayName)} className="bg-white text-black w-12 h-12 rounded-2xl text-xl flex items-center justify-center hover:scale-110 transition-all shadow-xl">✉️</button>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 bg-black/40 p-4 rounded-2xl border border-white/5">
-                        {[{ label: "朝", val: f.sectionStats?.morning || 0 }, { label: "昼", val: f.sectionStats?.afternoon || 0 }, { label: "夜", val: f.sectionStats?.night || 0 }].map((sec, si) => (
-                          <div key={si} className="text-center">
-                            <p className="text-[7px] font-black text-gray-500 mb-1">{sec.label}</p>
-                            <div className="h-1 bg-white/5 rounded-full overflow-hidden mb-1"><div className="h-full bg-blue-500" style={{ width: `${sec.val}%` }}></div></div>
-                            <p className="text-[9px] font-black">{sec.val}%</p>
-                          </div>
-                        ))}
+                        <button onClick={() => sendMessage(f.uid, f.displayName)} className="bg-white text-black w-12 h-12 rounded-2xl text-xl flex items-center justify-center hover:scale-110 shadow-xl transition-all">✉️</button>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col h-[65vh] bg-black/30 rounded-[3rem] border border-white/5 overflow-hidden max-w-lg mx-auto shadow-inner">
-                  <div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-hide">
-                    {userMessages.map((m, i) => (
-                      <div key={i} className={`flex flex-col ${m.from === user.displayName ? 'items-end' : 'items-start'}`}>
-                        <div className="flex items-end gap-2 max-w-[85%]">
-                          {m.from === user.displayName ? (
-                            <>
-                              <div className="flex flex-col items-end gap-0.5">
-                                {m.read && <span className="text-[8px] text-blue-400 font-black">既読</span>}
-                                <span className="text-[7px] text-gray-600 font-bold">{m.time}</span>
-                              </div>
-                              <div className="px-5 py-3 rounded-[1.5rem] shadow-lg text-sm font-bold bg-[#06C755] text-white rounded-tr-none">
-                                {m.text}
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-xs font-black border border-white/5 shrink-0 shadow-lg">{m.from[0]}</div>
-                              <div className="flex flex-col gap-1">
-                                <span className="text-[9px] font-black text-gray-500 ml-1">{m.from}</span>
-                                <div className="px-5 py-3 rounded-[1.5rem] shadow-md text-sm font-bold bg-white/10 text-gray-100 rounded-tl-none border border-white/5">
-                                  {m.text}
-                                </div>
-                              </div>
-                              <span className="text-[7px] text-gray-600 font-bold mb-1">{m.time}</span>
-                            </>
-                          )}
+                <div className="bg-black/30 rounded-[3rem] border border-white/5 h-[60vh] overflow-y-auto p-6 space-y-4 scrollbar-hide">
+                  {userMessages.map((m, i) => (
+                    <div key={i} className={`flex flex-col ${m.from === user.displayName ? 'items-end' : 'items-start'}`}>
+                      <div className="flex flex-col gap-1 max-w-[80%]">
+                        <span className="text-[8px] font-black text-gray-500 ml-2">{m.from}</span>
+                        <div className={`px-5 py-3 rounded-[1.5rem] text-sm font-bold shadow-md ${m.from === user.displayName ? 'bg-[#06C755] text-white rounded-tr-none' : 'bg-white/10 text-gray-100 rounded-tl-none'}`}>
+                          {m.text}
                         </div>
+                        <span className="text-[7px] text-gray-600 font-bold self-end">{m.time}</span>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -503,21 +435,29 @@ export default function Home() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setIsMenuOpen(false)}></div>
           <div className={`relative w-full max-w-sm p-8 rounded-[4rem] ${currentTheme.bg} border border-white/10 shadow-2xl max-h-[85vh] overflow-y-auto scrollbar-hide`}>
-            <div className="flex justify-between items-center mb-10"><h2 className="text-xl font-black italic text-gray-500">設定</h2><button onClick={() => setIsMenuOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center">✕</button></div>
-            <div className="space-y-12">
+            <div className="flex justify-between items-center mb-10"><h2 className="text-xl font-black italic text-gray-500 uppercase">設定</h2><button onClick={() => setIsMenuOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center">✕</button></div>
+            <div className="space-y-10">
               <section className="bg-white/5 p-8 rounded-[3rem] text-center border border-white/10">
-                <p className="text-[10px] font-black text-gray-500 mb-3 tracking-widest">マイID</p>
-                <p className="text-5xl font-black tracking-tighter text-white select-all">{myDisplayId}</p>
+                <p className="text-[10px] font-black text-gray-500 mb-3 tracking-widest uppercase">マイID</p>
+                <p className="text-4xl font-black tracking-tighter text-white select-all">{myDisplayId}</p>
               </section>
               <section>
-                <p className="text-[10px] font-black text-gray-500 mb-4 tracking-widest">友達追加</p>
-                <div className="flex gap-2">
-                  <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value.substring(0,8))} className="flex-1 bg-black/40 text-xs p-4 rounded-2xl border border-white/5 outline-none" placeholder="IDを入力..." />
-                  <button onClick={addFriend} className="bg-white text-black px-6 rounded-2xl font-black text-[10px] active:scale-95 shadow-lg">追加</button>
+                <p className="text-[10px] font-black text-gray-500 mb-4 tracking-widest uppercase">テーマカラー</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {THEMES.map((t, i) => (
+                    <button key={i} onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }} className={`w-full aspect-square rounded-xl border-2 transition-all ${themeIndex === i ? 'border-white scale-110' : 'border-transparent opacity-40'}`} style={{ backgroundColor: t.color }} title={t.name}></button>
+                  ))}
                 </div>
               </section>
               <section>
-                <p className="text-[10px] font-black text-gray-500 mb-4 tracking-widest">キャラクター選択</p>
+                <p className="text-[10px] font-black text-gray-500 mb-4 tracking-widest uppercase">友達を追加する</p>
+                <div className="flex gap-2">
+                  <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value.substring(0,8))} className="flex-1 bg-black/40 text-xs p-4 rounded-2xl border border-white/5 outline-none" placeholder="IDを入力..." />
+                  <button onClick={addFriend} className="bg-white text-black px-6 rounded-2xl font-black text-[10px] active:scale-95 transition-all shadow-lg">追加</button>
+                </div>
+              </section>
+              <section>
+                <p className="text-[10px] font-black text-gray-500 mb-4 tracking-widest uppercase">相棒を選択</p>
                 <div className="grid grid-cols-2 gap-3">
                   {CHARACTERS.map((c, i) => (
                     <button key={i} onClick={() => { setCharIndex(i); saveToFirebase({ charIndex: i }); }} className={`p-4 rounded-[2rem] border-2 transition-all flex flex-col items-center ${charIndex === i ? 'border-white bg-white/10 shadow-xl' : 'border-transparent opacity-30'}`}>
@@ -527,7 +467,7 @@ export default function Home() {
                   ))}
                 </div>
               </section>
-              <button onClick={() => signOut(auth)} className="w-full py-4 bg-red-500/10 text-red-500 rounded-3xl font-black text-xs border border-red-500/20 active:bg-red-500 active:text-white">ログアウト</button>
+              <button onClick={() => signOut(auth)} className="w-full py-4 bg-red-500/10 text-red-500 rounded-3xl font-black text-xs border border-red-500/20 active:bg-red-500 active:text-white transition-all">ログアウト</button>
             </div>
           </div>
         </div>
