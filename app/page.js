@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, where, updateDoc, arrayUnion, writeBatch } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, where, updateDoc, arrayUnion, writeBatch, getDocs } from "firebase/firestore";
 import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 // --- Firebase Config ---
@@ -31,11 +31,11 @@ const CHARACTERS = [
 ];
 
 const RANK_LIST = [
-  { name: "レジェンド", min: 100, color: "text-yellow-400", bg: "bg-yellow-400/20", desc: "完璧。神の領域。" },
-  { name: "プラチナ", min: 80, color: "text-blue-300", bg: "bg-blue-300/20", desc: "超一流。尊敬の的。" },
-  { name: "ゴールド", min: 50, color: "text-yellow-600", bg: "bg-yellow-600/20", desc: "安定。習慣の達人。" },
-  { name: "シルバー", min: 20, color: "text-gray-400", bg: "bg-gray-400/20", desc: "見習い。一歩ずつ前へ。" },
-  { name: "ビギナー", min: 0, color: "text-gray-500", bg: "bg-gray-500/10", desc: "挑戦者。ここから始まる。" }
+  { name: "レジェンド", min: 100, color: "text-yellow-400", bg: "bg-yellow-400/20" },
+  { name: "プラチナ", min: 80, color: "text-blue-300", bg: "bg-blue-300/20" },
+  { name: "ゴールド", min: 50, color: "text-yellow-600", bg: "bg-yellow-600/20" },
+  { name: "シルバー", min: 20, color: "text-gray-400", bg: "bg-gray-400/20" },
+  { name: "ビギナー", min: 0, color: "text-gray-500", bg: "bg-gray-500/10" }
 ];
 
 const THEMES = [
@@ -126,18 +126,12 @@ export default function Home() {
     const newRank = RANK_LIST.find(r => newPercent >= r.min)?.name || "ビギナー";
     const nextHistory = [...currentHistory.filter(h => h.date !== today), { date: today, percent: newPercent }];
 
-    const sectionStats = {
-      morning: currentTasks.morning.length === 0 ? 0 : Math.round((currentTasks.morning.filter(t => currentChecks["morning" + t]).length / currentTasks.morning.length) * 100),
-      afternoon: currentTasks.afternoon.length === 0 ? 0 : Math.round((currentTasks.afternoon.filter(t => currentChecks["afternoon" + t]).length / currentTasks.afternoon.length) * 100),
-      night: currentTasks.night.length === 0 ? 0 : Math.round((currentTasks.night.filter(t => currentChecks["night" + t]).length / currentTasks.night.length) * 100)
-    };
-
     await setDoc(doc(db, "users", user.uid), { 
       uid: user.uid, tasks: currentTasks, checks: currentChecks, lastCheckDate: today, 
       history: nextHistory, displayName: user.displayName, shortId: myDisplayId,
       rank: newRank, percent: newPercent, friends: currentFriendsList,
       streak: streakCount,
-      sectionStats, themeIndex: currentThemeIdx, charIndex: currentCharIdx, lastActive: Date.now()
+      themeIndex: currentThemeIdx, charIndex: currentCharIdx, lastActive: Date.now()
     }, { merge: true });
   };
 
@@ -154,10 +148,8 @@ export default function Home() {
             setFriendsList(d.friends || []);
             setThemeIndex(d.themeIndex || 0);
             setCharIndex(d.charIndex || 0);
-            
             const sortedMsgs = (d.messageHistory || []).sort((a, b) => a.id - b.id);
             setUserMessages(sortedMsgs);
-
             if (d.lastCheckDate === today) setChecks(d.checks || {});
           }
         });
@@ -173,7 +165,6 @@ export default function Home() {
     const unsub = onSnapshot(q, (s) => {
       const data = s.docs.map(d => d.data());
       setFriendsData(data);
-      // 修正ポイント：友達データ読み込み時、選択が空なら一人目をセット
       if (!selectedChatFriendId && data.length > 0) {
         setSelectedChatFriendId(data[0].shortId);
       }
@@ -213,21 +204,36 @@ export default function Home() {
     saveToFirebase({ tasks: nextTasks });
   };
 
+  // 友達追加の修正: 1回限りの取得にして重複ポップアップを防ぐ
   const addFriend = async () => {
-    if (!friendIdInput || friendIdInput === myDisplayId) return;
-    const q = query(collection(db, "users"), where("shortId", "==", friendIdInput));
-    onSnapshot(q, async (s) => {
-      if (s.empty) { alert("ユーザーが見つかりません"); } else {
-        const targetUid = s.docs[0].id;
-        if (friendsList.includes(friendIdInput)) return;
-        const nextList = [...friendsList, friendIdInput];
+    const inputId = friendIdInput.trim();
+    if (!inputId || inputId === myDisplayId) return;
+    if (friendsList.includes(inputId)) { alert("既に追加されています"); return; }
+
+    try {
+      const q = query(collection(db, "users"), where("shortId", "==", inputId));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        alert("ユーザーが見つかりません");
+      } else {
+        const targetDoc = querySnapshot.docs[0];
+        const targetUid = targetDoc.id;
+        const nextList = [...friendsList, inputId];
+        
+        // 自分側の更新
         setFriendsList(nextList);
-        saveToFirebase({ friendsList: nextList });
+        await saveToFirebase({ friendsList: nextList });
+        // 相手側の更新
         await updateDoc(doc(db, "users", targetUid), { friends: arrayUnion(myDisplayId) });
+        
         setFriendIdInput("");
         alert("友達に追加しました！");
       }
-    }, {onlyOnce: true});
+    } catch (e) {
+      console.error(e);
+      alert("エラーが発生しました");
+    }
   };
 
   const sendMessage = async (targetUid, targetShortId, targetName) => {
@@ -251,19 +257,15 @@ export default function Home() {
       batch.update(doc(db, "users", targetUid), { messageHistory: arrayUnion(msgObj) });
       batch.update(doc(db, "users", user.uid), { messageHistory: arrayUnion(msgObj) });
       await batch.commit();
-      
       setSelectedChatFriendId(targetShortId);
       setSocialSubTab("msgs");
-    } catch (e) {
-      console.error("送信失敗:", e);
-    }
+    } catch (e) { console.error(e); }
   };
 
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-black animate-pulse">読み込み中...</div>;
 
   if (!user) return (
     <div className={`min-h-screen w-full flex flex-col items-center justify-center px-6 transition-all bg-gray-950`}>
-       {/* 修正ポイント：text-centerを追加 */}
        <h1 className={`text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400 text-center`}>ROUTINE MASTER</h1>
        <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest uppercase">ログインして始める</button>
     </div>
@@ -339,7 +341,7 @@ export default function Home() {
                 </div>
 
                 <div className="flex flex-col gap-4">
-                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex-1 flex flex-col justify-between">
+                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex-1 flex flex-col justify-between overflow-hidden">
                     <div className="flex justify-between items-start mb-4">
                        <div><span className={`text-[8px] font-black px-3 py-1 rounded-full ${currentRank.bg} ${currentRank.color}`}>{currentRank.name}</span><h2 className="text-3xl font-black mt-1">{percent}%</h2></div>
                        <div className="text-right">
@@ -351,10 +353,13 @@ export default function Home() {
                          </div>
                        </div>
                     </div>
+                    {/* グラフ部分の改善: 縦横線の追加 */}
                     <div className="h-28 w-full bg-black/20 rounded-2xl p-2">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={true} horizontal={true} />
                           <XAxis dataKey="displayDate" stroke="#444" fontSize={8} fontWeight="black" tickLine={false} axisLine={false} />
+                          <YAxis hide domain={[0, 100]} />
                           <Tooltip contentStyle={{backgroundColor:'#000', border:'none', borderRadius:'12px', fontSize:'10px'}} />
                           <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={{r:3, fill:'#3b82f6'}} />
                         </LineChart>
@@ -402,7 +407,6 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            /* ソーシャルタブ */
             <div className="space-y-6">
                <div className="flex gap-8 mb-6 justify-center">
                 <button onClick={() => setSocialSubTab("list")} className={`text-[11px] font-black tracking-widest transition-all ${socialSubTab === 'list' ? 'text-white border-b-2 border-white pb-1' : 'text-gray-500'}`}>友達リスト</button>
@@ -419,10 +423,16 @@ export default function Home() {
                           <div className="flex gap-1.5"><div className="w-2 h-2 bg-white rounded-full"></div><div className="w-2 h-2 bg-white rounded-full"></div></div>
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-sm font-black flex items-center gap-2">{f.displayName} <span className={`text-[7px] px-2 py-0.5 rounded-full ${RANK_LIST.find(r=>r.name===f.rank)?.bg || 'bg-white/10'} ${RANK_LIST.find(r=>r.name===f.rank)?.color || 'text-white'}`}>{f.rank || "ビギナー"}</span></h3>
+                          {/* ランク部分の改善: whitespace-nowrapで折り返しを防ぐ */}
+                          <h3 className="text-sm font-black flex items-center flex-wrap gap-2">
+                            {f.displayName} 
+                            <span className={`text-[7px] px-2 py-0.5 rounded-full whitespace-nowrap ${RANK_LIST.find(r=>r.name===f.rank)?.bg || 'bg-white/10'} ${RANK_LIST.find(r=>r.name===f.rank)?.color || 'text-white'}`}>
+                              {f.rank || "ビギナー"}
+                            </span>
+                          </h3>
                           <div className="flex items-end gap-3 mt-1">
                             <span className="text-3xl font-black">{f.percent}%</span>
-                            <span className="text-[10px] font-black text-orange-400 mb-1.5">🔥 {f.streak || 0}日</span>
+                            <span className="text-[10px] font-black text-orange-400 mb-1.5 whitespace-nowrap">🔥 {f.streak || 0}日</span>
                           </div>
                         </div>
                         <button onClick={() => sendMessage(f.uid, f.shortId, f.displayName)} className="bg-white text-black w-12 h-12 rounded-2xl text-xl flex items-center justify-center hover:scale-110 shadow-xl transition-all">✉️</button>
@@ -431,40 +441,25 @@ export default function Home() {
                   ))}
                 </div>
               ) : (
-                /* LINE風個別チャット */
                 <div className="flex flex-col h-[65vh] max-w-2xl mx-auto bg-black/30 rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl">
                   <div className="flex border-b border-white/5 bg-white/5 p-2 overflow-x-auto scrollbar-hide">
                     {friendsData.map((f, i) => (
-                      <button 
-                        key={i} 
-                        onClick={() => setSelectedChatFriendId(f.shortId)} 
-                        className={`px-4 py-2 rounded-full text-[10px] font-black shrink-0 transition-all ${selectedChatFriendId === f.shortId ? 'bg-white text-black' : 'text-gray-500'}`}
-                      >
-                        {f.displayName}
-                      </button>
+                      <button key={i} onClick={() => setSelectedChatFriendId(f.shortId)} className={`px-4 py-2 rounded-full text-[10px] font-black shrink-0 transition-all ${selectedChatFriendId === f.shortId ? 'bg-white text-black' : 'text-gray-500'}`}>{f.displayName}</button>
                     ))}
                   </div>
-
                   <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide bg-white/2">
-                    {userMessages
-                      .filter(m => m.chatId === [myDisplayId, selectedChatFriendId].sort().join("_"))
-                      .map((m, i) => (
-                        <div key={i} className={`flex flex-col ${m.fromId === myDisplayId ? 'items-end' : 'items-start'}`}>
-                          <div className="flex flex-col gap-1 max-w-[80%]">
-                            <div className={`px-5 py-3 rounded-[1.5rem] text-sm font-bold shadow-md ${m.fromId === myDisplayId ? 'bg-[#06C755] text-white rounded-tr-none' : 'bg-white/10 text-gray-100 rounded-tl-none'}`}>
-                              {m.text}
-                            </div>
-                            <span className="text-[7px] text-gray-600 font-bold px-2">{m.time}</span>
-                          </div>
+                    {userMessages.filter(m => m.chatId === [myDisplayId, selectedChatFriendId].sort().join("_")).map((m, i) => (
+                      <div key={i} className={`flex flex-col ${m.fromId === myDisplayId ? 'items-end' : 'items-start'}`}>
+                        <div className="flex flex-col gap-1 max-w-[80%]">
+                          <div className={`px-5 py-3 rounded-[1.5rem] text-sm font-bold shadow-md ${m.fromId === myDisplayId ? 'bg-[#06C755] text-white rounded-tr-none' : 'bg-white/10 text-gray-100 rounded-tl-none'}`}>{m.text}</div>
+                          <span className="text-[7px] text-gray-600 font-bold px-2">{m.time}</span>
                         </div>
+                      </div>
                     ))}
-                    {/* 修正ポイント：未選択時・空時の文言表示 */}
                     {(!selectedChatFriendId || userMessages.filter(m => m.chatId === [myDisplayId, selectedChatFriendId].sort().join("_")).length === 0) && (
                       <div className="text-center mt-20 opacity-30">
                         <p className="text-[10px] font-black uppercase tracking-widest">トークルーム</p>
-                        <p className="text-[9px] mt-2">
-                          {friendsData.length === 0 ? "設定から友達を追加してください" : "メッセージを送信してみましょう"}
-                        </p>
+                        <p className="text-[9px] mt-2">{friendsData.length === 0 ? "設定から友達を追加してください" : "メッセージを送信してみましょう"}</p>
                       </div>
                     )}
                   </div>
