@@ -1,4 +1,3 @@
-import "./globals.css";  // ← この一行がデザインを読み込むスイッチです
 
 @tailwind base;
 @tailwind components;
