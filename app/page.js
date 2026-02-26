@@ -65,7 +65,11 @@ export default function Home() {
   const [themeIndex, setThemeIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [friendIdInput, setFriendIdInput] = useState("");
+  const [friendsList, setFriendsList] = useState([]);
+  const [friendsData, setFriendsData] = useState([]);
 
+  // --- Timer ---
   const [timeLeft, setTimeLeft] = useState(1500);
   const [isTimerActive, setIsTimerActive] = useState(false);
   const timerRef = useRef(null);
@@ -77,6 +81,7 @@ export default function Home() {
   const myDisplayId = user ? user.uid.substring(0, 8) : "";
   const currentChar = CHARACTERS[charIndex];
 
+  // グラフ用データ整形（日付を MM/DD に）
   const chartData = useMemo(() => {
     return history.slice(-7).map(h => ({
       ...h,
@@ -99,6 +104,7 @@ export default function Home() {
     return () => clearInterval(timerRef.current);
   }, [isTimerActive, timeLeft]);
 
+  // --- Auth & Data ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -109,6 +115,7 @@ export default function Home() {
           const d = snap.data();
           if (d.tasks) setTasks(d.tasks);
           if (d.history) setHistory(d.history);
+          if (d.friends) setFriendsList(d.friends);
           setThemeIndex(d.themeIndex || 0);
           setCharIndex(d.charIndex || 0);
           if (d.lastCheckDate === today) setChecks(d.checks || {});
@@ -119,13 +126,19 @@ export default function Home() {
     return () => unsubscribe();
   }, [today]);
 
+  useEffect(() => {
+    if (!user || friendsList.length === 0) return;
+    const q = query(collection(db, "users"), where("shortId", "in", friendsList));
+    return onSnapshot(q, (s) => setFriendsData(s.docs.map(d => d.data())));
+  }, [friendsList, user]);
+
   const saveProgress = async () => {
     if (!user) return;
     const newHistory = [...history.filter(h => h.date !== today), { date: today, percent }];
     await setDoc(doc(db, "users", user.uid), { 
       tasks, checks, lastCheckDate: today, history: newHistory, 
       displayName: user.displayName, shortId: myDisplayId,
-      rank: currentRank.name, percent,
+      rank: currentRank.name, percent, friends: friendsList,
       themeIndex, charIndex, lastActive: Date.now()
     }, { merge: true });
     alert("保存しました！");
@@ -151,6 +164,7 @@ export default function Home() {
         .animate-bounce-rich { animation: bounce-rich 2.5s infinite ease-in-out; }
         .animate-blink-rich { animation: blink-rich 5s infinite; }
         .animate-float-rich { animation: float-rich 3s infinite ease-in-out; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
 
       <div className="max-w-xl mx-auto pb-24">
@@ -159,27 +173,28 @@ export default function Home() {
           <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90 transition-all">⚙️</button>
         </header>
 
+        {/* --- Main Hero Section --- */}
         <div className="bg-white/5 p-8 rounded-[3.5rem] border border-white/10 mb-6 flex flex-col items-center relative overflow-hidden shadow-2xl">
-          <div className="absolute top-6 right-6 text-right bg-black/50 p-3 rounded-2xl backdrop-blur-md border border-white/5 z-20 min-w-[100px]">
-             <div className="grid grid-cols-2 gap-1 mb-2">
+          {/* Timer Mini UI */}
+          <div className="absolute top-6 right-8 text-right bg-black/40 p-3 rounded-2xl backdrop-blur-md border border-white/5 z-10">
+             <div className="flex gap-1.5 mb-2">
                {[5, 15, 25, 45].map(m => (
-                 <button key={m} onClick={() => setTimerMinutes(m)} className="text-[7px] font-black border border-white/10 px-1 py-1 rounded-md hover:bg-white hover:text-black transition-all">
+                 <button key={m} onClick={() => setTimerMinutes(m)} className="text-[8px] font-black border border-white/10 px-2 py-1 rounded-lg hover:bg-white hover:text-black transition-all">
                    {m === 5 ? "5m⚡" : `${m}m`}
                  </button>
                ))}
              </div>
-             <p className="text-2xl font-mono font-black tabular-nums tracking-tighter leading-none mb-1">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
-             <button onClick={() => setIsTimerActive(!isTimerActive)} className={`w-full py-1 text-[9px] font-black rounded-full uppercase transition-all ${isTimerActive ? "bg-red-500 text-white" : "bg-white text-black"}`}>
+             <p className="text-3xl font-mono font-black tabular-nums tracking-tighter">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
+             <button onClick={() => setIsTimerActive(!isTimerActive)} className={`mt-2 w-full py-1 text-[10px] font-black rounded-full uppercase transition-all ${isTimerActive ? "bg-red-500 text-white shadow-lg shadow-red-500/30" : "bg-white text-black"}`}>
                {isTimerActive ? "STOP" : "START"}
              </button>
           </div>
 
-          <div className="mt-8 flex flex-col items-center w-full">
-            <div className="self-start ml-4 bg-white text-black text-[10px] font-black p-3 rounded-2xl mb-8 animate-float-rich relative shadow-xl max-w-[160px] z-10">
-               {percent === 100 ? "神レベルだよ！" : (percent > 80 ? "いい感じ！" : "ファイト！")}{currentChar.suffix}
-               <div className="absolute left-6 -bottom-2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-t-white border-l-transparent border-r-transparent"></div>
+          <div className="mt-8">
+            <div className="bg-white text-black text-[11px] font-black p-3 rounded-2xl mb-8 animate-float-rich relative shadow-xl">
+               {percent === 100 ? "完璧すぎるよ！" : (percent > 80 ? "あとちょっとだね！" : "一緒にやろう！")}{currentChar.suffix}
+               <div className="absolute left-1/2 -bottom-2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-t-white border-l-transparent border-r-transparent -translate-x-1/2"></div>
             </div>
-
             <div className={`w-32 h-32 rounded-full ${currentChar.color} shadow-[0_25px_60px_rgba(0,0,0,0.4)] flex items-center justify-center animate-bounce-rich relative`}>
                <div className="flex gap-6 animate-blink-rich">
                  <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div>
@@ -193,6 +208,7 @@ export default function Home() {
           </div>
         </div>
 
+        {/* --- Stats & History --- */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-white/5 p-5 rounded-[2.5rem] border border-white/10 text-center flex flex-col justify-center items-center shadow-lg">
             <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${currentRank.bg} ${currentRank.color} mb-2 border border-current`}>{currentRank.name}</span>
@@ -202,13 +218,14 @@ export default function Home() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="displayDate" axisLine={false} tickLine={false} tick={{fontSize: 8, fill: '#666', fontWeight: 'bold'}} />
+                <XAxis dataKey="displayDate" hide={false} axisLine={false} tickLine={false} tick={{fontSize: 8, fill: '#666', fontWeight: 'bold'}} />
                 <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
+        {/* --- Adjusted Heatmap (Calendar) --- */}
         <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 mb-6 flex flex-col items-center shadow-md">
           <p className="text-[8px] font-black text-gray-500 uppercase mb-4 tracking-[0.4em]">Activity Calendar</p>
           <div className="grid grid-cols-7 gap-2">
@@ -220,12 +237,13 @@ export default function Home() {
                 <div key={i} className={`w-6 h-6 rounded-[6px] border border-white/5 transition-all duration-700 ${
                   h?.percent === 100 ? 'bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.6)]' : 
                   h?.percent > 0 ? `bg-blue-500/${Math.max(20, h.percent)}` : 'bg-white/5'
-                }`} />
+                }`} title={dStr} />
               )
             })}
           </div>
         </div>
 
+        {/* --- Task Lists --- */}
         {["morning", "afternoon", "night"].map(time => (
           <div key={time} className="bg-white/5 p-6 rounded-[2.5rem] mb-6 border border-white/10 shadow-xl group relative">
             <h2 className="text-[10px] font-black text-gray-500 uppercase mb-5 tracking-[0.3em] text-center opacity-40">{time}</h2>
@@ -233,7 +251,7 @@ export default function Home() {
               {tasks[time].map((task, index) => (
                 <div key={index} className="flex items-center group/item transition-all hover:translate-x-1">
                   <button onClick={() => setChecks(prev => ({ ...prev, [time + task]: !prev[time + task] }))} 
-                    className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none scale-110 shadow-lg" : "bg-black/20"}`}>
+                    className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none scale-110 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-black/20"}`}>
                     {checks[time + task] && <span className="text-[10px] font-black">✓</span>}
                   </button>
                   <span className={`flex-1 text-sm font-bold transition-all ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>
@@ -268,15 +286,18 @@ export default function Home() {
         </button>
       </div>
 
+      {/* --- Settings Menu --- */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setIsMenuOpen(false)}></div>
           <div className={`relative w-full max-w-sm p-8 rounded-[3.5rem] ${currentTheme.bg} border border-white/10 shadow-2xl max-h-[85vh] overflow-y-auto scrollbar-hide`}>
-             <div className="flex justify-between items-center mb-10">
+            <div className="flex justify-between items-center mb-10">
               <h2 className="text-xl font-black italic tracking-widest text-gray-500">SETTINGS</h2>
-              <button onClick={() => setIsMenuOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-xl">✕</button>
+              <button onClick={() => setIsMenuOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-xl hover:bg-white/10 transition-colors">✕</button>
             </div>
+            
             <div className="space-y-12 pb-10">
+              {/* Character */}
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Character Select</p>
                 <div className="grid grid-cols-2 gap-3">
@@ -284,19 +305,36 @@ export default function Home() {
                     <button key={i} onClick={() => setCharIndex(i)} className={`p-4 rounded-[2rem] border-2 transition-all flex flex-col items-center ${charIndex === i ? 'border-white bg-white/10' : 'border-transparent opacity-30 hover:opacity-60'}`}>
                       <div className={`w-10 h-10 rounded-full ${c.color} mb-3 shadow-lg`}></div>
                       <p className="text-[10px] font-black mb-1">{c.name}</p>
+                      <p className="text-[7px] text-gray-500 uppercase font-black">{c.personality}</p>
                     </button>
                   ))}
                 </div>
               </section>
+
+              {/* Enhanced Themes */}
               <section>
-                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Visual Themes</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Visual Themes ({THEMES.length})</p>
                 <div className="grid grid-cols-4 gap-3 justify-items-center">
                   {THEMES.map((t, i) => (
-                    <button key={i} onClick={() => setThemeIndex(i)} className={`w-10 h-10 rounded-full border-2 shadow-xl transition-all ${themeIndex === i ? 'border-white scale-110 ring-4 ring-white/10' : 'border-transparent'}`} style={{ backgroundColor: t.color }}></button>
+                    <button key={i} onClick={() => setThemeIndex(i)} className={`w-10 h-10 rounded-full border-2 shadow-xl transition-all ${themeIndex === i ? 'border-white scale-110 ring-4 ring-white/10' : 'border-transparent active:scale-90 hover:scale-105'}`} style={{ backgroundColor: t.color }} title={t.name}></button>
                   ))}
                 </div>
               </section>
-              <button onClick={() => signOut(auth)} className="w-full py-4 bg-red-500/10 text-red-500 rounded-[1.5rem] font-black text-xs border border-red-500/20">LOGOUT</button>
+
+              {/* Rank Info */}
+              <section>
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Rank System</p>
+                <div className="space-y-2.5">
+                  {RANK_LIST.map((r, i) => (
+                    <div key={i} className={`p-4 rounded-[1.5rem] border transition-all ${percent >= r.min ? 'bg-white/10 border-white/20 shadow-lg' : 'border-white/5 opacity-20'}`}>
+                      <div className="flex justify-between font-black text-[10px] mb-1.5"><span className={r.color}>● {r.name}</span><span className="opacity-50">{r.min}%+</span></div>
+                      <p className="text-[9px] text-gray-400 font-bold italic">{r.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <button onClick={() => signOut(auth)} className="w-full py-4 bg-red-500/10 text-red-500 rounded-[1.5rem] font-black text-xs border border-red-500/20 active:bg-red-500 active:text-white transition-all">LOGOUT</button>
             </div>
           </div>
         </div>
