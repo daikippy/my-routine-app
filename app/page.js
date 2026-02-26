@@ -20,6 +20,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// アラーム音の設定
+const alarmSound = typeof Audio !== "undefined" ? new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3") : null;
+
 // --- 定数 ---
 const CHARACTERS = [
   { id: "blob", name: "ぷるぷる", color: "bg-blue-500", accent: "from-blue-400 to-blue-600" },
@@ -84,6 +87,12 @@ export default function Home() {
   const myDisplayId = user ? user.uid.substring(0, 8) : "";
   const currentChar = CHARACTERS[charIndex];
   const currentTheme = THEMES[themeIndex];
+
+  // タスクライブラリ（重複削除）
+  const taskLibrary = useMemo(() => {
+    const all = [...tasks.morning, ...tasks.afternoon, ...tasks.night];
+    return Array.from(new Set(all)).filter(t => t !== "");
+  }, [tasks]);
 
   const characterMessage = useMemo(() => {
     if (percent === 0) return "さあ、これから一緒に頑張っていきましょう。";
@@ -177,11 +186,15 @@ export default function Home() {
     return () => unsub();
   }, [friendsList, user]);
 
+  // タイマーとアラーム音
   useEffect(() => {
     if (isTimerActive && timeLeft > 0) {
       timerRef.current = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     } else if (timeLeft === 0) {
       setIsTimerActive(false);
+      if (alarmSound) {
+        alarmSound.play().catch(e => console.log("Audio play failed:", e));
+      }
       alert("時間です！");
     }
     return () => clearInterval(timerRef.current);
@@ -218,6 +231,17 @@ export default function Home() {
     const nl = [...tasks[time]];
     nl.splice(index, 1);
     const nextTasks = {...tasks, [time]: nl};
+    setTasks(nextTasks);
+    saveToFirebase({ tasks: nextTasks });
+  };
+
+  // タスクの入れ替え機能
+  const moveTask = (time, index, direction) => {
+    const newTimeTasks = [...tasks[time]];
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= newTimeTasks.length) return;
+    [newTimeTasks[index], newTimeTasks[targetIndex]] = [newTimeTasks[targetIndex], newTimeTasks[index]];
+    const nextTasks = { ...tasks, [time]: newTimeTasks };
     setTasks(nextTasks);
     saveToFirebase({ tasks: nextTasks });
   };
@@ -282,7 +306,7 @@ export default function Home() {
        
        <button 
          onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} 
-         className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest uppercase"
+         className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest uppercase transition-all hover:bg-gray-200"
        >
          Googleでログイン
        </button>
@@ -291,7 +315,7 @@ export default function Home() {
          <p className="text-[10px] font-bold text-gray-500 leading-relaxed">
            ※ LINEやMessengerからお越しの方へ<br/>
            エラーが出る場合は、右上のメニューから<br/>
-           <span className="text-white font-black">「ブラウザで開く」</span>を選択してください。（Google Chromeがいいかも）
+           <span className="text-white font-black">「ブラウザで開く」</span>を選択してください。
          </p>
        </div>
     </div>
@@ -311,7 +335,8 @@ export default function Home() {
 
       {/* --- サイドバー --- */}
       <aside className={`fixed left-0 top-0 h-full w-80 z-50 transition-transform duration-500 bg-black/40 backdrop-blur-2xl border-r border-white/10 p-6 flex flex-col ${isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}>
-        <div className="flex justify-between items-center mb-10"><p className="text-[10px] font-black tracking-[0.4em] text-gray-500 uppercase">記録</p><button onClick={() => setIsSidebarOpen(false)} className="text-xl">✕</button></div>
+        <div className="flex justify-between items-center mb-10"><p className="text-[10px] font-black tracking-[0.4em] text-gray-500 uppercase">記録・履歴</p><button onClick={() => setIsSidebarOpen(false)} className="text-xl">✕</button></div>
+        
         <section className="bg-white/5 p-4 rounded-[2rem] border border-white/10 mb-8 text-center">
           <p className="text-[10px] font-black mb-4 opacity-50 tracking-widest">{new Date().getMonth() + 1}月</p>
           <div className="grid grid-cols-7 gap-1 mb-2 text-[8px] font-black text-gray-600">{['日','月','火','水','木','金','土'].map(d => <span key={d}>{d}</span>)}</div>
@@ -323,8 +348,31 @@ export default function Home() {
             ))}
           </div>
         </section>
+
+        {/* --- タスクライブラリ（コピペコーナー） --- */}
+        <section className="mb-8">
+          <p className="text-[10px] font-black text-gray-500 tracking-widest mb-4 uppercase">タスクライブラリ</p>
+          <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto scrollbar-hide">
+            {taskLibrary.map((t, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  // 現在空いている入力欄、または最後に触った箇所などにセットするロジック（ここでは一括で確認用アラート）
+                  const time = window.confirm(`${t} を午前の入力欄にセットしますか？`) ? "morning" : 
+                               window.confirm(`${t} を午後の入力欄にセットしますか？`) ? "afternoon" : "night";
+                  setNewTasks({ ...newTasks, [time]: t });
+                }}
+                className="text-[9px] font-bold bg-white/10 px-3 py-2 rounded-lg border border-white/5 hover:bg-white/20 transition-all text-left"
+              >
+                + {t}
+              </button>
+            ))}
+            {taskLibrary.length === 0 && <p className="text-[9px] text-gray-600 italic">登録済みの習慣がここに表示されます</p>}
+          </div>
+        </section>
+
         <section className="flex-1 overflow-y-auto scrollbar-hide space-y-4">
-          <p className="text-[10px] font-black text-gray-500 tracking-widest">最近の履歴</p>
+          <p className="text-[10px] font-black text-gray-500 tracking-widest">最近の達成率</p>
           {history.slice(-10).reverse().map((h, i) => (
             <div key={i} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5"><span className="text-xs font-bold text-gray-400">{h.date}</span><span className="text-xs font-black">{h.percent}%</span></div>
           ))}
@@ -335,7 +383,7 @@ export default function Home() {
       <main className="flex-1 overflow-y-auto min-h-screen scrollbar-hide p-4 relative">
         <div className="max-w-4xl mx-auto pb-32">
           <header className="flex justify-between items-center py-4 mb-4">
-            <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90">☰</button>
+            <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90 font-black text-xs px-4">MENU</button>
             <h1 className={`text-xl font-black italic bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.accent}`}>ROUTINE MASTER</h1>
             <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90">⚙️</button>
           </header>
@@ -415,7 +463,13 @@ export default function Home() {
                             {checks[time + task] && <span className="text-[10px] font-black text-white">✓</span>}
                           </button>
                           <span className={`flex-1 text-sm font-bold ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>{task.startsWith('!') ? <span className="text-orange-400 font-black">🌟 {task.substring(1)}</span> : task}</span>
-                          <button onClick={() => removeTask(time, index)} className="opacity-0 group-hover/item:opacity-100 text-red-500 p-1">✕</button>
+                          
+                          {/* 入れ替え・削除ボタン */}
+                          <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                            <button onClick={() => moveTask(time, index, -1)} className="p-1 text-gray-500 hover:text-white text-[10px]">↑</button>
+                            <button onClick={() => moveTask(time, index, 1)} className="p-1 text-gray-500 hover:text-white text-[10px]">↓</button>
+                            <button onClick={() => removeTask(time, index)} className="text-red-500 p-1 text-[10px]">✕</button>
+                          </div>
                         </div>
                       ))}
                     </div>
