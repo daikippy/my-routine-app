@@ -157,8 +157,6 @@ export default function Home() {
       return;
     }
     const q = query(collection(db, "users"), where("shortId", "==", friendIdInput));
-    const snap = await getDoc(doc(db, "users", friendIdInput)); // Note: ID based search
-    // We use a query to check existence
     onSnapshot(q, (s) => {
       if (s.empty) {
         alert("ユーザーが見つかりません。相手が一度保存(Save)しているか確認してください。");
@@ -344,6 +342,7 @@ export default function Home() {
                 </div>
               </section>
 
+              {/* Character Select */}
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Character Select</p>
                 <div className="grid grid-cols-2 gap-3">
@@ -356,11 +355,28 @@ export default function Home() {
                 </div>
               </section>
 
+              {/* Visual Themes */}
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Visual Themes</p>
                 <div className="grid grid-cols-4 gap-3">
                   {THEMES.map((t, i) => (
                     <button key={i} onClick={() => setThemeIndex(i)} className={`w-10 h-10 rounded-full border-2 transition-all ${themeIndex === i ? 'border-white scale-110' : 'border-transparent'}`} style={{ backgroundColor: t.color }}></button>
+                  ))}
+                </div>
+              </section>
+
+              {/* Rank System with Descriptions */}
+              <section>
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Rank System</p>
+                <div className="space-y-2.5">
+                  {RANK_LIST.map((r, i) => (
+                    <div key={i} className={`p-4 rounded-[1.5rem] border transition-all ${percent >= r.min ? 'bg-white/10 border-white/20 shadow-lg' : 'border-white/5 opacity-20'}`}>
+                      <div className="flex justify-between font-black text-[10px] mb-1.5">
+                        <span className={r.color}>● {r.name}</span>
+                        <span className="opacity-50">{r.min}%+</span>
+                      </div>
+                      <p className="text-[9px] text-gray-400 font-bold italic">{r.desc}</p>
+                    </div>
                   ))}
                 </div>
               </section>
