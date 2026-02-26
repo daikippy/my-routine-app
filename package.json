@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "recharts": "latest",
+    "firebase": "latest"
+  }
+}
