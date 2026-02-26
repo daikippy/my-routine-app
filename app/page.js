@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, where, updateDoc, arrayUnion, writeBatch, getDocs, arrayRemove } from "firebase/firestore";
-import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "firebase/auth";
+import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 // --- Firebase Config ---
 const firebaseConfig = {
@@ -85,7 +85,6 @@ export default function Home() {
   const currentChar = CHARACTERS[charIndex];
   const currentTheme = THEMES[themeIndex];
 
-  // 達成度別メッセージ
   const characterMessage = useMemo(() => {
     if (percent === 0) return "さあ、これから一緒に頑張っていきましょう。";
     if (percent < 30) return "まずは一歩ずつですね。応援しています。";
@@ -147,12 +146,6 @@ export default function Home() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      // リダイレクト後の結果を確認
-      const result = await getRedirectResult(auth);
-      if (result) {
-         // ログイン成功時の処理があればここに記載（基本はonAuthStateChangedでOK）
-      }
-
       setUser(u);
       if (u) {
         const docRef = doc(db, "users", u.uid);
@@ -206,12 +199,6 @@ export default function Home() {
       }
     }
   }, [selectedChatFriend, userMessages, user, myDisplayId]);
-
-  const handleGoogleLogin = () => {
-    const provider = new GoogleAuthProvider();
-    // アプリ内ブラウザ対策でリダイレクト方式を使用
-    signInWithRedirect(auth, provider);
-  };
 
   const toggleCheck = (id) => {
     const nextChecks = { ...checks, [id]: !checks[id] };
@@ -294,8 +281,8 @@ export default function Home() {
        <h1 className="text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400 text-center">ROUTINE MASTER</h1>
        
        <button 
-         onClick={handleGoogleLogin} 
-         className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest uppercase transition-all hover:bg-gray-200"
+         onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} 
+         className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest uppercase"
        >
          Googleでログイン
        </button>
@@ -304,7 +291,7 @@ export default function Home() {
          <p className="text-[10px] font-bold text-gray-500 leading-relaxed">
            ※ LINEやMessengerからお越しの方へ<br/>
            エラーが出る場合は、右上のメニューから<br/>
-           <span className="text-white">「ブラウザで開く」</span>を選択してください。
+           <span className="text-white font-black">「ブラウザで開く」</span>を選択してください。
          </p>
        </div>
     </div>
