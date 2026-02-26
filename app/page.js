@@ -32,7 +32,7 @@ const CHARACTERS = [
 
 const RANK_LIST = [
   { name: "LEGEND", min: 100, color: "text-yellow-400", bg: "bg-yellow-400/20", desc: "完璧。神の領域。" },
-  { name: "PLATINUM", min: 80, color: "text-blue-300", bg: "bg-blue-300/20", desc: "超一流。尊敬の的。" },
+  { name: "PLATINUM", min: 80, color: "text-blue-300", bg: "bg-blue-300/20", desc: "超一流。尊敬の大衆。" },
   { name: "GOLD", min: 50, color: "text-yellow-600", bg: "bg-yellow-600/20", desc: "安定。習慣の達人。" },
   { name: "SILVER", min: 20, color: "text-gray-400", bg: "bg-gray-400/20", desc: "見習い。一歩ずつ前へ。" },
   { name: "BEGINNER", min: 0, color: "text-gray-500", bg: "bg-gray-500/10", desc: "挑戦者。ここから始まる。" }
@@ -41,7 +41,7 @@ const RANK_LIST = [
 const THEMES = [
   { name: "漆黒", color: "#030712", bg: "bg-gray-950", accent: "from-blue-400 to-emerald-400" },
   { name: "深夜", color: "#0f172a", bg: "bg-slate-900", accent: "from-indigo-400 to-cyan-400" },
-  { name: "深森", color: "#064e3b", bg: "bg-emerald-950", accent: "from-green-400 to-yAellow-200" },
+  { name: "深森", color: "#064e3b", bg: "bg-emerald-950", accent: "from-green-400 to-yellow-200" },
   { name: "紫紅", color: "#2e1065", bg: "bg-neutral-950", accent: "from-purple-500 to-pink-400" },
   { name: "紅蓮", color: "#450a0a", bg: "bg-red-950", accent: "from-orange-500 to-red-400" },
   { name: "深海", color: "#1e1b4b", bg: "bg-indigo-950", accent: "from-blue-600 to-blue-300" },
@@ -65,7 +65,6 @@ export default function Home() {
   const [themeIndex, setThemeIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [friendIdInput, setFriendIdInput] = useState("");
   const [friendsList, setFriendsList] = useState([]);
   const [friendsData, setFriendsData] = useState([]);
 
@@ -81,7 +80,6 @@ export default function Home() {
   const myDisplayId = user ? user.uid.substring(0, 8) : "";
   const currentChar = CHARACTERS[charIndex];
 
-  // グラフ用データ整形（日付を MM/DD に）
   const chartData = useMemo(() => {
     return history.slice(-7).map(h => ({
       ...h,
@@ -148,10 +146,20 @@ export default function Home() {
 
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-black animate-pulse">LOADING...</div>;
 
+  // --- Login Screen (Corrected for Center Alignment on Mobile) ---
   if (!user) return (
-    <div className={`min-h-screen flex flex-col items-center justify-center ${currentTheme.bg}`}>
-       <h1 className={`text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.accent}`}>ROUTINE MASTER</h1>
-       <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl transition-all active:scale-95">GOOGLE LOGIN</button>
+    <div className={`min-h-screen w-full flex flex-col items-center justify-center px-6 text-center transition-all duration-700 ${currentTheme.bg}`}>
+       <div className="w-full max-w-sm flex flex-col items-center">
+         <h1 className={`text-4xl sm:text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.accent} leading-tight`}>
+           ROUTINE<br className="sm:hidden" /> MASTER
+         </h1>
+         <button 
+           onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} 
+           className="mt-10 w-full sm:w-auto bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl transition-all active:scale-95 text-sm tracking-widest"
+         >
+           GOOGLE LOGIN
+         </button>
+       </div>
     </div>
   );
 
@@ -175,35 +183,34 @@ export default function Home() {
 
         {/* --- Main Hero Section --- */}
         <div className="bg-white/5 p-8 rounded-[3.5rem] border border-white/10 mb-6 flex flex-col items-center relative overflow-hidden shadow-2xl">
-          {/* Timer Mini UI */}
           <div className="absolute top-6 right-8 text-right bg-black/40 p-3 rounded-2xl backdrop-blur-md border border-white/5 z-10">
-             <div className="flex gap-1.5 mb-2">
-               {[5, 15, 25, 45].map(m => (
-                 <button key={m} onClick={() => setTimerMinutes(m)} className="text-[8px] font-black border border-white/10 px-2 py-1 rounded-lg hover:bg-white hover:text-black transition-all">
-                   {m === 5 ? "5m⚡" : `${m}m`}
-                 </button>
-               ))}
-             </div>
-             <p className="text-3xl font-mono font-black tabular-nums tracking-tighter">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
-             <button onClick={() => setIsTimerActive(!isTimerActive)} className={`mt-2 w-full py-1 text-[10px] font-black rounded-full uppercase transition-all ${isTimerActive ? "bg-red-500 text-white shadow-lg shadow-red-500/30" : "bg-white text-black"}`}>
-               {isTimerActive ? "STOP" : "START"}
-             </button>
+              <div className="flex gap-1.5 mb-2">
+                {[5, 15, 25, 45].map(m => (
+                  <button key={m} onClick={() => setTimerMinutes(m)} className="text-[8px] font-black border border-white/10 px-2 py-1 rounded-lg hover:bg-white hover:text-black transition-all">
+                    {m === 5 ? "5m⚡" : `${m}m`}
+                  </button>
+                ))}
+              </div>
+              <p className="text-3xl font-mono font-black tabular-nums tracking-tighter">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
+              <button onClick={() => setIsTimerActive(!isTimerActive)} className={`mt-2 w-full py-1 text-[10px] font-black rounded-full uppercase transition-all ${isTimerActive ? "bg-red-500 text-white shadow-lg shadow-red-500/30" : "bg-white text-black"}`}>
+                {isTimerActive ? "STOP" : "START"}
+              </button>
           </div>
 
           <div className="mt-8">
             <div className="bg-white text-black text-[11px] font-black p-3 rounded-2xl mb-8 animate-float-rich relative shadow-xl">
-               {percent === 100 ? "完璧すぎるよ！" : (percent > 80 ? "あとちょっとだね！" : "一緒にやろう！")}{currentChar.suffix}
-               <div className="absolute left-1/2 -bottom-2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-t-white border-l-transparent border-r-transparent -translate-x-1/2"></div>
+                {percent === 100 ? "完璧すぎるよ！" : (percent > 80 ? "あとちょっとだね！" : "一緒にやろう！")}{currentChar.suffix}
+                <div className="absolute left-1/2 -bottom-2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-t-white border-l-transparent border-r-transparent -translate-x-1/2"></div>
             </div>
             <div className={`w-32 h-32 rounded-full ${currentChar.color} shadow-[0_25px_60px_rgba(0,0,0,0.4)] flex items-center justify-center animate-bounce-rich relative`}>
-               <div className="flex gap-6 animate-blink-rich">
-                 <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div>
-                 <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div>
-               </div>
-               <div className="absolute w-full flex justify-between px-5 opacity-30 mt-5">
-                 <div className="w-4 h-2 bg-pink-300 rounded-full blur-[1px]"></div>
-                 <div className="w-4 h-2 bg-pink-300 rounded-full blur-[1px]"></div>
-               </div>
+                <div className="flex gap-6 animate-blink-rich">
+                  <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div>
+                  <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div>
+                </div>
+                <div className="absolute w-full flex justify-between px-5 opacity-30 mt-5">
+                  <div className="w-4 h-2 bg-pink-300 rounded-full blur-[1px]"></div>
+                  <div className="w-4 h-2 bg-pink-300 rounded-full blur-[1px]"></div>
+                </div>
             </div>
           </div>
         </div>
@@ -225,7 +232,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* --- Adjusted Heatmap (Calendar) --- */}
+        {/* --- Activity Calendar --- */}
         <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 mb-6 flex flex-col items-center shadow-md">
           <p className="text-[8px] font-black text-gray-500 uppercase mb-4 tracking-[0.4em]">Activity Calendar</p>
           <div className="grid grid-cols-7 gap-2">
@@ -297,7 +304,6 @@ export default function Home() {
             </div>
             
             <div className="space-y-12 pb-10">
-              {/* Character */}
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Character Select</p>
                 <div className="grid grid-cols-2 gap-3">
@@ -311,7 +317,6 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* Enhanced Themes */}
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Visual Themes ({THEMES.length})</p>
                 <div className="grid grid-cols-4 gap-3 justify-items-center">
@@ -321,7 +326,6 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* Rank Info */}
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Rank System</p>
                 <div className="space-y-2.5">
