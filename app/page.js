@@ -20,7 +20,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// アラーム音の設定
+// アラーム音
 const alarmSound = typeof Audio !== "undefined" ? new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3") : null;
 
 // --- 定数 ---
@@ -88,7 +88,7 @@ export default function Home() {
   const currentChar = CHARACTERS[charIndex];
   const currentTheme = THEMES[themeIndex];
 
-  // タスクライブラリ（重複削除）
+  // タスクライブラリ
   const taskLibrary = useMemo(() => {
     const all = [...tasks.morning, ...tasks.afternoon, ...tasks.night];
     return Array.from(new Set(all)).filter(t => t !== "");
@@ -186,15 +186,12 @@ export default function Home() {
     return () => unsub();
   }, [friendsList, user]);
 
-  // タイマーとアラーム音
   useEffect(() => {
     if (isTimerActive && timeLeft > 0) {
       timerRef.current = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     } else if (timeLeft === 0) {
       setIsTimerActive(false);
-      if (alarmSound) {
-        alarmSound.play().catch(e => console.log("Audio play failed:", e));
-      }
+      if (alarmSound) alarmSound.play().catch(e => console.log(e));
       alert("時間です！");
     }
     return () => clearInterval(timerRef.current);
@@ -235,7 +232,6 @@ export default function Home() {
     saveToFirebase({ tasks: nextTasks });
   };
 
-  // タスクの入れ替え機能
   const moveTask = (time, index, direction) => {
     const newTimeTasks = [...tasks[time]];
     const targetIndex = index + direction;
@@ -249,7 +245,6 @@ export default function Home() {
   const addFriend = async () => {
     const inputId = friendIdInput.trim();
     if (!inputId || inputId === myDisplayId) return;
-    if (friendsList.includes(inputId)) { alert("既に追加されています"); return; }
     try {
       const q = query(collection(db, "users"), where("shortId", "==", inputId));
       const querySnapshot = await getDocs(q);
@@ -272,24 +267,15 @@ export default function Home() {
       setFriendsList(nextList);
       await saveToFirebase({ friendsList: nextList });
       await updateDoc(doc(db, "users", friendUid), { friends: arrayRemove(myDisplayId) });
-      alert("削除しました");
     } catch (e) { console.error(e); }
   };
 
   const sendMessage = async () => {
     if (!selectedChatFriend) return;
-    const msgText = window.prompt(`${selectedChatFriend.displayName}さんへメッセージ`, "");
+    const msgText = window.prompt(`${selectedChatFriend.displayName}さんへ`, "");
     if (!msgText) return;
     const chatId = [myDisplayId, selectedChatFriend.shortId].sort().join("_");
-    const msgObj = {
-      id: Date.now(), 
-      chatId: chatId,
-      fromId: myDisplayId,
-      from: user.displayName, 
-      text: msgText,
-      time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-      read: false
-    };
+    const msgObj = { id: Date.now(), chatId, fromId: myDisplayId, from: user.displayName, text: msgText, time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }), read: false };
     try {
       const batch = writeBatch(db);
       batch.update(doc(db, "users", selectedChatFriend.uid), { messageHistory: arrayUnion(msgObj) });
@@ -303,20 +289,9 @@ export default function Home() {
   if (!user) return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 transition-all bg-gray-950">
        <h1 className="text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400 text-center">ROUTINE MASTER</h1>
-       
-       <button 
-         onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} 
-         className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest uppercase transition-all hover:bg-gray-200"
-       >
-         Googleでログイン
-       </button>
-       
+       <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest uppercase">Googleでログイン</button>
        <div className="mt-8 bg-white/5 p-4 rounded-2xl border border-white/10 max-w-xs text-center">
-         <p className="text-[10px] font-bold text-gray-500 leading-relaxed">
-           ※ LINEやMessengerからお越しの方へ<br/>
-           エラーが出る場合は、右上のメニューから<br/>
-           <span className="text-white font-black">「ブラウザで開く」</span>を選択してください。
-         </p>
+         <p className="text-[10px] font-bold text-gray-500 leading-relaxed">※ LINE等でエラーが出る場合は<br/><span className="text-white font-black">「ブラウザで開く」</span>を選択してください。</p>
        </div>
     </div>
   );
@@ -349,29 +324,34 @@ export default function Home() {
           </div>
         </section>
 
-        {/* --- タスクライブラリ（コピペコーナー） --- */}
+        {/* --- タスクライブラリ（改善版） --- */}
         <section className="mb-8">
           <p className="text-[10px] font-black text-gray-500 tracking-widest mb-4 uppercase">タスクライブラリ</p>
-          <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto scrollbar-hide">
+          <div className="space-y-3 max-h-60 overflow-y-auto scrollbar-hide">
             {taskLibrary.map((t, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  // 現在空いている入力欄、または最後に触った箇所などにセットするロジック（ここでは一括で確認用アラート）
-                  const time = window.confirm(`${t} を午前の入力欄にセットしますか？`) ? "morning" : 
-                               window.confirm(`${t} を午後の入力欄にセットしますか？`) ? "afternoon" : "night";
-                  setNewTasks({ ...newTasks, [time]: t });
-                }}
-                className="text-[9px] font-bold bg-white/10 px-3 py-2 rounded-lg border border-white/5 hover:bg-white/20 transition-all text-left"
-              >
-                + {t}
-              </button>
+              <div key={i} className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                <p className="text-[10px] font-black mb-2 truncate">{t}</p>
+                <div className="flex gap-1">
+                  {['morning', 'afternoon', 'night'].map((time) => (
+                    <button
+                      key={time}
+                      onClick={() => {
+                        setNewTasks({ ...newTasks, [time]: t });
+                        setIsSidebarOpen(false);
+                      }}
+                      className="flex-1 py-1.5 bg-white/10 hover:bg-white text-[8px] font-black hover:text-black rounded-lg transition-all uppercase"
+                    >
+                      {time === 'morning' ? '午前' : time === 'afternoon' ? '午後' : '夜'}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
-            {taskLibrary.length === 0 && <p className="text-[9px] text-gray-600 italic">登録済みの習慣がここに表示されます</p>}
+            {taskLibrary.length === 0 && <p className="text-[9px] text-gray-600 italic">習慣を登録すると表示されます</p>}
           </div>
         </section>
 
-        <section className="flex-1 overflow-y-auto scrollbar-hide space-y-4">
+        <section className="flex-1 overflow-y-auto scrollbar-hide space-y-2">
           <p className="text-[10px] font-black text-gray-500 tracking-widest">最近の達成率</p>
           {history.slice(-10).reverse().map((h, i) => (
             <div key={i} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5"><span className="text-xs font-bold text-gray-400">{h.date}</span><span className="text-xs font-black">{h.percent}%</span></div>
@@ -382,10 +362,12 @@ export default function Home() {
       {/* --- メイン --- */}
       <main className="flex-1 overflow-y-auto min-h-screen scrollbar-hide p-4 relative">
         <div className="max-w-4xl mx-auto pb-32">
-          <header className="flex justify-between items-center py-4 mb-4">
-            <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90 font-black text-xs px-4">MENU</button>
+          
+          {/* 固定ヘッダー */}
+          <header className="sticky top-0 z-40 flex justify-between items-center py-4 mb-4 bg-transparent backdrop-blur-md px-2">
+            <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/10 rounded-xl border border-white/10 shadow-lg active:scale-90 font-black text-[10px] px-4 backdrop-blur-xl">MENU</button>
             <h1 className={`text-xl font-black italic bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.accent}`}>ROUTINE MASTER</h1>
-            <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90">⚙️</button>
+            <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/10 rounded-xl border border-white/10 shadow-lg active:scale-90 backdrop-blur-xl">⚙️</button>
           </header>
 
           <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 mb-8 mx-auto w-fit">
@@ -395,20 +377,17 @@ export default function Home() {
 
           {activeTab === "main" ? (
             <div className="space-y-8">
+              {/* キャラクター & チャート */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                 <div className="bg-white/5 p-8 rounded-[3.5rem] border border-white/10 flex flex-col items-center justify-center relative shadow-2xl overflow-hidden min-h-[350px]">
                   <div className={`w-36 h-36 rounded-full ${currentChar.color} shadow-2xl flex flex-col items-center justify-center animate-bounce-rich relative transition-all duration-700 ${percent === 100 ? 'animate-gold' : ''}`}>
                     <div className="flex gap-8 mb-4 animate-blink">
-                      {percent === 100 ? ( <><span className="text-3xl">🔥</span><span className="text-3xl">🔥</span></> ) :
-                       percent >= 80 ? ( <><span className="text-2xl">✨</span><span className="text-2xl">✨</span></> ) :
-                       percent <= 20 ? ( <><div className="w-5 h-1.5 bg-black/40 rounded-full rotate-12"></div><div className="w-5 h-1.5 bg-black/40 rounded-full -rotate-12"></div></> ) :
-                       ( <><div className="w-5 h-5 bg-white rounded-full flex items-center justify-center"><div className="w-2.5 h-2.5 bg-black rounded-full"></div></div><div className="w-5 h-5 bg-white rounded-full flex items-center justify-center"><div className="w-2.5 h-2.5 bg-black rounded-full"></div></div></> )}
+                      {percent === 100 ? <><span className="text-3xl">🔥</span><span className="text-3xl">🔥</span></> : <><div className="w-5 h-5 bg-white rounded-full flex items-center justify-center"><div className="w-2.5 h-2.5 bg-black rounded-full"></div></div><div className="w-5 h-5 bg-white rounded-full flex items-center justify-center"><div className="w-2.5 h-2.5 bg-black rounded-full"></div></div></>}
                     </div>
                     <div className={`transition-all duration-500 ${percent >= 50 ? 'w-10 h-6 bg-white/30 rounded-b-full' : 'w-8 h-1 bg-black/20 rounded-full'}`}></div>
                   </div>
                   <div className="mt-8 text-center space-y-2">
                     <div className="bg-white text-black px-6 py-3 rounded-2xl shadow-2xl inline-block hover:scale-105 transition-transform max-w-[250px]">
-                      <p className="text-[9px] font-black opacity-40 mb-1">{percent}% 達成中</p>
                       <p className="text-[12px] font-black leading-relaxed">{characterMessage}</p>
                     </div>
                     <p className="text-[10px] font-bold text-gray-400 italic block">継続: {streakCount}日間 🔥</p>
@@ -417,41 +396,26 @@ export default function Home() {
 
                 <div className="flex flex-col gap-4">
                   <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex-1 flex flex-col justify-between overflow-hidden">
-                    <div className="flex justify-between items-start mb-4">
-                       <div><span className={`text-[8px] font-black px-3 py-1 rounded-full ${currentRank.bg} ${currentRank.color}`}>{currentRank.name}</span><h2 className="text-3xl font-black mt-1">{percent}%</h2></div>
-                       <div className="text-right">
-                         <p className="text-[8px] font-black text-gray-500 uppercase">ランク目安</p>
-                         <div className="mt-1 space-y-0.5">
-                            {RANK_LIST.map(r => (
-                              <div key={r.name} className={`flex items-center gap-2 text-[7px] font-bold ${percent >= r.min ? 'opacity-100' : 'opacity-20'}`}><div className={`w-1.5 h-1.5 rounded-full ${r.color.replace('text','bg')}`}></div><span>{r.name}</span></div>
-                            ))}
-                         </div>
-                       </div>
-                    </div>
+                    <div><span className={`text-[8px] font-black px-3 py-1 rounded-full ${currentRank.bg} ${currentRank.color}`}>{currentRank.name}</span><h2 className="text-3xl font-black mt-1">{percent}%</h2></div>
                     <div className="h-28 w-full bg-black/20 rounded-2xl p-2">
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={true} horizontal={true} />
-                          <XAxis dataKey="displayDate" stroke="#444" fontSize={8} fontWeight="black" tickLine={false} axisLine={false} />
-                          <YAxis hide domain={[0, 100]} />
-                          <Tooltip contentStyle={{backgroundColor:'#000', border:'none', borderRadius:'12px', fontSize:'10px'}} />
-                          <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={{r:3, fill:'#3b82f6'}} />
-                        </LineChart>
+                        <LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" /><XAxis dataKey="displayDate" stroke="#444" fontSize={8} /><YAxis hide domain={[0, 100]} /><Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={{r:3, fill:'#3b82f6'}} /></LineChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
                   <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center justify-around shadow-lg">
                     <div className="text-center">
-                      <p className="text-[28px] font-mono font-black tabular-nums">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
+                      <p className="text-[28px] font-mono font-black">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
                       <button onClick={() => setIsTimerActive(!isTimerActive)} className={`mt-1 px-5 py-1.5 text-[9px] font-black rounded-full transition-all ${isTimerActive ? "bg-red-500" : "bg-white text-black"}`}>{isTimerActive ? "停止" : "集中開始"}</button>
                     </div>
                     <div className="grid grid-cols-2 gap-1.5">
-                      {[5, 15, 25, 45].map(m => <button key={m} onClick={() => { setIsTimerActive(false); setTimeLeft(m*60); }} className="text-[8px] font-black border border-white/10 w-10 py-2 rounded-xl hover:bg-white hover:text-black transition-all">{m}分</button>)}
+                      {[15, 25, 45, 60].map(m => <button key={m} onClick={() => { setIsTimerActive(false); setTimeLeft(m*60); }} className="text-[8px] font-black border border-white/10 w-10 py-2 rounded-xl hover:bg-white hover:text-black transition-all">{m}分</button>)}
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* タスクリスト */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
                 {["morning", "afternoon", "night"].map(time => (
                   <div key={time} className="bg-white/5 p-7 rounded-[3rem] border border-white/10 shadow-xl flex flex-col h-auto">
@@ -463,8 +427,6 @@ export default function Home() {
                             {checks[time + task] && <span className="text-[10px] font-black text-white">✓</span>}
                           </button>
                           <span className={`flex-1 text-sm font-bold ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>{task.startsWith('!') ? <span className="text-orange-400 font-black">🌟 {task.substring(1)}</span> : task}</span>
-                          
-                          {/* 入れ替え・削除ボタン */}
                           <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
                             <button onClick={() => moveTask(time, index, -1)} className="p-1 text-gray-500 hover:text-white text-[10px]">↑</button>
                             <button onClick={() => moveTask(time, index, 1)} className="p-1 text-gray-500 hover:text-white text-[10px]">↓</button>
@@ -485,6 +447,7 @@ export default function Home() {
               </div>
             </div>
           ) : (
+            /* 交流タブ */
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {friendsData.map((f, i) => {
                 const chatId = [myDisplayId, f.shortId].sort().join("_");
@@ -493,25 +456,10 @@ export default function Home() {
                   <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 relative group shadow-2xl overflow-hidden hover:bg-white/[0.07] transition-all">
                     <div className={`absolute top-0 left-0 w-1.5 h-full ${CHARACTERS[f.charIndex || 0].accent} bg-gradient-to-b`}></div>
                     <div className="flex items-center gap-4">
-                      <div className={`w-16 h-16 rounded-full ${CHARACTERS[f.charIndex || 0].color} flex items-center justify-center animate-bounce-rich shadow-lg relative`}>
-                        <div className="flex gap-1.5"><div className="w-2 h-2 bg-white rounded-full"></div><div className="w-2 h-2 bg-white rounded-full"></div></div>
-                        {unreadCount > 0 && (
-                          <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-black animate-pulse shadow-lg">
-                            {unreadCount}
-                          </div>
-                        )}
-                      </div>
+                      <div className={`w-16 h-16 rounded-full ${CHARACTERS[f.charIndex || 0].color} flex items-center justify-center animate-bounce-rich shadow-lg relative`}><div className="flex gap-1.5"><div className="w-2 h-2 bg-white rounded-full"></div><div className="w-2 h-2 bg-white rounded-full"></div></div>{unreadCount > 0 && <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-black animate-pulse shadow-lg">{unreadCount}</div>}</div>
                       <div className="flex-1">
-                        <h3 className="text-sm font-black flex items-center flex-wrap gap-2">
-                          {f.displayName} 
-                          <span className={`text-[7px] px-2 py-0.5 rounded-full whitespace-nowrap ${RANK_LIST.find(r=>r.name===f.rank)?.bg || 'bg-white/10'} ${RANK_LIST.find(r=>r.name===f.rank)?.color || 'text-white'}`}>
-                            {f.rank || "ビギナー"}
-                          </span>
-                        </h3>
-                        <div className="flex items-end gap-3 mt-1">
-                          <span className="text-3xl font-black">{f.percent}%</span>
-                          <span className="text-[10px] font-black text-orange-400 mb-1.5 whitespace-nowrap">🔥 {f.streak || 0}日</span>
-                        </div>
+                        <h3 className="text-sm font-black flex items-center flex-wrap gap-2">{f.displayName} <span className={`text-[7px] px-2 py-0.5 rounded-full ${RANK_LIST.find(r=>r.name===f.rank)?.bg || 'bg-white/10'} ${RANK_LIST.find(r=>r.name===f.rank)?.color || 'text-white'}`}>{f.rank || "ビギナー"}</span></h3>
+                        <div className="flex items-end gap-3 mt-1"><span className="text-3xl font-black">{f.percent}%</span><span className="text-[10px] font-black text-orange-400 mb-1.5">🔥 {f.streak || 0}日</span></div>
                       </div>
                       <div className="flex flex-col gap-2">
                         <button onClick={() => setSelectedChatFriend(f)} className="bg-white text-black w-10 h-10 rounded-xl text-lg flex items-center justify-center hover:scale-110 shadow-xl transition-all">✉️</button>
@@ -526,38 +474,23 @@ export default function Home() {
         </div>
       </main>
 
-      {/* --- 個別トーク画面 --- */}
+      {/* --- チャット画面 --- */}
       {selectedChatFriend && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSelectedChatFriend(null)}></div>
           <div className="relative w-full max-w-xl h-[85vh] bg-[#111] rounded-[3rem] border border-white/10 flex flex-col overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full ${CHARACTERS[selectedChatFriend.charIndex || 0].color}`}></div>
-                <p className="font-black">{selectedChatFriend.displayName}</p>
-              </div>
+              <div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-full ${CHARACTERS[selectedChatFriend.charIndex || 0].color}`}></div><p className="font-black">{selectedChatFriend.displayName}</p></div>
               <button onClick={() => setSelectedChatFriend(null)} className="text-xl">✕</button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
-              {userMessages
-                .filter(m => m.chatId === [myDisplayId, selectedChatFriend.shortId].sort().join("_"))
-                .map((m, i) => (
-                  <div key={i} className={`flex flex-col ${m.fromId === myDisplayId ? 'items-end' : 'items-start'}`}>
-                    <div className="flex flex-col gap-1 max-w-[85%]">
-                      <div className={`px-5 py-3 rounded-[1.5rem] text-sm font-bold shadow-md ${m.fromId === myDisplayId ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white/10 text-gray-100 rounded-tl-none'}`}>
-                        {m.text}
-                      </div>
-                      <div className="flex items-center gap-2 px-2">
-                        <span className="text-[7px] text-gray-600 font-bold">{m.time}</span>
-                        {m.fromId === myDisplayId && m.read && <span className="text-[7px] text-blue-400 font-black">既読</span>}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              {userMessages.filter(m => m.chatId === [myDisplayId, selectedChatFriend.shortId].sort().join("_")).map((m, i) => (
+                <div key={i} className={`flex flex-col ${m.fromId === myDisplayId ? 'items-end' : 'items-start'}`}>
+                  <div className="flex flex-col gap-1 max-w-[85%]"><div className={`px-5 py-3 rounded-[1.5rem] text-sm font-bold shadow-md ${m.fromId === myDisplayId ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white/10 text-gray-100 rounded-tl-none'}`}>{m.text}</div><div className="flex items-center gap-2 px-2"><span className="text-[7px] text-gray-600 font-bold">{m.time}</span>{m.fromId === myDisplayId && m.read && <span className="text-[7px] text-blue-400 font-black">既読</span>}</div></div>
+                </div>
+              ))}
             </div>
-            <div className="p-6 bg-white/5">
-              <button onClick={sendMessage} className="w-full bg-white text-black py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">メッセージを送る</button>
-            </div>
+            <div className="p-6 bg-white/5"><button onClick={sendMessage} className="w-full bg-white text-black py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">メッセージを送る</button></div>
           </div>
         </div>
       )}
@@ -569,34 +502,16 @@ export default function Home() {
           <div className={`relative w-full max-w-sm p-8 rounded-[4rem] ${currentTheme.bg} border border-white/10 shadow-2xl max-h-[85vh] overflow-y-auto scrollbar-hide`}>
             <div className="flex justify-between items-center mb-10"><h2 className="text-xl font-black text-gray-500">設定</h2><button onClick={() => setIsMenuOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center">✕</button></div>
             <div className="space-y-10">
-              <section className="bg-white/5 p-8 rounded-[3rem] text-center border border-white/10">
-                <p className="text-[10px] font-black text-gray-500 mb-3 tracking-widest uppercase">マイID</p>
-                <p className="text-4xl font-black tracking-tighter text-white select-all">{myDisplayId}</p>
-              </section>
+              <section className="bg-white/5 p-8 rounded-[3rem] text-center border border-white/10"><p className="text-[10px] font-black text-gray-500 mb-3 tracking-widest uppercase">マイID</p><p className="text-4xl font-black tracking-tighter text-white select-all">{myDisplayId}</p></section>
               <section>
                 <p className="text-[10px] font-black text-gray-500 mb-4 tracking-widest uppercase">テーマカラー</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {THEMES.map((t, i) => (
-                    <button key={i} onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }} className={`w-full aspect-square rounded-xl border-2 transition-all ${themeIndex === i ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-40'}`} style={{ backgroundColor: t.color }}></button>
-                  ))}
-                </div>
+                <div className="grid grid-cols-4 gap-2">{THEMES.map((t, i) => (<button key={i} onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }} className={`w-full aspect-square rounded-xl border-2 transition-all ${themeIndex === i ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-40'}`} style={{ backgroundColor: t.color }}></button>))}</div>
               </section>
               <section>
                 <p className="text-[10px] font-black text-gray-500 mb-4 tracking-widest uppercase">友達を追加</p>
-                <div className="flex gap-2">
-                  <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value.substring(0,8))} className="flex-1 bg-black/40 text-xs p-4 rounded-2xl border border-white/5 outline-none" placeholder="IDを入力..." />
-                  <button onClick={addFriend} className="bg-white text-black px-6 rounded-2xl font-black text-[10px] active:scale-95 shadow-lg">追加</button>
-                </div>
+                <div className="flex gap-2"><input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value.substring(0,8))} className="flex-1 bg-black/40 text-xs p-4 rounded-2xl border border-white/5 outline-none" placeholder="IDを入力..." /><button onClick={addFriend} className="bg-white text-black px-6 rounded-2xl font-black text-[10px] active:scale-95">追加</button></div>
               </section>
-              <section>
-                <p className="text-[10px] font-black text-gray-500 mb-4 tracking-widest uppercase">相棒を選択</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {CHARACTERS.map((c, i) => (
-                    <button key={i} onClick={() => { setCharIndex(i); saveToFirebase({ charIndex: i }); }} className={`p-4 rounded-[2rem] border-2 transition-all flex flex-col items-center ${charIndex === i ? 'border-white bg-white/10' : 'border-transparent opacity-30'}`}><div className={`w-8 h-8 rounded-full ${c.color} mb-2`}></div><p className="text-[9px] font-black">{c.name}</p></button>
-                  ))}
-                </div>
-              </section>
-              <button onClick={() => signOut(auth)} className="w-full py-4 bg-red-500/10 text-red-500 rounded-3xl font-black text-xs border border-red-500/20 active:bg-red-500 active:text-white transition-all">ログアウト</button>
+              <button onClick={() => signOut(auth)} className="w-full py-4 bg-red-500/10 text-red-500 rounded-3xl font-black text-xs border border-red-500/20">ログアウト</button>
             </div>
           </div>
         </div>
