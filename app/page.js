@@ -94,6 +94,15 @@ export default function Home() {
     return Array.from(new Set(all)).filter(t => t !== "");
   }, [tasks]);
 
+  const characterMessage = useMemo(() => {
+    if (percent === 0) return "さあ、これから一緒に頑張っていきましょう。";
+    if (percent < 30) return "まずは一歩ずつですね。応援しています。";
+    if (percent < 50) return "調子が出てきましたね。その調子です。";
+    if (percent < 80) return "半分以上クリアしましたね。素晴らしいです。";
+    if (percent < 100) return "あと少しです。最後まで走り抜けましょう。";
+    return "パーフェクト！最高の結果を出せましたね。";
+  }, [percent]);
+
   const streakCount = useMemo(() => {
     let count = 0;
     const sortedHistory = [...history].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -177,6 +186,7 @@ export default function Home() {
     return () => unsub();
   }, [friendsList, user]);
 
+  // タイマーとアラーム音
   useEffect(() => {
     if (isTimerActive && timeLeft > 0) {
       timerRef.current = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
@@ -189,6 +199,19 @@ export default function Home() {
     }
     return () => clearInterval(timerRef.current);
   }, [isTimerActive, timeLeft]);
+
+  useEffect(() => {
+    if (selectedChatFriend && user) {
+      const chatId = [myDisplayId, selectedChatFriend.shortId].sort().join("_");
+      const unreadMsgs = userMessages.filter(m => m.chatId === chatId && m.fromId !== myDisplayId && !m.read);
+      if (unreadMsgs.length > 0) {
+        const updatedMessages = userMessages.map(m => 
+          (m.chatId === chatId && m.fromId !== myDisplayId) ? { ...m, read: true } : m
+        );
+        updateDoc(doc(db, "users", user.uid), { messageHistory: updatedMessages });
+      }
+    }
+  }, [selectedChatFriend, userMessages, user, myDisplayId]);
 
   const toggleCheck = (id) => {
     const nextChecks = { ...checks, [id]: !checks[id] };
@@ -212,6 +235,7 @@ export default function Home() {
     saveToFirebase({ tasks: nextTasks });
   };
 
+  // タスクの入れ替え機能
   const moveTask = (time, index, direction) => {
     const newTimeTasks = [...tasks[time]];
     const targetIndex = index + direction;
@@ -279,8 +303,21 @@ export default function Home() {
   if (!user) return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 transition-all bg-gray-950">
        <h1 className="text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400 text-center">ROUTINE MASTER</h1>
-       <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest uppercase transition-all hover:bg-gray-200">Googleでログイン</button>
-       <div className="mt-8 bg-white/5 p-4 rounded-2xl border border-white/10 max-w-xs text-center"><p className="text-[10px] font-bold text-gray-500 leading-relaxed">※ LINE等でエラーが出る場合は、右上のメニューから<br/><span className="text-white font-black">「ブラウザで開く」</span>を選択してください。</p></div>
+       
+       <button 
+         onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} 
+         className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest uppercase transition-all hover:bg-gray-200"
+       >
+         Googleでログイン
+       </button>
+       
+       <div className="mt-8 bg-white/5 p-4 rounded-2xl border border-white/10 max-w-xs text-center">
+         <p className="text-[10px] font-bold text-gray-500 leading-relaxed">
+           ※ LINEやMessengerからお越しの方へ<br/>
+           エラーが出る場合は、右上のメニューから<br/>
+           <span className="text-white font-black">「ブラウザで開く」</span>を選択してください。
+         </p>
+       </div>
     </div>
   );
 
@@ -300,26 +337,9 @@ export default function Home() {
       <aside className={`fixed left-0 top-0 h-full w-80 z-50 transition-transform duration-500 bg-black/40 backdrop-blur-2xl border-r border-white/10 p-6 flex flex-col ${isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}>
         <div className="flex justify-between items-center mb-10"><p className="text-[10px] font-black tracking-[0.4em] text-gray-500 uppercase">記録・履歴</p><button onClick={() => setIsSidebarOpen(false)} className="text-xl">✕</button></div>
         
-        {/* --- タスクライブラリ（改善版） --- */}
-        <section className="mb-8">
-          <p className="text-[10px] font-black text-gray-500 tracking-widest mb-4 uppercase">タスクライブラリ</p>
-          <div className="space-y-3 max-h-60 overflow-y-auto scrollbar-hide">
-            {taskLibrary.map((t, i) => (
-              <div key={i} className="bg-white/5 p-3 rounded-2xl border border-white/5">
-                <p className="text-[10px] font-black mb-2 truncate">{t}</p>
-                <div className="flex gap-1">
-                  {['morning', 'afternoon', 'night'].map((time) => (
-                    <button key={time} onClick={() => { setNewTasks({ ...newTasks, [time]: t }); setIsSidebarOpen(false); }} className="flex-1 py-1.5 bg-white/10 hover:bg-white text-[8px] font-black hover:text-black rounded-lg transition-all uppercase">{time === 'morning' ? '午前' : time === 'afternoon' ? '午後' : '夜'}</button>
-                  ))}
-                </div>
-              </div>
-            ))}
-            {taskLibrary.length === 0 && <p className="text-[9px] text-gray-600 italic">習慣を登録するとここに出ます</p>}
-          </div>
-        </section>
-
-        <section className="bg-white/5 p-4 rounded-[2rem] border border-white/10 mb-8 text-center flex-shrink-0">
+        <section className="bg-white/5 p-4 rounded-[2rem] border border-white/10 mb-8 text-center">
           <p className="text-[10px] font-black mb-4 opacity-50 tracking-widest">{new Date().getMonth() + 1}月</p>
+          <div className="grid grid-cols-7 gap-1 mb-2 text-[8px] font-black text-gray-600">{['日','月','火','水','木','金','土'].map(d => <span key={d}>{d}</span>)}</div>
           <div className="grid grid-cols-7 gap-1">
             {calendarDays.map((d, i) => (
               <div key={i} className="aspect-square flex items-center justify-center relative">
@@ -328,19 +348,47 @@ export default function Home() {
             ))}
           </div>
         </section>
+
+        {/* --- タスクライブラリ（コピペコーナー） --- */}
+        <section className="mb-8">
+          <p className="text-[10px] font-black text-gray-500 tracking-widest mb-4 uppercase">タスクライブラリ</p>
+          <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto scrollbar-hide">
+            {taskLibrary.map((t, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  // 現在空いている入力欄、または最後に触った箇所などにセットするロジック（ここでは一括で確認用アラート）
+                  const time = window.confirm(`${t} を午前の入力欄にセットしますか？`) ? "morning" : 
+                               window.confirm(`${t} を午後の入力欄にセットしますか？`) ? "afternoon" : "night";
+                  setNewTasks({ ...newTasks, [time]: t });
+                }}
+                className="text-[9px] font-bold bg-white/10 px-3 py-2 rounded-lg border border-white/5 hover:bg-white/20 transition-all text-left"
+              >
+                + {t}
+              </button>
+            ))}
+            {taskLibrary.length === 0 && <p className="text-[9px] text-gray-600 italic">登録済みの習慣がここに表示されます</p>}
+          </div>
+        </section>
+
+        <section className="flex-1 overflow-y-auto scrollbar-hide space-y-4">
+          <p className="text-[10px] font-black text-gray-500 tracking-widest">最近の達成率</p>
+          {history.slice(-10).reverse().map((h, i) => (
+            <div key={i} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5"><span className="text-xs font-bold text-gray-400">{h.date}</span><span className="text-xs font-black">{h.percent}%</span></div>
+          ))}
+        </section>
       </aside>
 
       {/* --- メイン --- */}
-      <main className="flex-1 overflow-y-auto min-h-screen scrollbar-hide relative">
-        {/* 固定ヘッダー */}
-        <header className="sticky top-0 z-40 flex justify-between items-center py-4 px-6 bg-transparent backdrop-blur-md">
-          <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/10 rounded-xl border border-white/10 shadow-lg active:scale-90 font-black text-[10px] px-4 backdrop-blur-xl transition-all">MENU</button>
-          <h1 className={`text-xl font-black italic bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.accent}`}>ROUTINE MASTER</h1>
-          <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/10 rounded-xl border border-white/10 shadow-lg active:scale-90 backdrop-blur-xl transition-all">⚙️</button>
-        </header>
+      <main className="flex-1 overflow-y-auto min-h-screen scrollbar-hide p-4 relative">
+        <div className="max-w-4xl mx-auto pb-32">
+          <header className="flex justify-between items-center py-4 mb-4">
+            <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90 font-black text-xs px-4">MENU</button>
+            <h1 className={`text-xl font-black italic bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.accent}`}>ROUTINE MASTER</h1>
+            <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90">⚙️</button>
+          </header>
 
-        <div className="max-w-4xl mx-auto pb-32 px-4">
-          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 my-8 mx-auto w-fit">
+          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 mb-8 mx-auto w-fit">
             <button onClick={() => setActiveTab("main")} className={`px-8 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === "main" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>ホーム</button>
             <button onClick={() => setActiveTab("social")} className={`px-8 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === "social" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>交流</button>
           </div>
@@ -359,7 +407,10 @@ export default function Home() {
                     <div className={`transition-all duration-500 ${percent >= 50 ? 'w-10 h-6 bg-white/30 rounded-b-full' : 'w-8 h-1 bg-black/20 rounded-full'}`}></div>
                   </div>
                   <div className="mt-8 text-center space-y-2">
-                    <div className="bg-white text-black px-6 py-3 rounded-2xl shadow-2xl inline-block hover:scale-105 transition-transform max-w-[250px]"><p className="text-[12px] font-black leading-relaxed">達成率 {percent}%！順調ですね。</p></div>
+                    <div className="bg-white text-black px-6 py-3 rounded-2xl shadow-2xl inline-block hover:scale-105 transition-transform max-w-[250px]">
+                      <p className="text-[9px] font-black opacity-40 mb-1">{percent}% 達成中</p>
+                      <p className="text-[12px] font-black leading-relaxed">{characterMessage}</p>
+                    </div>
                     <p className="text-[10px] font-bold text-gray-400 italic block">継続: {streakCount}日間 🔥</p>
                   </div>
                 </div>
@@ -368,6 +419,14 @@ export default function Home() {
                   <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex-1 flex flex-col justify-between overflow-hidden">
                     <div className="flex justify-between items-start mb-4">
                        <div><span className={`text-[8px] font-black px-3 py-1 rounded-full ${currentRank.bg} ${currentRank.color}`}>{currentRank.name}</span><h2 className="text-3xl font-black mt-1">{percent}%</h2></div>
+                       <div className="text-right">
+                         <p className="text-[8px] font-black text-gray-500 uppercase">ランク目安</p>
+                         <div className="mt-1 space-y-0.5">
+                            {RANK_LIST.map(r => (
+                              <div key={r.name} className={`flex items-center gap-2 text-[7px] font-bold ${percent >= r.min ? 'opacity-100' : 'opacity-20'}`}><div className={`w-1.5 h-1.5 rounded-full ${r.color.replace('text','bg')}`}></div><span>{r.name}</span></div>
+                            ))}
+                         </div>
+                       </div>
                     </div>
                     <div className="h-28 w-full bg-black/20 rounded-2xl p-2">
                       <ResponsiveContainer width="100%" height="100%">
@@ -400,8 +459,12 @@ export default function Home() {
                     <div className="space-y-4">
                       {tasks[time].map((task, index) => (
                         <div key={index} className="flex items-center group/item">
-                          <button onClick={() => toggleCheck(time + task)} className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none scale-110 shadow-lg" : "bg-black/20"}`}>{checks[time + task] && <span className="text-[10px] font-black text-white">✓</span>}</button>
+                          <button onClick={() => toggleCheck(time + task)} className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none scale-110 shadow-lg" : "bg-black/20"}`}>
+                            {checks[time + task] && <span className="text-[10px] font-black text-white">✓</span>}
+                          </button>
                           <span className={`flex-1 text-sm font-bold ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>{task.startsWith('!') ? <span className="text-orange-400 font-black">🌟 {task.substring(1)}</span> : task}</span>
+                          
+                          {/* 入れ替え・削除ボタン */}
                           <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
                             <button onClick={() => moveTask(time, index, -1)} className="p-1 text-gray-500 hover:text-white text-[10px]">↑</button>
                             <button onClick={() => moveTask(time, index, 1)} className="p-1 text-gray-500 hover:text-white text-[10px]">↓</button>
@@ -412,6 +475,7 @@ export default function Home() {
                     </div>
                     <div className="mt-6 flex flex-col gap-2">
                       <div className="flex gap-2">
+                        <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }} className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
                         <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })} className="flex-1 bg-black/40 text-[11px] p-3 rounded-xl border border-white/5 outline-none focus:border-white/20" placeholder="習慣を入力..." />
                       </div>
                       <button onClick={() => addTask(time)} className="w-full bg-white text-black py-3 rounded-xl font-black text-[10px] active:scale-95 transition-all shadow-lg">追加する</button>
@@ -422,56 +486,118 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {friendsData.map((f, i) => (
-                <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 relative group shadow-2xl overflow-hidden transition-all">
-                  <div className={`absolute top-0 left-0 w-1.5 h-full ${CHARACTERS[f.charIndex || 0].accent} bg-gradient-to-b`}></div>
-                  <div className="flex items-center gap-4">
-                    <div className={`w-16 h-16 rounded-full ${CHARACTERS[f.charIndex || 0].color} flex items-center justify-center animate-bounce-rich shadow-lg`}></div>
-                    <div className="flex-1">
-                      <h3 className="text-sm font-black">{f.displayName}</h3>
-                      <p className="text-2xl font-black">{f.percent}%</p>
+              {friendsData.map((f, i) => {
+                const chatId = [myDisplayId, f.shortId].sort().join("_");
+                const unreadCount = userMessages.filter(m => m.chatId === chatId && m.fromId !== myDisplayId && !m.read).length;
+                return (
+                  <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 relative group shadow-2xl overflow-hidden hover:bg-white/[0.07] transition-all">
+                    <div className={`absolute top-0 left-0 w-1.5 h-full ${CHARACTERS[f.charIndex || 0].accent} bg-gradient-to-b`}></div>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-16 h-16 rounded-full ${CHARACTERS[f.charIndex || 0].color} flex items-center justify-center animate-bounce-rich shadow-lg relative`}>
+                        <div className="flex gap-1.5"><div className="w-2 h-2 bg-white rounded-full"></div><div className="w-2 h-2 bg-white rounded-full"></div></div>
+                        {unreadCount > 0 && (
+                          <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-black animate-pulse shadow-lg">
+                            {unreadCount}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-black flex items-center flex-wrap gap-2">
+                          {f.displayName} 
+                          <span className={`text-[7px] px-2 py-0.5 rounded-full whitespace-nowrap ${RANK_LIST.find(r=>r.name===f.rank)?.bg || 'bg-white/10'} ${RANK_LIST.find(r=>r.name===f.rank)?.color || 'text-white'}`}>
+                            {f.rank || "ビギナー"}
+                          </span>
+                        </h3>
+                        <div className="flex items-end gap-3 mt-1">
+                          <span className="text-3xl font-black">{f.percent}%</span>
+                          <span className="text-[10px] font-black text-orange-400 mb-1.5 whitespace-nowrap">🔥 {f.streak || 0}日</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <button onClick={() => setSelectedChatFriend(f)} className="bg-white text-black w-10 h-10 rounded-xl text-lg flex items-center justify-center hover:scale-110 shadow-xl transition-all">✉️</button>
+                        <button onClick={() => deleteFriend(f.shortId, f.uid)} className="bg-red-500/10 text-red-500 w-10 h-10 rounded-xl text-xs flex items-center justify-center hover:bg-red-600 hover:text-white transition-all">✕</button>
+                      </div>
                     </div>
-                    <button onClick={() => setSelectedChatFriend(f)} className="bg-white text-black w-10 h-10 rounded-xl text-lg flex items-center justify-center shadow-xl">✉️</button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       </main>
 
-      {/* --- トーク・設定モーダルは前回同様のため省略（実際にはここに配置されます） --- */}
+      {/* --- 個別トーク画面 --- */}
+      {selectedChatFriend && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSelectedChatFriend(null)}></div>
+          <div className="relative w-full max-w-xl h-[85vh] bg-[#111] rounded-[3rem] border border-white/10 flex flex-col overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full ${CHARACTERS[selectedChatFriend.charIndex || 0].color}`}></div>
+                <p className="font-black">{selectedChatFriend.displayName}</p>
+              </div>
+              <button onClick={() => setSelectedChatFriend(null)} className="text-xl">✕</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
+              {userMessages
+                .filter(m => m.chatId === [myDisplayId, selectedChatFriend.shortId].sort().join("_"))
+                .map((m, i) => (
+                  <div key={i} className={`flex flex-col ${m.fromId === myDisplayId ? 'items-end' : 'items-start'}`}>
+                    <div className="flex flex-col gap-1 max-w-[85%]">
+                      <div className={`px-5 py-3 rounded-[1.5rem] text-sm font-bold shadow-md ${m.fromId === myDisplayId ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white/10 text-gray-100 rounded-tl-none'}`}>
+                        {m.text}
+                      </div>
+                      <div className="flex items-center gap-2 px-2">
+                        <span className="text-[7px] text-gray-600 font-bold">{m.time}</span>
+                        {m.fromId === myDisplayId && m.read && <span className="text-[7px] text-blue-400 font-black">既読</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+            <div className="p-6 bg-white/5">
+              <button onClick={sendMessage} className="w-full bg-white text-black py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">メッセージを送る</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- 設定モーダル --- */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setIsMenuOpen(false)}></div>
           <div className={`relative w-full max-w-sm p-8 rounded-[4rem] ${currentTheme.bg} border border-white/10 shadow-2xl max-h-[85vh] overflow-y-auto scrollbar-hide`}>
             <div className="flex justify-between items-center mb-10"><h2 className="text-xl font-black text-gray-500">設定</h2><button onClick={() => setIsMenuOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center">✕</button></div>
             <div className="space-y-10">
-              <section className="bg-white/5 p-8 rounded-[3rem] text-center border border-white/10"><p className="text-[10px] font-black text-gray-500 mb-3 tracking-widest uppercase">マイID</p><p className="text-4xl font-black tracking-tighter text-white select-all">{myDisplayId}</p></section>
-              <section><p className="text-[10px] font-black text-gray-500 mb-4 tracking-widest uppercase">テーマカラー</p><div className="grid grid-cols-4 gap-2">{THEMES.map((t, i) => (<button key={i} onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }} className={`w-full aspect-square rounded-xl border-2 transition-all ${themeIndex === i ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-40'}`} style={{ backgroundColor: t.color }}></button>))}</div></section>
+              <section className="bg-white/5 p-8 rounded-[3rem] text-center border border-white/10">
+                <p className="text-[10px] font-black text-gray-500 mb-3 tracking-widest uppercase">マイID</p>
+                <p className="text-4xl font-black tracking-tighter text-white select-all">{myDisplayId}</p>
+              </section>
+              <section>
+                <p className="text-[10px] font-black text-gray-500 mb-4 tracking-widest uppercase">テーマカラー</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {THEMES.map((t, i) => (
+                    <button key={i} onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }} className={`w-full aspect-square rounded-xl border-2 transition-all ${themeIndex === i ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-40'}`} style={{ backgroundColor: t.color }}></button>
+                  ))}
+                </div>
+              </section>
+              <section>
+                <p className="text-[10px] font-black text-gray-500 mb-4 tracking-widest uppercase">友達を追加</p>
+                <div className="flex gap-2">
+                  <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value.substring(0,8))} className="flex-1 bg-black/40 text-xs p-4 rounded-2xl border border-white/5 outline-none" placeholder="IDを入力..." />
+                  <button onClick={addFriend} className="bg-white text-black px-6 rounded-2xl font-black text-[10px] active:scale-95 shadow-lg">追加</button>
+                </div>
+              </section>
+              <section>
+                <p className="text-[10px] font-black text-gray-500 mb-4 tracking-widest uppercase">相棒を選択</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {CHARACTERS.map((c, i) => (
+                    <button key={i} onClick={() => { setCharIndex(i); saveToFirebase({ charIndex: i }); }} className={`p-4 rounded-[2rem] border-2 transition-all flex flex-col items-center ${charIndex === i ? 'border-white bg-white/10' : 'border-transparent opacity-30'}`}><div className={`w-8 h-8 rounded-full ${c.color} mb-2`}></div><p className="text-[9px] font-black">{c.name}</p></button>
+                  ))}
+                </div>
+              </section>
               <button onClick={() => signOut(auth)} className="w-full py-4 bg-red-500/10 text-red-500 rounded-3xl font-black text-xs border border-red-500/20 active:bg-red-500 active:text-white transition-all">ログアウト</button>
             </div>
-          </div>
-        </div>
-      )}
-      
-      {/* チャット画面も同様に維持 */}
-      {selectedChatFriend && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSelectedChatFriend(null)}></div>
-          <div className="relative w-full max-w-xl h-[85vh] bg-[#111] rounded-[3rem] border border-white/10 flex flex-col overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-              <p className="font-black">{selectedChatFriend.displayName} さんへのメッセージ</p>
-              <button onClick={() => setSelectedChatFriend(null)} className="text-xl">✕</button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
-              {userMessages.filter(m => m.chatId === [myDisplayId, selectedChatFriend.shortId].sort().join("_")).map((m, i) => (
-                <div key={i} className={`flex flex-col ${m.fromId === myDisplayId ? 'items-end' : 'items-start'}`}>
-                  <div className={`px-5 py-3 rounded-[1.5rem] text-sm font-bold ${m.fromId === myDisplayId ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-100'}`}>{m.text}</div>
-                </div>
-              ))}
-            </div>
-            <div className="p-6 bg-white/5"><button onClick={sendMessage} className="w-full bg-white text-black py-4 rounded-2xl font-black text-sm active:scale-95 shadow-lg">メッセージを送る</button></div>
           </div>
         </div>
       )}
