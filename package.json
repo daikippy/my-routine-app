@@ -5,6 +5,6 @@
     "react-dom": "latest",
     "recharts": "latest",
     "firebase": "latest",
-    "canvas-confetti": "latest"
+    "lucide-react": "latest"
   }
 }
