@@ -319,7 +319,7 @@ export default function Home() {
            <div className="space-y-4">
              <div className="bg-blue-500/10 p-5 rounded-2xl border border-blue-500/20 text-center">
                 <p className="text-[11px] font-bold text-blue-300 leading-relaxed mb-3">
-                  LINEやMessengerアプリ内で開いている方は、右上のメニューからブラウザへ切り替えてください。
+                  アクセスが難しい場合ブラウザ（Google Chrome等）へ切り替えてください。
                 </p>
                 <div className="flex justify-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xs">🧭</div>
