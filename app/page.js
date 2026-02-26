@@ -68,6 +68,7 @@ export default function Home() {
   const [charIndex, setCharIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [friendIdInput, setFriendIdInput] = useState("");
+  const [selectedChatFriendId, setSelectedChatFriendId] = useState(""); // 個別チャット選択用
   const [friendsList, setFriendsList] = useState([]);
   const [friendsData, setFriendsData] = useState([]);
   const [userMessages, setUserMessages] = useState([]);
@@ -222,7 +223,6 @@ export default function Home() {
   const sendMessage = async (targetUid, targetShortId, targetName) => {
     const msgText = window.prompt(`${targetName}さんへ応援メッセージ`, "お疲れ様！");
     if (msgText) {
-      // 共通のチャットルームIDを作成
       const chatId = [myDisplayId, targetShortId].sort().join("_");
       const msgObj = {
         id: Date.now(), 
@@ -239,6 +239,10 @@ export default function Home() {
       batch.update(doc(db, "users", user.uid), { messageHistory: arrayUnion(msgObj) });
       await batch.commit();
       alert("送信しました！");
+      // 送信後、自動的にその人のチャットタブを開く
+      setSelectedChatFriendId(targetShortId);
+      setActiveTab("social");
+      setSocialSubTab("msgs");
     }
   };
 
@@ -411,19 +415,21 @@ export default function Home() {
                             <span className="text-[10px] font-black text-orange-400 mb-1.5">🔥 {f.streak || 0}日</span>
                           </div>
                         </div>
-　　　　　　　　　　　　　<button onClick={() => sendMessage(f.uid, f.shortId, f.displayName)} className="bg-white text-black w-12 h-12 rounded-2xl text-xl flex items-center justify-center hover:scale-110 shadow-xl transition-all">✉️</button>                      </div>
+                        <button onClick={() => sendMessage(f.uid, f.shortId, f.displayName)} className="bg-white text-black w-12 h-12 rounded-2xl text-xl flex items-center justify-center hover:scale-110 shadow-xl transition-all">✉️</button>
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
+                /* LINE風個別チャット */
                 <div className="flex flex-col h-[65vh] max-w-2xl mx-auto bg-black/30 rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl">
                   {/* 友達選択バー */}
                   <div className="flex border-b border-white/5 bg-white/5 p-2 overflow-x-auto scrollbar-hide">
                     {friendsData.map((f, i) => (
                       <button 
                         key={i} 
-                        onClick={() => setFriendIdInput(f.shortId)} 
-                        className={`px-4 py-2 rounded-full text-[10px] font-black shrink-0 transition-all ${friendIdInput === f.shortId ? 'bg-white text-black' : 'text-gray-500'}`}
+                        onClick={() => setSelectedChatFriendId(f.shortId)} 
+                        className={`px-4 py-2 rounded-full text-[10px] font-black shrink-0 transition-all ${selectedChatFriendId === f.shortId ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
                       >
                         {f.displayName}
                       </button>
@@ -431,9 +437,9 @@ export default function Home() {
                   </div>
 
                   {/* チャット履歴エリア */}
-                  <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide bg-white/2">
                     {userMessages
-                      .filter(m => m.chatId === [myDisplayId, friendIdInput].sort().join("_"))
+                      .filter(m => m.chatId === [myDisplayId, selectedChatFriendId].sort().join("_"))
                       .map((m, i) => (
                         <div key={i} className={`flex flex-col ${m.fromId === myDisplayId ? 'items-end' : 'items-start'}`}>
                           <div className="flex flex-col gap-1 max-w-[80%]">
@@ -444,7 +450,7 @@ export default function Home() {
                           </div>
                         </div>
                     ))}
-                    {(!friendIdInput || userMessages.filter(m => m.chatId === [myDisplayId, friendIdInput].sort().join("_")).length === 0) && (
+                    {(!selectedChatFriendId || userMessages.filter(m => m.chatId === [myDisplayId, selectedChatFriendId].sort().join("_")).length === 0) && (
                       <div className="text-center mt-20 opacity-30">
                         <p className="text-[10px] font-black uppercase tracking-widest">トークルーム</p>
                         <p className="text-[9px] mt-2">友達を選択してください</p>
