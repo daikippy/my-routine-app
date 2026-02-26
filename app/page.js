@@ -68,7 +68,7 @@ export default function Home() {
   const [charIndex, setCharIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [friendIdInput, setFriendIdInput] = useState("");
-  const [selectedChatFriendId, setSelectedChatFriendId] = useState(""); // 個別チャット選択用
+  const [selectedChatFriendId, setSelectedChatFriendId] = useState(""); 
   const [friendsList, setFriendsList] = useState([]);
   const [friendsData, setFriendsData] = useState([]);
   const [userMessages, setUserMessages] = useState([]);
@@ -154,7 +154,11 @@ export default function Home() {
             setFriendsList(d.friends || []);
             setThemeIndex(d.themeIndex || 0);
             setCharIndex(d.charIndex || 0);
-            setUserMessages(d.messageHistory || []);
+            
+            // 修正ポイント：Firestoreからメッセージを読み込み、時間順にソートして同期
+            const sortedMsgs = (d.messageHistory || []).sort((a, b) => a.id - b.id);
+            setUserMessages(sortedMsgs);
+
             if (d.lastCheckDate === today) setChecks(d.checks || {});
           }
         });
@@ -220,29 +224,33 @@ export default function Home() {
     }, {onlyOnce: true});
   };
 
+  // 修正ポイント：Firestoreへの送信のみを行い、同期は onSnapshot に任せる
   const sendMessage = async (targetUid, targetShortId, targetName) => {
     const msgText = window.prompt(`${targetName}さんへ応援メッセージ`, "お疲れ様！");
-    if (msgText) {
-      const chatId = [myDisplayId, targetShortId].sort().join("_");
-      const msgObj = {
-        id: Date.now(), 
-        chatId: chatId,
-        fromId: myDisplayId,
-        from: user.displayName, 
-        to: targetName, 
-        text: msgText,
-        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        read: false
-      };
+    if (!msgText) return;
+
+    const chatId = [myDisplayId, targetShortId].sort().join("_");
+    const msgObj = {
+      id: Date.now(), 
+      chatId: chatId,
+      fromId: myDisplayId,
+      from: user.displayName, 
+      to: targetName, 
+      text: msgText,
+      time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+      read: false
+    };
+
+    try {
       const batch = writeBatch(db);
       batch.update(doc(db, "users", targetUid), { messageHistory: arrayUnion(msgObj) });
       batch.update(doc(db, "users", user.uid), { messageHistory: arrayUnion(msgObj) });
       await batch.commit();
-      alert("送信しました！");
-      // 送信後、自動的にその人のチャットタブを開く
+      
       setSelectedChatFriendId(targetShortId);
-      setActiveTab("social");
       setSocialSubTab("msgs");
+    } catch (e) {
+      console.error("送信失敗:", e);
     }
   };
 
@@ -308,7 +316,7 @@ export default function Home() {
           {activeTab === "main" ? (
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-                {/* キャラクター */}
+                {/* キャラクターエリア */}
                 <div className="bg-white/5 p-8 rounded-[3.5rem] border border-white/10 flex flex-col items-center justify-center relative shadow-2xl overflow-hidden min-h-[350px]">
                   <div className={`w-36 h-36 rounded-full ${currentChar.color} shadow-2xl flex flex-col items-center justify-center animate-bounce-rich relative transition-all duration-700 ${percent === 100 ? 'animate-gold' : ''}`}>
                     <div className="flex gap-8 mb-4 animate-blink">
@@ -325,7 +333,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* ステータス */}
+                {/* ステータスエリア */}
                 <div className="flex flex-col gap-4">
                   <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex-1 flex flex-col justify-between">
                     <div className="flex justify-between items-start mb-4">
@@ -421,22 +429,20 @@ export default function Home() {
                   ))}
                 </div>
               ) : (
-                /* LINE風個別チャット */
+                /* 個別チャット表示エリア */
                 <div className="flex flex-col h-[65vh] max-w-2xl mx-auto bg-black/30 rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl">
-                  {/* 友達選択バー */}
                   <div className="flex border-b border-white/5 bg-white/5 p-2 overflow-x-auto scrollbar-hide">
                     {friendsData.map((f, i) => (
                       <button 
                         key={i} 
                         onClick={() => setSelectedChatFriendId(f.shortId)} 
-                        className={`px-4 py-2 rounded-full text-[10px] font-black shrink-0 transition-all ${selectedChatFriendId === f.shortId ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                        className={`px-4 py-2 rounded-full text-[10px] font-black shrink-0 transition-all ${selectedChatFriendId === f.shortId ? 'bg-white text-black' : 'text-gray-500'}`}
                       >
                         {f.displayName}
                       </button>
                     ))}
                   </div>
 
-                  {/* チャット履歴エリア */}
                   <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide bg-white/2">
                     {userMessages
                       .filter(m => m.chatId === [myDisplayId, selectedChatFriendId].sort().join("_"))
@@ -453,7 +459,7 @@ export default function Home() {
                     {(!selectedChatFriendId || userMessages.filter(m => m.chatId === [myDisplayId, selectedChatFriendId].sort().join("_")).length === 0) && (
                       <div className="text-center mt-20 opacity-30">
                         <p className="text-[10px] font-black uppercase tracking-widest">トークルーム</p>
-                        <p className="text-[9px] mt-2">友達を選択してください</p>
+                        <p className="text-[9px] mt-2">友達を選択してトークを開始</p>
                       </div>
                     )}
                   </div>
@@ -464,7 +470,7 @@ export default function Home() {
         </div>
       </main>
 
-      {/* --- 設定 --- */}
+      {/* --- 設定モーダル --- */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setIsMenuOpen(false)}></div>
