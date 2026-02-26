@@ -219,11 +219,18 @@ export default function Home() {
     }, {onlyOnce: true});
   };
 
-  const sendMessage = async (targetUid, targetName) => {
+  const sendMessage = async (targetUid, targetShortId, targetName) => {
     const msgText = window.prompt(`${targetName}さんへ応援メッセージ`, "お疲れ様！");
     if (msgText) {
+      // 共通のチャットルームIDを作成
+      const chatId = [myDisplayId, targetShortId].sort().join("_");
       const msgObj = {
-        id: Date.now(), from: user.displayName, to: targetName, text: msgText,
+        id: Date.now(), 
+        chatId: chatId,
+        fromId: myDisplayId,
+        from: user.displayName, 
+        to: targetName, 
+        text: msgText,
         time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
         read: false
       };
@@ -404,22 +411,46 @@ export default function Home() {
                             <span className="text-[10px] font-black text-orange-400 mb-1.5">🔥 {f.streak || 0}日</span>
                           </div>
                         </div>
-                        <button onClick={() => sendMessage(f.uid, f.displayName)} className="bg-white text-black w-12 h-12 rounded-2xl text-xl flex items-center justify-center hover:scale-110 shadow-xl transition-all">✉️</button>
-                      </div>
+　　　　　　　　　　　　　<button onClick={() => sendMessage(f.uid, f.shortId, f.displayName)} className="bg-white text-black w-12 h-12 rounded-2xl text-xl flex items-center justify-center hover:scale-110 shadow-xl transition-all">✉️</button>                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="bg-black/30 rounded-[3rem] border border-white/5 h-[60vh] overflow-y-auto p-6 space-y-4 scrollbar-hide">
-                  {userMessages.map((m, i) => (
-                    <div key={i} className={`flex flex-col ${m.from === user.displayName ? 'items-end' : 'items-start'}`}>
-                      <div className="flex flex-col gap-1 max-w-[80%]">
-                        <span className="text-[8px] font-black text-gray-500 ml-2">{m.from}</span>
-                        <div className={`px-5 py-3 rounded-[1.5rem] text-sm font-bold shadow-md ${m.from === user.displayName ? 'bg-[#06C755] text-white rounded-tr-none' : 'bg-white/10 text-gray-100 rounded-tl-none'}`}>{m.text}</div>
-                        <span className="text-[7px] text-gray-600 font-bold self-end">{m.time}</span>
+                <div className="flex flex-col h-[65vh] max-w-2xl mx-auto bg-black/30 rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl">
+                  {/* 友達選択バー */}
+                  <div className="flex border-b border-white/5 bg-white/5 p-2 overflow-x-auto scrollbar-hide">
+                    {friendsData.map((f, i) => (
+                      <button 
+                        key={i} 
+                        onClick={() => setFriendIdInput(f.shortId)} 
+                        className={`px-4 py-2 rounded-full text-[10px] font-black shrink-0 transition-all ${friendIdInput === f.shortId ? 'bg-white text-black' : 'text-gray-500'}`}
+                      >
+                        {f.displayName}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* チャット履歴エリア */}
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
+                    {userMessages
+                      .filter(m => m.chatId === [myDisplayId, friendIdInput].sort().join("_"))
+                      .map((m, i) => (
+                        <div key={i} className={`flex flex-col ${m.fromId === myDisplayId ? 'items-end' : 'items-start'}`}>
+                          <div className="flex flex-col gap-1 max-w-[80%]">
+                            <div className={`px-5 py-3 rounded-[1.5rem] text-sm font-bold shadow-md ${m.fromId === myDisplayId ? 'bg-[#06C755] text-white rounded-tr-none' : 'bg-white/10 text-gray-100 rounded-tl-none'}`}>
+                              {m.text}
+                            </div>
+                            <span className="text-[7px] text-gray-600 font-bold px-2">{m.time}</span>
+                          </div>
+                        </div>
+                    ))}
+                    {(!friendIdInput || userMessages.filter(m => m.chatId === [myDisplayId, friendIdInput].sort().join("_")).length === 0) && (
+                      <div className="text-center mt-20 opacity-30">
+                        <p className="text-[10px] font-black uppercase tracking-widest">トークルーム</p>
+                        <p className="text-[9px] mt-2">友達を選択してください</p>
                       </div>
-                    </div>
-                  ))}
+                    )}
+                  </div>
                 </div>
               )}
             </div>
