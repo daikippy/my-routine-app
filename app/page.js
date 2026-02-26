@@ -32,7 +32,7 @@ const CHARACTERS = [
 
 const RANK_LIST = [
   { name: "LEGEND", min: 100, color: "text-yellow-400", bg: "bg-yellow-400/20", desc: "完璧。神の領域。" },
-  { name: "PLATINUM", min: 80, color: "text-blue-300", bg: "bg-blue-300/20", desc: "超一流。尊敬の大衆。" },
+  { name: "PLATINUM", min: 80, color: "text-blue-300", bg: "bg-blue-300/20", desc: "超一流。尊敬の的。" },
   { name: "GOLD", min: 50, color: "text-yellow-600", bg: "bg-yellow-600/20", desc: "安定。習慣の達人。" },
   { name: "SILVER", min: 20, color: "text-gray-400", bg: "bg-gray-400/20", desc: "見習い。一歩ずつ前へ。" },
   { name: "BEGINNER", min: 0, color: "text-gray-500", bg: "bg-gray-500/10", desc: "挑戦者。ここから始まる。" }
@@ -66,7 +66,6 @@ export default function Home() {
   const [charIndex, setCharIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [friendsList, setFriendsList] = useState([]);
-  const [friendsData, setFriendsData] = useState([]);
 
   // --- Timer ---
   const [timeLeft, setTimeLeft] = useState(1500);
@@ -124,12 +123,6 @@ export default function Home() {
     return () => unsubscribe();
   }, [today]);
 
-  useEffect(() => {
-    if (!user || friendsList.length === 0) return;
-    const q = query(collection(db, "users"), where("shortId", "in", friendsList));
-    return onSnapshot(q, (s) => setFriendsData(s.docs.map(d => d.data())));
-  }, [friendsList, user]);
-
   const saveProgress = async () => {
     if (!user) return;
     const newHistory = [...history.filter(h => h.date !== today), { date: today, percent }];
@@ -146,7 +139,6 @@ export default function Home() {
 
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-black animate-pulse">LOADING...</div>;
 
-  // --- Login Screen (Corrected for Center Alignment on Mobile) ---
   if (!user) return (
     <div className={`min-h-screen w-full flex flex-col items-center justify-center px-6 text-center transition-all duration-700 ${currentTheme.bg}`}>
        <div className="w-full max-w-sm flex flex-col items-center">
@@ -181,24 +173,29 @@ export default function Home() {
           <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90 transition-all">⚙️</button>
         </header>
 
-        {/* --- Main Hero Section --- */}
-        <div className="bg-white/5 p-8 rounded-[3.5rem] border border-white/10 mb-6 flex flex-col items-center relative overflow-hidden shadow-2xl">
-          <div className="absolute top-6 right-8 text-right bg-black/40 p-3 rounded-2xl backdrop-blur-md border border-white/5 z-10">
-              <div className="flex gap-1.5 mb-2">
+        {/* --- Main Hero Section (Layout Adjusted) --- */}
+        <div className="bg-white/5 p-6 sm:p-8 rounded-[3.5rem] border border-white/10 mb-6 flex flex-col items-center relative overflow-hidden shadow-2xl">
+          
+          {/* Timer Section (Now centered at the top of the box) */}
+          <div className="w-full flex flex-col items-center mb-6 bg-black/20 p-4 rounded-[2.5rem] border border-white/5">
+              <div className="flex gap-2 mb-3">
                 {[5, 15, 25, 45].map(m => (
-                  <button key={m} onClick={() => setTimerMinutes(m)} className="text-[8px] font-black border border-white/10 px-2 py-1 rounded-lg hover:bg-white hover:text-black transition-all">
+                  <button key={m} onClick={() => setTimerMinutes(m)} className="text-[10px] font-black border border-white/10 px-3 py-1 rounded-full hover:bg-white hover:text-black transition-all">
                     {m === 5 ? "5m⚡" : `${m}m`}
                   </button>
                 ))}
               </div>
-              <p className="text-3xl font-mono font-black tabular-nums tracking-tighter">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
-              <button onClick={() => setIsTimerActive(!isTimerActive)} className={`mt-2 w-full py-1 text-[10px] font-black rounded-full uppercase transition-all ${isTimerActive ? "bg-red-500 text-white shadow-lg shadow-red-500/30" : "bg-white text-black"}`}>
-                {isTimerActive ? "STOP" : "START"}
-              </button>
+              <div className="flex items-center gap-4">
+                <p className="text-4xl font-mono font-black tabular-nums tracking-tighter">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
+                <button onClick={() => setIsTimerActive(!isTimerActive)} className={`px-6 py-2 text-[10px] font-black rounded-full uppercase transition-all ${isTimerActive ? "bg-red-500 text-white shadow-lg shadow-red-500/30" : "bg-white text-black"}`}>
+                  {isTimerActive ? "STOP" : "START"}
+                </button>
+              </div>
           </div>
 
-          <div className="mt-8">
-            <div className="bg-white text-black text-[11px] font-black p-3 rounded-2xl mb-8 animate-float-rich relative shadow-xl">
+          {/* Character & Message Section */}
+          <div className="flex flex-col items-center">
+            <div className="bg-white text-black text-[11px] font-black p-3 rounded-2xl mb-6 animate-float-rich relative shadow-xl">
                 {percent === 100 ? "完璧すぎるよ！" : (percent > 80 ? "あとちょっとだね！" : "一緒にやろう！")}{currentChar.suffix}
                 <div className="absolute left-1/2 -bottom-2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-t-white border-l-transparent border-r-transparent -translate-x-1/2"></div>
             </div>
@@ -225,7 +222,7 @@ export default function Home() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="displayDate" hide={false} axisLine={false} tickLine={false} tick={{fontSize: 8, fill: '#666', fontWeight: 'bold'}} />
+                <XAxis dataKey="displayDate" axisLine={false} tickLine={false} tick={{fontSize: 8, fill: '#666', fontWeight: 'bold'}} />
                 <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }} />
               </LineChart>
             </ResponsiveContainer>
