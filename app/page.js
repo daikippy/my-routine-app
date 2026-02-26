@@ -76,8 +76,10 @@ export default function Home() {
   const [friendsData, setFriendsData] = useState([]);
   const [userMessages, setUserMessages] = useState([]);
 
+  // タイマー用ステート変更
   const [timeLeft, setTimeLeft] = useState(300); 
   const [isTimerActive, setIsTimerActive] = useState(false);
+  const endTimeRef = useRef(null);
   const timerRef = useRef(null);
 
   const totalTasks = tasks.morning.length + tasks.afternoon.length + tasks.night.length;
@@ -186,19 +188,34 @@ export default function Home() {
     return () => unsub();
   }, [friendsList, user]);
 
-  // タイマーとアラーム音
+  // タイマー修正：画面オフ対策とアラーム順序
   useEffect(() => {
-    if (isTimerActive && timeLeft > 0) {
-      timerRef.current = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
-    } else if (timeLeft === 0) {
-      setIsTimerActive(false);
-      if (alarmSound) {
-        alarmSound.play().catch(e => console.log("Audio play failed:", e));
-      }
-      alert("時間です！");
+    if (isTimerActive) {
+      endTimeRef.current = Date.now() + timeLeft * 1000;
+      timerRef.current = setInterval(() => {
+        const remaining = Math.round((endTimeRef.current - Date.now()) / 1000);
+        if (remaining <= 0) {
+          setIsTimerActive(false);
+          setTimeLeft(0);
+          clearInterval(timerRef.current);
+          
+          // 音を先に鳴らしてからアラート
+          if (alarmSound) {
+            alarmSound.play().catch(e => console.log("Audio play failed:", e));
+          }
+          if (typeof navigator !== "undefined" && navigator.vibrate) {
+            navigator.vibrate([500, 200, 500]);
+          }
+          setTimeout(() => alert("時間です！"), 100); 
+        } else {
+          setTimeLeft(remaining);
+        }
+      }, 1000);
+    } else {
+      clearInterval(timerRef.current);
     }
     return () => clearInterval(timerRef.current);
-  }, [isTimerActive, timeLeft]);
+  }, [isTimerActive]);
 
   useEffect(() => {
     if (selectedChatFriend && user) {
@@ -565,7 +582,11 @@ export default function Home() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsMenuOpen(false)}></div>
           <div className="relative w-full max-w-lg bg-[#0a0a0a] rounded-[3rem] border border-white/10 p-8 shadow-2xl max-h-[80vh] overflow-y-auto scrollbar-hide">
-            <h2 className="text-xl font-black mb-6 italic tracking-tighter">SETTINGS</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-black italic tracking-tighter">SETTINGS</h2>
+              <button onClick={() => setIsMenuOpen(false)} className="w-10 h-10 flex items-center justify-center bg-white/5 rounded-full border border-white/10 hover:bg-white/10 transition-all">✕</button>
+            </div>
+
             <section className="mb-8">
               <p className="text-[10px] font-black text-gray-500 mb-4 uppercase tracking-widest">マイID (友達追加用)</p>
               <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex justify-between items-center">
@@ -573,16 +594,20 @@ export default function Home() {
                 <button onClick={() => { navigator.clipboard.writeText(myDisplayId); alert("コピーしました！"); }} className="text-[10px] bg-white text-black px-4 py-2 rounded-lg font-black">コピー</button>
               </div>
             </section>
+            
             <section className="mb-8">
               <p className="text-[10px] font-black text-gray-500 mb-4 uppercase tracking-widest">テーマ選択</p>
               <div className="grid grid-cols-3 gap-2">
                 {THEMES.map((t, i) => (
-                  <button key={i} onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }} className={`p-3 rounded-xl border text-[10px] font-black transition-all ${themeIndex === i ? 'border-white bg-white text-black' : 'border-white/10 bg-white/5 text-gray-400'}`}>
-                    {t.name}
+                  <button key={i} onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }} 
+                    className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${themeIndex === i ? 'border-white bg-white/10' : 'border-white/10 bg-white/5 opacity-60'}`}>
+                    <div className="w-full h-2 rounded-full bg-gradient-to-r" style={{ background: `linear-gradient(to right, ${t.color}, #666)` }}></div>
+                    <span className="text-[9px] font-black">{t.name}</span>
                   </button>
                 ))}
               </div>
             </section>
+            
             <section className="mb-8">
               <p className="text-[10px] font-black text-gray-500 mb-4 uppercase tracking-widest">パートナー選択</p>
               <div className="grid grid-cols-3 gap-2">
