@@ -1,15 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import { initializeApp } from "firebase/app";
-import { 
-  getFirestore, doc, setDoc, getDocs, collection, onSnapshot, 
-  query, where, updateDoc, arrayUnion 
-} from "firebase/firestore";
-import { 
-  getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup 
-} from "firebase/auth";
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, where, updateDoc, arrayUnion, writeBatch } from "firebase/firestore";
+import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 // --- Firebase Config ---
 const firebaseConfig = {
@@ -27,20 +22,20 @@ const db = getFirestore(app);
 
 // --- Constants ---
 const CHARACTERS = [
-  { id: "blob", name: "ぷるぷる", color: "bg-blue-500", suffix: "だね！" },
-  { id: "fluff", name: "もふもふ", color: "bg-orange-400", suffix: "ですよぉ" },
-  { id: "spark", name: "ぴかぴか", color: "bg-yellow-400", suffix: "だよっ☆" },
-  { id: "fire", name: "メラメラ", color: "bg-red-500", suffix: "だぜッ！" },
-  { id: "cool", name: "しっとり", color: "bg-indigo-600", suffix: "ですね。" },
-  { id: "ghost", name: "ふわふわ", color: "bg-purple-400", suffix: "なの…？" }
+  { id: "blob", name: "ぷるぷる", color: "bg-blue-500", suffix: "だね！", accent: "from-blue-400 to-blue-600" },
+  { id: "fluff", name: "もふもふ", color: "bg-orange-400", suffix: "ですよぉ", accent: "from-orange-300 to-orange-500" },
+  { id: "spark", name: "ぴかぴか", color: "bg-yellow-400", suffix: "だよっ☆", accent: "from-yellow-300 to-yellow-500" },
+  { id: "fire", name: "メラメラ", color: "bg-red-500", suffix: "だぜッ！", accent: "from-red-400 to-red-600" },
+  { id: "cool", name: "しっとり", color: "bg-indigo-600", suffix: "ですね。", accent: "from-indigo-500 to-indigo-700" },
+  { id: "ghost", name: "ふわふわ", color: "bg-purple-400", suffix: "なの…？", accent: "from-purple-300 to-purple-500" }
 ];
 
 const RANK_LIST = [
-  { name: "LEGEND", min: 100, color: "text-yellow-400", bg: "bg-yellow-400/20" },
-  { name: "PLATINUM", min: 80, color: "text-blue-300", bg: "bg-blue-300/20" },
-  { name: "GOLD", min: 50, color: "text-yellow-600", bg: "bg-yellow-600/20" },
-  { name: "SILVER", min: 20, color: "text-gray-400", bg: "bg-gray-400/20" },
-  { name: "BEGINNER", min: 0, color: "text-gray-500", bg: "bg-gray-500/10" }
+  { name: "LEGEND", min: 100, color: "text-yellow-400", bg: "bg-yellow-400/20", desc: "完璧. 神の領域." },
+  { name: "PLATINUM", min: 80, color: "text-blue-300", bg: "bg-blue-300/20", desc: "超一流. 尊敬の的." },
+  { name: "GOLD", min: 50, color: "text-yellow-600", bg: "bg-yellow-600/20", desc: "安定. 習慣の達人." },
+  { name: "SILVER", min: 20, color: "text-gray-400", bg: "bg-gray-400/20", desc: "見習い. 一歩ずつ前へ." },
+  { name: "BEGINNER", min: 0, color: "text-gray-500", bg: "bg-gray-500/10", desc: "挑戦者. ここから始まる." }
 ];
 
 const THEMES = [
@@ -92,7 +87,6 @@ export default function Home() {
 
   const chartData = useMemo(() => history.slice(-7).map(h => ({ ...h, displayDate: h.date.split('-').slice(1).join('/') })), [history]);
 
-  // --- カレンダー計算 ---
   const calendarDays = useMemo(() => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -107,7 +101,6 @@ export default function Home() {
     return days;
   }, [history]);
 
-  // --- 既読処理 ---
   useEffect(() => {
     if (activeTab === "social" && socialSubTab === "msgs" && user) {
       const hasUnread = userMessages.some(m => !m.read);
@@ -118,65 +111,8 @@ export default function Home() {
     }
   }, [activeTab, socialSubTab, userMessages, user]);
 
-  // --- Firebase Data Fetching ---
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      if (u) {
-        const docRef = doc(db, "users", u.uid);
-        const unsubDoc = onSnapshot(docRef, (snap) => {
-          if (snap.exists()) {
-            const d = snap.data();
-            setTasks(d.tasks || { morning: [], afternoon: [], night: [] });
-            setHistory(d.history || []);
-            setFriendsList(d.friends || []);
-            setThemeIndex(d.themeIndex || 0);
-            setCharIndex(d.charIndex || 0);
-            setUserMessages(d.messageHistory || []);
-            if (d.lastCheckDate === today) setChecks(d.checks || {});
-            
-            if (d.message) {
-              setIncomingMsg(d.message);
-              setTimeout(() => updateDoc(docRef, { message: null }), 5000);
-            }
-          }
-        });
-        return () => unsubDoc();
-      }
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [today]);
-
-  // --- Friends Listener ---
-  useEffect(() => {
-    if (!user || friendsList.length === 0) { setFriendsData([]); return; }
-    const q = query(collection(db, "users"), where("shortId", "in", friendsList));
-    const unsub = onSnapshot(q, (s) => setFriendsData(s.docs.map(d => d.data())));
-    return () => unsub();
-  }, [friendsList, user]);
-
-  // --- Optimized Timer Logic ---
-  useEffect(() => {
-    if (isTimerActive && timeLeft > 0) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
-    } else {
-      clearInterval(timerRef.current);
-      if (timeLeft === 0 && isTimerActive) {
-        setIsTimerActive(false);
-        alert("時間ですよ！");
-      }
-    }
-    return () => clearInterval(timerRef.current);
-  }, [isTimerActive, timeLeft]);
-
-  // --- Data Save Logic ---
   const saveToFirebase = async (updatedData = {}) => {
     if (!user) return;
-    
-    // 現在の状態か、引数で渡された最新の状態を使用
     const currentTasks = updatedData.tasks || tasks;
     const currentChecks = updatedData.checks || checks;
     const currentHistory = updatedData.history || history;
@@ -188,7 +124,6 @@ export default function Home() {
     const total = currentTasks.morning.length + currentTasks.afternoon.length + currentTasks.night.length;
     const newPercent = total === 0 ? 0 : Math.round((comp / total) * 100);
     const newRank = RANK_LIST.find(r => newPercent >= r.min)?.name || "BEGINNER";
-    
     const nextHistory = [...currentHistory.filter(h => h.date !== today), { date: today, percent: newPercent }];
 
     const sectionStats = {
@@ -205,7 +140,50 @@ export default function Home() {
     }, { merge: true });
   };
 
-  // --- Handlers ---
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      if (u) {
+        const docRef = doc(db, "users", u.uid);
+        onSnapshot(docRef, (snap) => {
+          if (snap.exists()) {
+            const d = snap.data();
+            setTasks(d.tasks || { morning: [], afternoon: [], night: [] });
+            setHistory(d.history || []);
+            setFriendsList(d.friends || []);
+            setThemeIndex(d.themeIndex || 0);
+            setCharIndex(d.charIndex || 0);
+            setUserMessages(d.messageHistory || []);
+            if (d.lastCheckDate === today) setChecks(d.checks || {});
+            if (d.message) {
+              setIncomingMsg(d.message);
+              setTimeout(() => updateDoc(docRef, { message: null }), 5000);
+            }
+          }
+        });
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, [today]);
+
+  useEffect(() => {
+    if (!user || friendsList.length === 0) { setFriendsData([]); return; }
+    const q = query(collection(db, "users"), where("shortId", "in", friendsList));
+    const unsub = onSnapshot(q, (s) => setFriendsData(s.docs.map(d => d.data())));
+    return () => unsub();
+  }, [friendsList, user]);
+
+  useEffect(() => {
+    if (isTimerActive && timeLeft > 0) {
+      timerRef.current = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    } else if (timeLeft === 0) {
+      setIsTimerActive(false);
+      alert("時間ですよ！");
+    }
+    return () => clearInterval(timerRef.current);
+  }, [isTimerActive, timeLeft]);
+
   const toggleCheck = (id) => {
     const nextChecks = { ...checks, [id]: !checks[id] };
     setChecks(nextChecks);
@@ -231,27 +209,19 @@ export default function Home() {
   const addFriend = async () => {
     if (!friendIdInput || friendIdInput === myDisplayId) return;
     if (friendsList.includes(friendIdInput)) { alert("すでに追加されています"); return; }
-    
     const q = query(collection(db, "users"), where("shortId", "==", friendIdInput));
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      alert("ユーザーが見つかりません");
-      return;
-    }
-
-    const targetUserDoc = querySnapshot.docs[0];
-    const targetUid = targetUserDoc.id;
-
-    const nextList = [...friendsList, friendIdInput];
-    setFriendsList(nextList);
-    
-    // 相互登録
-    await updateDoc(doc(db, "users", user.uid), { friends: arrayUnion(friendIdInput) });
-    await updateDoc(doc(db, "users", targetUid), { friends: arrayUnion(myDisplayId) });
-
-    setFriendIdInput("");
-    alert("フレンドを相互登録しました！");
+    onSnapshot(q, async (s) => {
+      if (s.empty) { alert("ユーザーが見つかりません"); } else {
+        const targetUserDoc = s.docs[0];
+        const targetUid = targetUserDoc.id;
+        const nextList = [...friendsList, friendIdInput];
+        setFriendsList(nextList);
+        saveToFirebase({ friendsList: nextList });
+        await updateDoc(doc(db, "users", targetUid), { friends: arrayUnion(myDisplayId) });
+        setFriendIdInput("");
+        alert("フレンドを相互登録しました！");
+      }
+    }, {onlyOnce: true});
   };
 
   const removeFriend = async (fid) => {
@@ -272,10 +242,8 @@ export default function Home() {
         date: new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }),
         read: false
       };
-      await updateDoc(doc(db, "users", targetUid), {
-        message: msgObj,
-        messageHistory: arrayUnion(msgObj)
-      });
+      const targetRef = doc(db, "users", targetUid);
+      await updateDoc(targetRef, { message: msgObj, messageHistory: arrayUnion(msgObj) });
       alert("送信しました！");
     }
   };
@@ -327,7 +295,7 @@ export default function Home() {
       </aside>
 
       {/* --- Main --- */}
-      <main className="flex-1 overflow-y-auto h-screen scrollbar-hide p-4 relative">
+      <main className="flex-1 overflow-y-auto min-h-screen scrollbar-hide p-4 relative transition-all">
         {incomingMsg && (
           <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm bg-white text-black p-4 rounded-3xl shadow-2xl animate-slideIn flex items-center gap-4">
             <div className="text-2xl">📩</div>
@@ -338,7 +306,7 @@ export default function Home() {
           </div>
         )}
 
-        <div className="max-w-xl mx-auto pb-24">
+        <div className="max-w-4xl mx-auto pb-24">
           <header className="flex justify-between items-center py-4 mb-4">
             <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90">☰</button>
             <h1 className={`text-xl font-black italic bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.accent}`}>ROUTINE MASTER</h1>
@@ -352,69 +320,75 @@ export default function Home() {
 
           {activeTab === "main" ? (
             <>
-              {/* Hero & Timer */}
-              <div className="bg-white/5 p-6 sm:p-8 rounded-[3.5rem] border border-white/10 mb-6 flex flex-col items-center relative shadow-2xl">
-                <div className="w-full flex flex-col items-center mb-8 bg-black/20 p-4 rounded-[2.5rem] border border-white/5">
-                    <div className="flex gap-2 mb-3">
-                      {[5, 15, 25, 45].map(m => <button key={m} onClick={() => { setIsTimerActive(false); setTimeLeft(m*60); }} className="text-[10px] font-black border border-white/10 px-3 py-1 rounded-full hover:bg-white hover:text-black transition-all">{m}m</button>)}
+              {/* Hero & Status Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* Character Card */}
+                <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex flex-col items-center justify-center relative shadow-2xl min-h-[280px]">
+                  <div className="relative mb-6">
+                    <div className={`w-28 h-28 rounded-full ${currentChar.color} shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col items-center justify-center animate-bounce-rich relative overflow-hidden`}>
+                        <div className="flex gap-6 mb-2 animate-blink">
+                          <div className="w-3 h-3 bg-white rounded-full flex items-center justify-center"><div className="w-1.5 h-1.5 bg-black rounded-full"></div></div>
+                          <div className="w-3 h-3 bg-white rounded-full flex items-center justify-center"><div className="w-1.5 h-1.5 bg-black rounded-full"></div></div>
+                        </div>
+                        <div className={`w-4 h-1.5 bg-black/20 rounded-full animate-mouth ${percent > 50 ? 'h-3 rounded-b-full bg-white/30' : ''}`}></div>
                     </div>
-                    <div className="flex items-center gap-4">
+                  </div>
+                  <p className="text-[11px] font-black bg-white text-black px-5 py-2.5 rounded-2xl shadow-xl">{percent}%達成{currentChar.suffix}</p>
+                </div>
+
+                {/* Timer & Mini Stats */}
+                <div className="space-y-4">
+                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex flex-col items-center justify-center shadow-lg">
+                    <div className="flex gap-2 mb-4">
+                      {[5, 15, 25, 45].map(m => <button key={m} onClick={() => { setIsTimerActive(false); setTimeLeft(m*60); }} className="text-[9px] font-black border border-white/10 px-3 py-1.5 rounded-full hover:bg-white hover:text-black transition-all">{m}m</button>)}
+                    </div>
+                    <div className="flex items-center gap-6">
                       <p className="text-4xl font-mono font-black tabular-nums">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
                       <button onClick={() => setIsTimerActive(!isTimerActive)} className={`px-6 py-2 text-[10px] font-black rounded-full transition-all ${isTimerActive ? "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]" : "bg-white text-black"}`}>{isTimerActive ? "STOP" : "START"}</button>
                     </div>
-                </div>
-                <div className="relative mb-6">
-                  <div className={`w-32 h-32 rounded-full ${currentChar.color} shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col items-center justify-center animate-bounce-rich relative overflow-hidden`}>
-                      <div className="flex gap-7 mb-2 animate-blink">
-                        <div className="w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center"><div className="w-1.5 h-1.5 bg-black rounded-full"></div></div>
-                        <div className="w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center"><div className="w-1.5 h-1.5 bg-black rounded-full"></div></div>
-                      </div>
-                      <div className={`w-4 h-2 bg-black/20 rounded-full animate-mouth ${percent > 50 ? 'h-3 rounded-b-full bg-white/30' : ''}`}></div>
                   </div>
-                </div>
-                <p className="mt-4 text-[11px] font-black bg-white text-black px-5 py-2.5 rounded-2xl shadow-xl">{percent}%達成{currentChar.suffix}</p>
-              </div>
-
-              {/* Stats & Graph */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-white/5 p-5 rounded-[2.5rem] border border-white/10 text-center flex flex-col justify-center items-center shadow-lg">
-                  <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${currentRank.bg} ${currentRank.color} mb-2`}>{currentRank.name}</span>
-                  <div className="text-4xl font-black mt-1 tracking-tighter">{percent}%</div>
-                </div>
-                <div className="bg-white/5 p-3 rounded-[2.5rem] border border-white/10 h-32 overflow-hidden shadow-lg">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
-                      <XAxis dataKey="displayDate" stroke="#444" fontSize={8} fontWeight="bold" tickLine={false} axisLine={false} />
-                      <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/5 p-4 rounded-[2rem] border border-white/10 text-center flex flex-col justify-center items-center shadow-md">
+                      <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${currentRank.bg} ${currentRank.color} mb-1`}>{currentRank.name}</span>
+                      <div className="text-2xl font-black tracking-tighter">{percent}%</div>
+                    </div>
+                    <div className="bg-white/5 p-2 rounded-[2rem] border border-white/10 h-24 overflow-hidden shadow-md">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData}>
+                          <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Tasks List */}
-              {["morning", "afternoon", "night"].map(time => (
-                <div key={time} className="bg-white/5 p-6 rounded-[2.5rem] mb-6 border border-white/10 shadow-xl group">
-                  <h2 className="text-[10px] font-black text-gray-500 uppercase mb-5 tracking-[0.3em] text-center opacity-40">{time}</h2>
-                  <div className="space-y-4">
-                    {tasks[time].map((task, index) => (
-                      <div key={index} className="flex items-center group/item transition-all">
-                        <button onClick={() => toggleCheck(time + task)} className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none shadow-lg shadow-emerald-500/30" : "bg-black/20"}`}>
-                          {checks[time + task] && <span className="text-[10px] font-black">✓</span>}
-                        </button>
-                        <span className={`flex-1 text-sm font-bold ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>
-                          {task.startsWith('!') ? <span className="text-orange-400 font-black">🌟 {task.substring(1)}</span> : task}
-                        </span>
-                        <button onClick={() => removeTask(time, index)} className="opacity-0 group-hover/item:opacity-100 text-red-500 p-2">✕</button>
-                      </div>
-                    ))}
+              {/* Tasks Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {["morning", "afternoon", "night"].map(time => (
+                  <div key={time} className="bg-white/5 p-6 rounded-[2rem] border border-white/10 shadow-xl group flex flex-col">
+                    <h2 className="text-[9px] font-black text-gray-500 uppercase mb-5 tracking-[0.3em] text-center opacity-40">{time}</h2>
+                    <div className="space-y-4 flex-1">
+                      {tasks[time].map((task, index) => (
+                        <div key={index} className="flex items-center group/item transition-all">
+                          <button onClick={() => toggleCheck(time + task)} className={`w-5 h-5 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none shadow-lg shadow-emerald-500/30" : "bg-black/20"}`}>
+                            {checks[time + task] && <span className="text-[9px] font-black">✓</span>}
+                          </button>
+                          <span className={`flex-1 text-xs font-bold ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>
+                            {task.startsWith('!') ? <span className="text-orange-400 font-black">🌟 {task.substring(1)}</span> : task}
+                          </span>
+                          <button onClick={() => removeTask(time, index)} className="opacity-0 group-hover/item:opacity-100 text-red-500 p-1">✕</button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex mt-6 gap-2">
+                      <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }} className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300 shadow-lg" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
+                      <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })} className="flex-1 bg-black/40 text-[10px] p-2 rounded-xl border border-white/5 outline-none" placeholder="Task..." />
+                      <button onClick={() => addTask(time)} className="bg-white text-black px-3 rounded-xl font-black text-[9px] active:scale-95 transition-all">ADD</button>
+                    </div>
                   </div>
-                  <div className="flex mt-6 gap-2">
-                    <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }} className={`w-11 h-11 rounded-xl flex items-center justify-center border-2 transition-all ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300 shadow-lg" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
-                    <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })} className="flex-1 bg-black/40 text-xs p-3 rounded-xl border border-white/5 outline-none" placeholder="新しいタスク..." />
-                    <button onClick={() => addTask(time)} className="bg-white text-black px-5 rounded-xl font-black text-[10px] active:scale-95 transition-all">ADD</button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </>
           ) : (
             <div className="space-y-6">
@@ -425,31 +399,32 @@ export default function Home() {
                   {userMessages.some(m => !m.read) && <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span>}
                 </button>
               </div>
-
               {socialSubTab === "list" ? (
-                friendsData.length === 0 ? <p className="text-center text-gray-500 py-20 font-bold">友達をIDで追加しよう！</p> : friendsData.map((f, i) => (
-                  <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 shadow-xl relative group">
-                    <button onClick={() => removeFriend(f.shortId)} className="absolute top-6 right-6 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">✕</button>
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className={`w-14 h-14 rounded-full ${CHARACTERS[f.charIndex || 0].color} flex items-center justify-center animate-bounce-rich shadow-lg`}><div className="flex gap-1.5"><div className="w-1.5 h-1.5 bg-white rounded-full"></div><div className="w-1.5 h-1.5 bg-white rounded-full"></div></div></div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-black">{f.displayName}</h3>
-                          <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${RANK_LIST.find(r=>r.name===f.rank)?.bg} ${RANK_LIST.find(r=>r.name===f.rank)?.color}`}>{f.rank}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {friendsData.length === 0 ? <p className="text-center text-gray-500 py-20 font-bold col-span-full">友達をIDで追加しよう！</p> : friendsData.map((f, i) => (
+                    <div key={i} className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 shadow-xl relative group">
+                      <button onClick={() => removeFriend(f.shortId)} className="absolute top-4 right-4 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">✕</button>
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className={`w-12 h-12 rounded-full ${CHARACTERS[f.charIndex || 0].color} flex items-center justify-center animate-bounce-rich shadow-lg`}><div className="flex gap-1"><div className="w-1 h-1 bg-white rounded-full"></div><div className="w-1 h-1 bg-white rounded-full"></div></div></div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-xs font-black">{f.displayName}</h3>
+                            <span className={`text-[6px] font-black px-1.5 py-0.5 rounded-full ${RANK_LIST.find(r=>r.name===f.rank)?.bg} ${RANK_LIST.find(r=>r.name===f.rank)?.color}`}>{f.rank}</span>
+                          </div>
+                          <div className="text-xl font-black">{f.percent}%</div>
                         </div>
-                        <div className="text-2xl font-black">{f.percent}%</div>
+                        <button onClick={() => sendMessage(f.uid, f.displayName)} className="bg-white/10 p-2.5 rounded-xl text-lg hover:bg-white hover:text-black transition-all">✉️</button>
                       </div>
-                      <button onClick={() => sendMessage(f.uid, f.displayName)} className="bg-white/10 p-3 rounded-2xl text-xl hover:bg-white hover:text-black transition-all">✉️</button>
+                      <div className="space-y-1.5 bg-black/20 p-3 rounded-2xl">
+                        {[{ label: "AM", val: f.sectionStats?.morning || 0 }, { label: "PM", val: f.sectionStats?.afternoon || 0 }, { label: "NG", val: f.sectionStats?.night || 0 }].map((sec, si) => (
+                          <div key={si} className="flex items-center gap-3"><span className="text-[6px] font-black w-6 opacity-40">{sec.label}</span><div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-blue-400" style={{ width: `${sec.val}%` }}></div></div></div>
+                        ))}
+                      </div>
                     </div>
-                    <div className="space-y-2 bg-black/20 p-4 rounded-3xl">
-                      {[{ label: "AM", val: f.sectionStats?.morning || 0 }, { label: "PM", val: f.sectionStats?.afternoon || 0 }, { label: "NG", val: f.sectionStats?.night || 0 }].map((sec, si) => (
-                        <div key={si} className="flex items-center gap-3"><span className="text-[7px] font-black w-8 opacity-40">{sec.label}</span><div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-blue-400" style={{ width: `${sec.val}%` }}></div></div></div>
-                      ))}
-                    </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               ) : (
-                <div className="space-y-4 px-2">
+                <div className="space-y-4 px-2 max-w-lg mx-auto">
                   {(!userMessages || userMessages.length === 0) ? (
                     <p className="text-center text-gray-500 py-20 font-bold">メッセージはまだありません</p>
                   ) : (
@@ -458,10 +433,10 @@ export default function Home() {
                         <span className="text-[8px] font-black text-gray-500 mb-1 px-2 uppercase">{m.from}</span>
                         <div className="flex items-end gap-2 max-w-[85%]">
                           {m.from === user.displayName && <span className="text-[8px] text-gray-600 font-bold mb-1">{m.read ? '既読' : '未読'}</span>}
-                          <div className={`px-4 py-2.5 rounded-2xl shadow-sm text-sm font-bold ${m.from === user.displayName ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white/10 text-gray-100 rounded-tl-none border border-white/5'}`}>
+                          <div className={`px-4 py-2 rounded-xl shadow-sm text-xs font-bold ${m.from === user.displayName ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white/10 text-gray-100 rounded-tl-none border border-white/5'}`}>
                             {m.text}
                           </div>
-                          <span className="text-[8px] text-gray-600 font-bold mb-1 min-w-fit">{m.time}</span>
+                          <span className="text-[7px] text-gray-600 font-bold mb-1 min-w-fit">{m.time}</span>
                         </div>
                       </div>
                     ))
@@ -473,14 +448,14 @@ export default function Home() {
         </div>
       </main>
 
-      {/* --- Settings Modal --- */}
+      {/* --- Settings --- */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setIsMenuOpen(false)}></div>
-          <div className={`relative w-full max-w-sm p-8 rounded-[3.5rem] ${currentTheme.bg} border border-white/10 shadow-2xl max-h-[85vh] overflow-y-auto scrollbar-hide`}>
+          <div className={`relative w-full max-w-sm p-8 rounded-[3rem] ${currentTheme.bg} border border-white/10 shadow-2xl max-h-[85vh] overflow-y-auto scrollbar-hide`}>
             <div className="flex justify-between items-center mb-10"><h2 className="text-xl font-black italic text-gray-500">SETTINGS</h2><button onClick={() => setIsMenuOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center">✕</button></div>
             <div className="space-y-12">
-              <section className="bg-white/5 p-8 rounded-[2.5rem] text-center border border-white/10 shadow-inner">
+              <section className="bg-white/5 p-8 rounded-[2rem] text-center border border-white/10 shadow-inner">
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-3 tracking-widest">My ID</p>
                 <p className="text-5xl font-black tracking-tighter text-white select-all">{myDisplayId}</p>
                 <p className="text-[9px] text-gray-600 mt-3 font-bold italic">Tap to copy and share</p>
@@ -496,7 +471,7 @@ export default function Home() {
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Character</p>
                 <div className="grid grid-cols-2 gap-3">
                   {CHARACTERS.map((c, i) => (
-                    <button key={i} onClick={() => { setCharIndex(i); saveToFirebase({ charIndex: i }); }} className={`p-4 rounded-[2rem] border-2 transition-all flex flex-col items-center ${charIndex === i ? 'border-white bg-white/10 shadow-lg' : 'border-transparent opacity-30'}`}>
+                    <button key={i} onClick={() => { setCharIndex(i); saveToFirebase({ charIndex: i }); }} className={`p-4 rounded-[1.5rem] border-2 transition-all flex flex-col items-center ${charIndex === i ? 'border-white bg-white/10 shadow-lg' : 'border-transparent opacity-30'}`}>
                       <div className={`w-8 h-8 rounded-full ${c.color} mb-2 shadow-lg`}></div>
                       <p className="text-[9px] font-black">{c.name}</p>
                     </button>
