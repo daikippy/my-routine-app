@@ -291,7 +291,7 @@ export default function Home() {
          <p className="text-[10px] font-bold text-gray-500 leading-relaxed">
            ※ LINEやMessengerからお越しの方へ<br/>
            エラーが出る場合は、右上のメニューから<br/>
-           <span className="text-white font-black">「ブラウザで開く」</span>を選択してください。
+           <span className="text-white font-black">「ブラウザで開く」</span>を選択してください。（Google Chromeがいいかも）
          </p>
        </div>
     </div>
