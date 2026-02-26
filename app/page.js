@@ -85,7 +85,6 @@ export default function Home() {
   const currentChar = CHARACTERS[charIndex];
   const currentTheme = THEMES[themeIndex];
 
-  // 連続記録（ストリーク）の計算
   const streakCount = useMemo(() => {
     let count = 0;
     const sortedHistory = [...history].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -112,7 +111,6 @@ export default function Home() {
     return days;
   }, [history]);
 
-  //既読処理
   useEffect(() => {
     if (activeTab === "social" && socialSubTab === "msgs" && user) {
       const hasUnread = userMessages.some(m => !m.read && m.from !== user.displayName);
@@ -222,7 +220,6 @@ export default function Home() {
   const addFriend = async () => {
     if (!friendIdInput || friendIdInput === myDisplayId) return;
     const q = query(collection(db, "users"), where("shortId", "==", friendIdInput));
-    const querySnapshot = await getDoc(doc(db, "users", "dummy")); // Trigger
     onSnapshot(q, async (s) => {
       if (s.empty) { alert("ユーザーが見つかりません"); } else {
         const targetUserDoc = s.docs[0];
@@ -257,7 +254,6 @@ export default function Home() {
         date: new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }),
         read: false
       };
-      
       const batch = writeBatch(db);
       batch.update(doc(db, "users", targetUid), { message: msgObj, messageHistory: arrayUnion(msgObj) });
       batch.update(doc(db, "users", user.uid), { messageHistory: arrayUnion(msgObj) });
@@ -280,17 +276,15 @@ export default function Home() {
       <style jsx global>{`
         @keyframes bounce-rich { 0%, 100% { transform: translateY(0) scale(1, 1); } 50% { transform: translateY(-15px) scale(0.95, 1.05); } }
         @keyframes blink { 0%, 90%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
-        @keyframes mouth-happy { 0%, 100% { transform: scale(1.2); } 50% { transform: scale(1.5, 0.8); } }
-        @keyframes mouth-sad { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.8, 1.2); } }
+        @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(234, 179, 8, 0); } 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); } }
         @keyframes slideIn { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .animate-bounce-rich { animation: bounce-rich 2s infinite ease-in-out; }
         .animate-blink { animation: blink 4s infinite; }
-        .animate-slideIn { animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        .animate-gold { animation: pulse-gold 2s infinite; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
 
       {/* --- Sidebar --- */}
-      <div className={`fixed inset-0 z-40 transition-opacity duration-500 ${isSidebarOpen ? "bg-black/60 backdrop-blur-sm opacity-100" : "bg-transparent opacity-0 pointer-events-none"}`} onClick={() => setIsSidebarOpen(false)}></div>
       <aside className={`fixed left-0 top-0 h-full w-80 z-50 transition-transform duration-500 bg-black/40 backdrop-blur-2xl border-r border-white/10 p-6 flex flex-col ${isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}>
         <div className="flex justify-between items-center mb-10"><p className="text-[10px] font-black tracking-[0.4em] text-gray-500 uppercase">Archive</p><button onClick={() => setIsSidebarOpen(false)} className="text-xl">✕</button></div>
         <section className="bg-white/5 p-4 rounded-[2rem] border border-white/10 mb-8 text-center">
@@ -314,153 +308,149 @@ export default function Home() {
 
       {/* --- Main --- */}
       <main className="flex-1 overflow-y-auto min-h-screen scrollbar-hide p-4 relative">
-        {incomingMsg && (
-          <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm bg-white text-black p-4 rounded-3xl shadow-2xl animate-slideIn flex items-center gap-4">
-            <div className="text-2xl">📩</div>
-            <div className="overflow-hidden">
-              <p className="text-[10px] font-black opacity-50">{incomingMsg.from}からのメッセージ</p>
-              <p className="text-sm font-bold truncate">{incomingMsg.text}</p>
-            </div>
-          </div>
-        )}
-
-        <div className="max-w-4xl mx-auto pb-24">
+        <div className="max-w-4xl mx-auto pb-32">
           <header className="flex justify-between items-center py-4 mb-4">
             <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90">☰</button>
             <h1 className={`text-xl font-black italic bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.accent}`}>ROUTINE MASTER</h1>
             <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90">⚙️</button>
           </header>
 
-          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 mb-6 mx-auto w-fit">
+          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 mb-8 mx-auto w-fit">
             <button onClick={() => setActiveTab("main")} className={`px-8 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === "main" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>MAIN</button>
             <button onClick={() => setActiveTab("social")} className={`px-8 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === "social" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>SOCIAL</button>
           </div>
 
           {activeTab === "main" ? (
-            <>
-              {/* Hero Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="bg-white/5 p-8 rounded-[3rem] border border-white/10 flex flex-col items-center justify-center relative shadow-2xl min-h-[320px]">
-                  <div className="relative mb-6">
-                    {/* 表情豊かなキャラ */}
-                    <div className={`w-32 h-32 rounded-full ${currentChar.color} shadow-2xl flex flex-col items-center justify-center animate-bounce-rich relative overflow-hidden transition-all duration-500`}>
-                        {/* 目 */}
-                        <div className="flex gap-8 mb-3 animate-blink">
-                          {percent >= 80 ? (
-                            <><div className="text-2xl">⭐</div><div className="text-2xl">⭐</div></>
-                          ) : percent <= 20 ? (
-                            <><div className="w-4 h-1 bg-black/40 rounded-full rotate-12"></div><div className="w-4 h-1 bg-black/40 rounded-full -rotate-12"></div></>
-                          ) : (
-                            <><div className="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div><div className="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div></>
-                          )}
-                        </div>
-                        {/* 口 */}
-                        <div className={`transition-all duration-500 ${percent >= 50 ? 'w-8 h-4 bg-white/30 rounded-b-full scale-125' : 'w-6 h-1 bg-black/20 rounded-full'}`} 
-                             style={{ animation: percent >= 50 ? 'mouth-happy 2s infinite' : 'mouth-sad 3s infinite' }}></div>
-                        {/* ほっぺ */}
-                        {percent >= 90 && <div className="absolute inset-x-0 bottom-8 flex justify-between px-4 opacity-40"><div className="w-4 h-2 bg-pink-300 rounded-full blur-sm"></div><div className="w-4 h-2 bg-pink-300 rounded-full blur-sm"></div></div>}
+            <div className="space-y-8">
+              {/* Top Hero Layout */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+                {/* Character Card */}
+                <div className="bg-white/5 p-8 rounded-[3.5rem] border border-white/10 flex flex-col items-center justify-center relative shadow-2xl overflow-hidden min-h-[350px]">
+                  <div className={`w-36 h-36 rounded-full ${currentChar.color} shadow-2xl flex flex-col items-center justify-center animate-bounce-rich relative overflow-hidden transition-all duration-700 ${percent === 100 ? 'animate-gold' : ''}`}>
+                    {/* 表情ロジック */}
+                    <div className="flex gap-8 mb-4 animate-blink">
+                      {percent === 100 ? ( <><span className="text-3xl">🔥</span><span className="text-3xl">🔥</span></> ) :
+                       percent >= 80 ? ( <><span className="text-2xl">✨</span><span className="text-2xl">✨</span></> ) :
+                       percent <= 20 ? ( <><div className="w-5 h-1.5 bg-black/40 rounded-full rotate-12"></div><div className="w-5 h-1.5 bg-black/40 rounded-full -rotate-12"></div></> ) :
+                       ( <><div className="w-5 h-5 bg-white rounded-full flex items-center justify-center"><div className="w-2.5 h-2.5 bg-black rounded-full"></div></div><div className="w-5 h-5 bg-white rounded-full flex items-center justify-center"><div className="w-2.5 h-2.5 bg-black rounded-full"></div></div></> )}
                     </div>
+                    <div className={`transition-all duration-500 ${percent >= 50 ? 'w-10 h-6 bg-white/30 rounded-b-full' : 'w-8 h-1 bg-black/20 rounded-full'}`}></div>
+                    {percent >= 70 && <div className="absolute inset-x-0 bottom-10 flex justify-between px-6 opacity-40"><div className="w-5 h-2 bg-pink-300 rounded-full blur-sm"></div><div className="w-5 h-2 bg-pink-300 rounded-full blur-sm"></div></div>}
                   </div>
-                  <div className="text-center">
-                    <p className="text-[12px] font-black bg-white text-black px-6 py-2 rounded-2xl shadow-xl inline-block">{percent}%達成{currentChar.suffix}</p>
-                    <p className="mt-2 text-[10px] font-bold text-gray-500 italic">🔥 {streakCount}日連続 80%超え！</p>
+                  <div className="mt-8 text-center space-y-2">
+                    <p className="text-[13px] font-black bg-white text-black px-8 py-3 rounded-2xl shadow-2xl inline-block transition-transform hover:scale-110">{percent}%達成{currentChar.suffix}</p>
+                    <p className="text-[10px] font-bold text-gray-400 italic block">STREAK: {streakCount} DAYS 🔥</p>
                   </div>
                 </div>
 
-                {/* Stats Section */}
-                <div className="space-y-4">
-                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex flex-col items-center justify-center shadow-lg">
-                    <div className="flex gap-2 mb-4">
-                      {[5, 15, 25, 45].map(m => <button key={m} onClick={() => { setIsTimerActive(false); setTimeLeft(m*60); }} className="text-[9px] font-black border border-white/10 px-3 py-1.5 rounded-full hover:bg-white hover:text-black transition-all">{m}m</button>)}
+                {/* Stats & Rank Legend Card */}
+                <div className="flex flex-col gap-4">
+                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex-1 flex flex-col justify-between">
+                    <div className="flex justify-between items-start mb-4">
+                       <div>
+                         <span className={`text-[8px] font-black px-3 py-1 rounded-full ${currentRank.bg} ${currentRank.color}`}>{currentRank.name}</span>
+                         <h2 className="text-3xl font-black mt-1">{percent}%</h2>
+                       </div>
+                       <div className="text-right">
+                         <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Rank Legend</p>
+                         <div className="mt-1 space-y-0.5">
+                            {RANK_LIST.map(r => (
+                              <div key={r.name} className={`flex items-center gap-2 text-[7px] font-bold ${percent >= r.min ? 'opacity-100' : 'opacity-20'}`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${r.color.replace('text','bg')}`}></div>
+                                <span>{r.name} ({r.min}+)</span>
+                                <span className="text-gray-600 hidden lg:inline">- {r.desc}</span>
+                              </div>
+                            ))}
+                         </div>
+                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <p className="text-4xl font-mono font-black tabular-nums tracking-tighter">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
-                      <button onClick={() => setIsTimerActive(!isTimerActive)} className={`px-6 py-2 text-[10px] font-black rounded-full transition-all ${isTimerActive ? "bg-red-500" : "bg-white text-black"}`}>{isTimerActive ? "STOP" : "START"}</button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 h-full">
-                    <div className="bg-white/5 p-4 rounded-[2rem] border border-white/10 flex flex-col justify-center items-center shadow-md">
-                      <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${currentRank.bg} ${currentRank.color} mb-1`}>{currentRank.name}</span>
-                      <div className="text-2xl font-black">{percent}%</div>
-                      <p className="text-[6px] text-gray-600 font-bold mt-1 text-center">{currentRank.desc}</p>
-                    </div>
-                    <div className="bg-white/5 p-2 rounded-[2rem] border border-white/10 h-32 overflow-hidden shadow-md">
+                    <div className="h-28 w-full bg-black/20 rounded-2xl p-2">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData}>
                           <XAxis dataKey="displayDate" stroke="#444" fontSize={8} fontWeight="black" tickLine={false} axisLine={false} />
-                          <Tooltip contentStyle={{backgroundColor:'#000', border:'none', borderRadius:'12px', fontSize:'10px'}} itemStyle={{color:'#3b82f6'}} />
-                          <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={{r:2, fill:'#3b82f6'}} />
+                          <Tooltip contentStyle={{backgroundColor:'#000', border:'none', borderRadius:'12px', fontSize:'10px'}} />
+                          <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={{r:3, fill:'#3b82f6'}} />
                         </LineChart>
                       </ResponsiveContainer>
+                    </div>
+                  </div>
+                  {/* Timer */}
+                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center justify-around shadow-lg">
+                    <div className="text-center">
+                      <p className="text-[28px] font-mono font-black tabular-nums">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
+                      <button onClick={() => setIsTimerActive(!isTimerActive)} className={`mt-1 px-5 py-1.5 text-[9px] font-black rounded-full transition-all ${isTimerActive ? "bg-red-500" : "bg-white text-black"}`}>{isTimerActive ? "STOP" : "START"}</button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[15, 25, 45, 60].map(m => <button key={m} onClick={() => { setIsTimerActive(false); setTimeLeft(m*60); }} className="text-[8px] font-black border border-white/10 w-10 py-2 rounded-xl hover:bg-white hover:text-black transition-all">{m}m</button>)}
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Tasks Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
                 {["morning", "afternoon", "night"].map(time => (
-                  <div key={time} className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 shadow-xl flex flex-col">
-                    <h2 className="text-[10px] font-black text-gray-500 uppercase mb-5 tracking-[0.3em] text-center opacity-40">{time}</h2>
+                  <div key={time} className="bg-white/5 p-7 rounded-[3rem] border border-white/10 shadow-xl flex flex-col min-h-[400px]">
+                    <h2 className="text-[11px] font-black text-gray-500 uppercase mb-6 tracking-[0.4em] text-center opacity-30">{time}</h2>
                     <div className="space-y-4 flex-1">
                       {tasks[time].map((task, index) => (
-                        <div key={index} className="flex items-center group/item transition-all">
-                          <button onClick={() => toggleCheck(time + task)} className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none shadow-lg" : "bg-black/20"}`}>
-                            {checks[time + task] && <span className="text-[10px] font-black">✓</span>}
+                        <div key={index} className="flex items-center group/item animate-fadeIn">
+                          <button onClick={() => toggleCheck(time + task)} className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none scale-110 shadow-lg" : "bg-black/20"}`}>
+                            {checks[time + task] && <span className="text-[10px] font-black text-white">✓</span>}
                           </button>
                           <span className={`flex-1 text-sm font-bold ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>
                             {task.startsWith('!') ? <span className="text-orange-400 font-black">🌟 {task.substring(1)}</span> : task}
                           </span>
-                          <button onClick={() => removeTask(time, index)} className="opacity-0 group-hover/item:opacity-100 text-red-500 p-1">✕</button>
+                          <button onClick={() => removeTask(time, index)} className="opacity-0 group-hover/item:opacity-100 text-red-500 p-1 transition-all">✕</button>
                         </div>
                       ))}
                     </div>
-                    <div className="flex mt-6 gap-2">
-                      <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }} className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300 shadow-lg" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
-                      <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })} className="flex-1 bg-black/40 text-xs p-3 rounded-xl border border-white/5 outline-none" placeholder="Task..." />
-                      <button onClick={() => addTask(time)} className="bg-white text-black px-4 rounded-xl font-black text-[10px] active:scale-95 transition-all">ADD</button>
+                    <div className="mt-6 flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }} className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
+                        <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })} className="flex-1 bg-black/40 text-[11px] p-3 rounded-xl border border-white/5 outline-none focus:border-white/20" placeholder={`${time} task...`} />
+                      </div>
+                      <button onClick={() => addTask(time)} className="w-full bg-white text-black py-3 rounded-xl font-black text-[10px] active:scale-95 transition-all shadow-lg">ADD TASK</button>
                     </div>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           ) : (
+            /* Social View (LINE-style) */
             <div className="space-y-6">
-              <div className="flex gap-8 mb-6 justify-center">
+               <div className="flex gap-8 mb-6 justify-center">
                 <button onClick={() => setSocialSubTab("list")} className={`text-[11px] font-black tracking-widest transition-all ${socialSubTab === 'list' ? 'text-white border-b-2 border-white pb-1' : 'text-gray-500'}`}>FRIENDS</button>
                 <button onClick={() => setSocialSubTab("msgs")} className={`text-[11px] font-black tracking-widest transition-all relative ${socialSubTab === 'msgs' ? 'text-white border-b-2 border-white pb-1' : 'text-gray-500'}`}>
-                  MESSAGES
-                  {userMessages.some(m => !m.read && m.from !== user.displayName) && <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span>}
+                  CHATS
+                  {userMessages.some(m => !m.read && m.from !== user.displayName) && <span className="absolute -top-1 -right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-black animate-pulse"></span>}
                 </button>
               </div>
 
               {socialSubTab === "list" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {friendsData.length === 0 ? <p className="text-center text-gray-500 py-20 font-bold col-span-full">友達をIDで追加しよう！</p> : friendsData.map((f, i) => (
-                    <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 shadow-xl relative group overflow-hidden">
-                      <div className={`absolute top-0 left-0 w-1 h-full ${CHARACTERS[f.charIndex || 0].accent} bg-gradient-to-b`}></div>
-                      <button onClick={() => removeFriend(f.shortId)} className="absolute top-4 right-4 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">✕</button>
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className={`w-14 h-14 rounded-full ${CHARACTERS[f.charIndex || 0].color} flex items-center justify-center animate-bounce-rich shadow-lg`}><div className="flex gap-1"><div className="w-1.5 h-1.5 bg-white rounded-full"></div><div className="w-1.5 h-1.5 bg-white rounded-full"></div></div></div>
+                  {friendsData.map((f, i) => (
+                    <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 relative group overflow-hidden shadow-2xl transition-all hover:bg-white/[0.07]">
+                      <div className={`absolute top-0 left-0 w-1.5 h-full ${CHARACTERS[f.charIndex || 0].accent} bg-gradient-to-b`}></div>
+                      <div className="flex items-center gap-4 mb-5">
+                        <div className={`w-16 h-16 rounded-full ${CHARACTERS[f.charIndex || 0].color} flex items-center justify-center animate-bounce-rich shadow-lg`}>
+                          <div className="flex gap-1.5"><div className="w-2 h-2 bg-white rounded-full"></div><div className="w-2 h-2 bg-white rounded-full"></div></div>
+                        </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-black">{f.displayName}</h3>
-                            <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${RANK_LIST.find(r=>r.name===f.rank)?.bg} ${RANK_LIST.find(r=>r.name===f.rank)?.color}`}>{f.rank}</span>
-                          </div>
-                          <div className="flex items-end gap-2">
-                            <span className="text-2xl font-black">{f.percent}%</span>
-                            <span className="text-[9px] font-bold text-orange-400 mb-1">🔥 {f.streak || 0}日連続</span>
+                          <h3 className="text-sm font-black flex items-center gap-2">{f.displayName}<span className={`text-[7px] px-2 py-0.5 rounded-full ${RANK_LIST.find(r=>r.name===f.rank)?.bg} ${RANK_LIST.find(r=>r.name===f.rank)?.color}`}>{f.rank}</span></h3>
+                          <div className="flex items-end gap-3 mt-1">
+                            <span className="text-3xl font-black">{f.percent}%</span>
+                            <span className="text-[10px] font-black text-orange-400 mb-1.5">🔥 {f.streak || 0}d</span>
                           </div>
                         </div>
-                        <button onClick={() => sendMessage(f.uid, f.displayName)} className="bg-white/10 p-3 rounded-2xl text-xl hover:bg-white hover:text-black transition-all shadow-lg">✉️</button>
+                        <button onClick={() => sendMessage(f.uid, f.displayName)} className="bg-white text-black w-12 h-12 rounded-2xl text-xl flex items-center justify-center hover:scale-110 transition-all shadow-xl">✉️</button>
                       </div>
-                      {/* 詳細ステータス */}
-                      <div className="grid grid-cols-3 gap-2 bg-black/20 p-3 rounded-2xl">
-                        {[{ label: "AM", val: f.sectionStats?.morning || 0 }, { label: "PM", val: f.sectionStats?.afternoon || 0 }, { label: "NG", val: f.sectionStats?.night || 0 }].map((sec, si) => (
+                      <div className="grid grid-cols-3 gap-2 bg-black/40 p-4 rounded-2xl border border-white/5">
+                        {[{ label: "MORNING", val: f.sectionStats?.morning || 0 }, { label: "AFTERNOON", val: f.sectionStats?.afternoon || 0 }, { label: "NIGHT", val: f.sectionStats?.night || 0 }].map((sec, si) => (
                           <div key={si} className="text-center">
-                            <p className="text-[6px] font-black opacity-40 mb-1">{sec.label}</p>
-                            <div className="h-1 bg-white/5 rounded-full overflow-hidden mb-1"><div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${sec.val}%` }}></div></div>
-                            <p className="text-[8px] font-black">{sec.val}%</p>
+                            <p className="text-[7px] font-black text-gray-500 mb-1">{sec.label}</p>
+                            <div className="h-1 bg-white/5 rounded-full overflow-hidden mb-1"><div className="h-full bg-blue-500" style={{ width: `${sec.val}%` }}></div></div>
+                            <p className="text-[9px] font-black">{sec.val}%</p>
                           </div>
                         ))}
                       </div>
@@ -468,46 +458,39 @@ export default function Home() {
                   ))}
                 </div>
               ) : (
-                /* LINE風メッセージUI */
-                <div className="flex flex-col h-[60vh] bg-black/20 rounded-[2.5rem] border border-white/5 overflow-hidden max-w-lg mx-auto shadow-inner">
-                  <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
-                    {(!userMessages || userMessages.length === 0) ? (
-                      <p className="text-center text-gray-500 py-20 font-bold opacity-30">メッセージはまだありません</p>
-                    ) : (
-                      userMessages.map((m, i) => (
-                        <div key={i} className={`flex flex-col ${m.from === user.displayName ? 'items-end' : 'items-start'}`}>
-                          <div className="flex items-end gap-2 max-w-[85%]">
-                            {/* 自分のメッセージ（右側） */}
-                            {m.from === user.displayName ? (
-                              <>
-                                <div className="flex flex-col items-end gap-1">
-                                  {m.read && <span className="text-[8px] text-blue-400 font-black">既読</span>}
-                                  <span className="text-[7px] text-gray-600 font-bold">{m.time}</span>
-                                </div>
-                                <div className={`px-4 py-2.5 rounded-2xl shadow-lg text-sm font-bold bg-emerald-600 text-white rounded-tr-none border border-emerald-500/30`}>
+                <div className="flex flex-col h-[65vh] bg-black/30 rounded-[3rem] border border-white/5 overflow-hidden max-w-lg mx-auto shadow-inner">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-hide">
+                    {userMessages.map((m, i) => (
+                      <div key={i} className={`flex flex-col ${m.from === user.displayName ? 'items-end' : 'items-start'}`}>
+                        <div className="flex items-end gap-2 max-w-[85%]">
+                          {m.from === user.displayName ? (
+                            <>
+                              <div className="flex flex-col items-end gap-0.5">
+                                {m.read && <span className="text-[8px] text-blue-400 font-black">既読</span>}
+                                <span className="text-[7px] text-gray-600 font-bold">{m.time}</span>
+                              </div>
+                              <div className="px-5 py-3 rounded-[1.5rem] shadow-lg text-sm font-bold bg-[#06C755] text-white rounded-tr-none">
+                                {m.text}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-xs font-black border border-white/5 shrink-0 shadow-lg">{m.from[0]}</div>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[9px] font-black text-gray-500 ml-1">{m.from}</span>
+                                <div className="px-5 py-3 rounded-[1.5rem] shadow-md text-sm font-bold bg-white/10 text-gray-100 rounded-tl-none border border-white/5">
                                   {m.text}
                                 </div>
-                              </>
-                            ) : (
-                              /* 相手のメッセージ（左側） */
-                              <>
-                                <div className={`w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[10px] border border-white/5 shrink-0`}>{m.from[0]}</div>
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-[8px] font-black text-gray-500 ml-1">{m.from}</span>
-                                  <div className={`px-4 py-2.5 rounded-2xl shadow-md text-sm font-bold bg-white/10 text-gray-100 rounded-tl-none border border-white/10`}>
-                                    {m.text}
-                                  </div>
-                                </div>
-                                <span className="text-[7px] text-gray-600 font-bold mb-1">{m.time}</span>
-                              </>
-                            )}
-                          </div>
+                              </div>
+                              <span className="text-[7px] text-gray-600 font-bold mb-1">{m.time}</span>
+                            </>
+                          )}
                         </div>
-                      ))
-                    )}
+                      </div>
+                    ))}
                   </div>
-                  <div className="p-4 bg-white/5 border-t border-white/5 text-center">
-                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest opacity-50">メッセージはフレンド一覧から送信できます</p>
+                  <div className="p-4 bg-white/5 border-t border-white/5 text-center text-[9px] font-black text-gray-600 tracking-widest uppercase">
+                    Friends can send messages from their list
                   </div>
                 </div>
               )}
@@ -520,13 +503,12 @@ export default function Home() {
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setIsMenuOpen(false)}></div>
-          <div className={`relative w-full max-w-sm p-8 rounded-[3.5rem] ${currentTheme.bg} border border-white/10 shadow-2xl max-h-[85vh] overflow-y-auto scrollbar-hide`}>
+          <div className={`relative w-full max-w-sm p-8 rounded-[4rem] ${currentTheme.bg} border border-white/10 shadow-2xl max-h-[85vh] overflow-y-auto scrollbar-hide`}>
             <div className="flex justify-between items-center mb-10"><h2 className="text-xl font-black italic text-gray-500">SETTINGS</h2><button onClick={() => setIsMenuOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center">✕</button></div>
             <div className="space-y-12">
-              <section className="bg-white/5 p-8 rounded-[2.5rem] text-center border border-white/10 shadow-inner">
+              <section className="bg-white/5 p-8 rounded-[3rem] text-center border border-white/10 shadow-inner">
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-3 tracking-widest">My ID</p>
                 <p className="text-5xl font-black tracking-tighter text-white select-all">{myDisplayId}</p>
-                <p className="text-[9px] text-gray-600 mt-3 font-bold italic">IDをコピーして友達に教えよう</p>
               </section>
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Add Friend</p>
@@ -539,20 +521,14 @@ export default function Home() {
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Character</p>
                 <div className="grid grid-cols-2 gap-3">
                   {CHARACTERS.map((c, i) => (
-                    <button key={i} onClick={() => { setCharIndex(i); saveToFirebase({ charIndex: i }); }} className={`p-4 rounded-[1.8rem] border-2 transition-all flex flex-col items-center ${charIndex === i ? 'border-white bg-white/10' : 'border-transparent opacity-30'}`}>
-                      <div className={`w-8 h-8 rounded-full ${c.color} mb-2 shadow-lg`}></div>
+                    <button key={i} onClick={() => { setCharIndex(i); saveToFirebase({ charIndex: i }); }} className={`p-4 rounded-[2rem] border-2 transition-all flex flex-col items-center ${charIndex === i ? 'border-white bg-white/10 shadow-xl' : 'border-transparent opacity-30'}`}>
+                      <div className={`w-8 h-8 rounded-full ${c.color} mb-2`}></div>
                       <p className="text-[9px] font-black">{c.name}</p>
                     </button>
                   ))}
                 </div>
               </section>
-              <section>
-                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Theme Color</p>
-                <div className="grid grid-cols-4 gap-3">
-                  {THEMES.map((t, i) => <button key={i} onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }} className={`w-10 h-10 rounded-full border-2 transition-all ${themeIndex === i ? 'border-white scale-110 shadow-lg' : 'border-transparent'}`} style={{ backgroundColor: t.color }}></button>)}
-                </div>
-              </section>
-              <button onClick={() => signOut(auth)} className="w-full py-4 bg-red-500/10 text-red-500 rounded-[1.5rem] font-black text-xs border border-red-500/20 active:bg-red-500 active:text-white transition-all">LOGOUT</button>
+              <button onClick={() => signOut(auth)} className="w-full py-4 bg-red-500/10 text-red-500 rounded-3xl font-black text-xs border border-red-500/20 active:bg-red-500 active:text-white transition-all">LOGOUT</button>
             </div>
           </div>
         </div>
