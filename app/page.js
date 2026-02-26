@@ -155,7 +155,6 @@ export default function Home() {
             setThemeIndex(d.themeIndex || 0);
             setCharIndex(d.charIndex || 0);
             
-            // 修正ポイント：Firestoreからメッセージを読み込み、時間順にソートして同期
             const sortedMsgs = (d.messageHistory || []).sort((a, b) => a.id - b.id);
             setUserMessages(sortedMsgs);
 
@@ -171,9 +170,16 @@ export default function Home() {
   useEffect(() => {
     if (!user || friendsList.length === 0) { setFriendsData([]); return; }
     const q = query(collection(db, "users"), where("shortId", "in", friendsList));
-    const unsub = onSnapshot(q, (s) => setFriendsData(s.docs.map(d => d.data())));
+    const unsub = onSnapshot(q, (s) => {
+      const data = s.docs.map(d => d.data());
+      setFriendsData(data);
+      // 修正ポイント：友達データ読み込み時、選択が空なら一人目をセット
+      if (!selectedChatFriendId && data.length > 0) {
+        setSelectedChatFriendId(data[0].shortId);
+      }
+    });
     return () => unsub();
-  }, [friendsList, user]);
+  }, [friendsList, user, selectedChatFriendId]);
 
   useEffect(() => {
     if (isTimerActive && timeLeft > 0) {
@@ -224,7 +230,6 @@ export default function Home() {
     }, {onlyOnce: true});
   };
 
-  // 修正ポイント：Firestoreへの送信のみを行い、同期は onSnapshot に任せる
   const sendMessage = async (targetUid, targetShortId, targetName) => {
     const msgText = window.prompt(`${targetName}さんへ応援メッセージ`, "お疲れ様！");
     if (!msgText) return;
@@ -258,7 +263,8 @@ export default function Home() {
 
   if (!user) return (
     <div className={`min-h-screen w-full flex flex-col items-center justify-center px-6 transition-all bg-gray-950`}>
-       <h1 className={`text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400`}>ROUTINE MASTER</h1>
+       {/* 修正ポイント：text-centerを追加 */}
+       <h1 className={`text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400 text-center`}>ROUTINE MASTER</h1>
        <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest uppercase">ログインして始める</button>
     </div>
   );
@@ -316,7 +322,6 @@ export default function Home() {
           {activeTab === "main" ? (
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-                {/* キャラクターエリア */}
                 <div className="bg-white/5 p-8 rounded-[3.5rem] border border-white/10 flex flex-col items-center justify-center relative shadow-2xl overflow-hidden min-h-[350px]">
                   <div className={`w-36 h-36 rounded-full ${currentChar.color} shadow-2xl flex flex-col items-center justify-center animate-bounce-rich relative transition-all duration-700 ${percent === 100 ? 'animate-gold' : ''}`}>
                     <div className="flex gap-8 mb-4 animate-blink">
@@ -333,7 +338,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* ステータスエリア */}
                 <div className="flex flex-col gap-4">
                   <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex-1 flex flex-col justify-between">
                     <div className="flex justify-between items-start mb-4">
@@ -357,7 +361,6 @@ export default function Home() {
                       </ResponsiveContainer>
                     </div>
                   </div>
-                  {/* タイマー */}
                   <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex items-center justify-around shadow-lg">
                     <div className="text-center">
                       <p className="text-[28px] font-mono font-black tabular-nums">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
@@ -370,7 +373,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* タスクセクション */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
                 {["morning", "afternoon", "night"].map(time => (
                   <div key={time} className="bg-white/5 p-7 rounded-[3rem] border border-white/10 shadow-xl flex flex-col h-auto">
@@ -400,7 +402,7 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            /* ソーシャル */
+            /* ソーシャルタブ */
             <div className="space-y-6">
                <div className="flex gap-8 mb-6 justify-center">
                 <button onClick={() => setSocialSubTab("list")} className={`text-[11px] font-black tracking-widest transition-all ${socialSubTab === 'list' ? 'text-white border-b-2 border-white pb-1' : 'text-gray-500'}`}>友達リスト</button>
@@ -429,7 +431,7 @@ export default function Home() {
                   ))}
                 </div>
               ) : (
-                /* 個別チャット表示エリア */
+                /* LINE風個別チャット */
                 <div className="flex flex-col h-[65vh] max-w-2xl mx-auto bg-black/30 rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl">
                   <div className="flex border-b border-white/5 bg-white/5 p-2 overflow-x-auto scrollbar-hide">
                     {friendsData.map((f, i) => (
@@ -456,10 +458,13 @@ export default function Home() {
                           </div>
                         </div>
                     ))}
+                    {/* 修正ポイント：未選択時・空時の文言表示 */}
                     {(!selectedChatFriendId || userMessages.filter(m => m.chatId === [myDisplayId, selectedChatFriendId].sort().join("_")).length === 0) && (
                       <div className="text-center mt-20 opacity-30">
                         <p className="text-[10px] font-black uppercase tracking-widest">トークルーム</p>
-                        <p className="text-[9px] mt-2">友達を選択してトークを開始</p>
+                        <p className="text-[9px] mt-2">
+                          {friendsData.length === 0 ? "設定から友達を追加してください" : "メッセージを送信してみましょう"}
+                        </p>
                       </div>
                     )}
                   </div>
