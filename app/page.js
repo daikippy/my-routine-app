@@ -65,7 +65,9 @@ export default function Home() {
   const [themeIndex, setThemeIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [friendIdInput, setFriendIdInput] = useState("");
   const [friendsList, setFriendsList] = useState([]);
+  const [friendsData, setFriendsData] = useState([]);
 
   // --- Timer ---
   const [timeLeft, setTimeLeft] = useState(1500);
@@ -123,6 +125,19 @@ export default function Home() {
     return () => unsubscribe();
   }, [today]);
 
+  // --- Real-time Friends Data Fetch ---
+  useEffect(() => {
+    if (!user || friendsList.length === 0) {
+      setFriendsData([]);
+      return;
+    }
+    const q = query(collection(db, "users"), where("shortId", "in", friendsList));
+    const unsub = onSnapshot(q, (s) => {
+      setFriendsData(s.docs.map(d => d.data()));
+    });
+    return () => unsub();
+  }, [friendsList, user]);
+
   const saveProgress = async () => {
     if (!user) return;
     const newHistory = [...history.filter(h => h.date !== today), { date: today, percent }];
@@ -135,6 +150,27 @@ export default function Home() {
     alert("保存しました！");
   };
 
+  const addFriend = async () => {
+    if (!friendIdInput || friendIdInput === myDisplayId) return;
+    if (friendsList.includes(friendIdInput)) {
+      alert("すでに追加されています");
+      return;
+    }
+    const q = query(collection(db, "users"), where("shortId", "==", friendIdInput));
+    const snap = await getDoc(doc(db, "users", friendIdInput)); // Note: ID based search
+    // We use a query to check existence
+    onSnapshot(q, (s) => {
+      if (s.empty) {
+        alert("ユーザーが見つかりません。相手が一度保存(Save)しているか確認してください。");
+      } else {
+        const newList = [...friendsList, friendIdInput];
+        setFriendsList(newList);
+        setFriendIdInput("");
+        alert("フレンドを追加しました！");
+      }
+    }, {onlyOnce: true});
+  };
+
   const currentTheme = THEMES[themeIndex];
 
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-black animate-pulse">LOADING...</div>;
@@ -145,12 +181,7 @@ export default function Home() {
          <h1 className={`text-4xl sm:text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.accent} leading-tight`}>
            ROUTINE<br className="sm:hidden" /> MASTER
          </h1>
-         <button 
-           onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} 
-           className="mt-10 w-full sm:w-auto bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl transition-all active:scale-95 text-sm tracking-widest"
-         >
-           GOOGLE LOGIN
-         </button>
+         <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="mt-10 w-full sm:w-auto bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl transition-all active:scale-95 text-sm tracking-widest">GOOGLE LOGIN</button>
        </div>
     </div>
   );
@@ -173,10 +204,8 @@ export default function Home() {
           <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90 transition-all">⚙️</button>
         </header>
 
-        {/* --- Main Hero Section (Layout Adjusted) --- */}
+        {/* --- Timer & Character Hero --- */}
         <div className="bg-white/5 p-6 sm:p-8 rounded-[3.5rem] border border-white/10 mb-6 flex flex-col items-center relative overflow-hidden shadow-2xl">
-          
-          {/* Timer Section (Now centered at the top of the box) */}
           <div className="w-full flex flex-col items-center mb-6 bg-black/20 p-4 rounded-[2.5rem] border border-white/5">
               <div className="flex gap-2 mb-3">
                 {[5, 15, 25, 45].map(m => (
@@ -192,8 +221,6 @@ export default function Home() {
                 </button>
               </div>
           </div>
-
-          {/* Character & Message Section */}
           <div className="flex flex-col items-center">
             <div className="bg-white text-black text-[11px] font-black p-3 rounded-2xl mb-6 animate-float-rich relative shadow-xl">
                 {percent === 100 ? "完璧すぎるよ！" : (percent > 80 ? "あとちょっとだね！" : "一緒にやろう！")}{currentChar.suffix}
@@ -204,15 +231,11 @@ export default function Home() {
                   <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div>
                   <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div>
                 </div>
-                <div className="absolute w-full flex justify-between px-5 opacity-30 mt-5">
-                  <div className="w-4 h-2 bg-pink-300 rounded-full blur-[1px]"></div>
-                  <div className="w-4 h-2 bg-pink-300 rounded-full blur-[1px]"></div>
-                </div>
             </div>
           </div>
         </div>
 
-        {/* --- Stats & History --- */}
+        {/* --- Stats & Graph --- */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-white/5 p-5 rounded-[2.5rem] border border-white/10 text-center flex flex-col justify-center items-center shadow-lg">
             <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${currentRank.bg} ${currentRank.color} mb-2 border border-current`}>{currentRank.name}</span>
@@ -237,15 +260,34 @@ export default function Home() {
               const d = new Date(); d.setDate(d.getDate() - (27 - i));
               const dStr = d.toISOString().split('T')[0];
               const h = history.find(entry => entry.date === dStr);
-              return (
-                <div key={i} className={`w-6 h-6 rounded-[6px] border border-white/5 transition-all duration-700 ${
-                  h?.percent === 100 ? 'bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.6)]' : 
-                  h?.percent > 0 ? `bg-blue-500/${Math.max(20, h.percent)}` : 'bg-white/5'
-                }`} title={dStr} />
-              )
+              return <div key={i} className={`w-6 h-6 rounded-[6px] border border-white/5 transition-all duration-700 ${h?.percent === 100 ? 'bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.6)]' : h?.percent > 0 ? `bg-blue-500/${Math.max(20, h.percent)}` : 'bg-white/5'}`} />
             })}
           </div>
         </div>
+
+        {/* --- Friends Activity --- */}
+        {friendsData.length > 0 && (
+          <div className="bg-white/5 p-6 rounded-[2.5rem] mb-6 border border-white/10 shadow-xl overflow-hidden">
+            <p className="text-[10px] font-black text-gray-500 uppercase mb-5 tracking-[0.3em] text-center">Friends Status</p>
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              {friendsData.map((f, i) => {
+                const fChar = CHARACTERS[f.charIndex || 0];
+                return (
+                  <div key={i} className="flex flex-col items-center min-w-[80px] bg-white/5 p-4 rounded-3xl border border-white/5">
+                    <div className={`w-10 h-10 rounded-full ${fChar.color} mb-2 shadow-lg flex items-center justify-center`}>
+                      <div className="flex gap-2">
+                        <div className="w-1 h-1 bg-white rounded-full"></div>
+                        <div className="w-1 h-1 bg-white rounded-full"></div>
+                      </div>
+                    </div>
+                    <p className="text-[10px] font-black truncate w-full text-center mb-1">{f.displayName?.split(' ')[0]}</p>
+                    <p className={`text-[8px] font-black ${RANK_LIST.find(r => r.name === f.rank)?.color}`}>{f.percent}%</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* --- Task Lists --- */}
         {["morning", "afternoon", "night"].map(time => (
@@ -254,40 +296,25 @@ export default function Home() {
             <div className="space-y-4">
               {tasks[time].map((task, index) => (
                 <div key={index} className="flex items-center group/item transition-all hover:translate-x-1">
-                  <button onClick={() => setChecks(prev => ({ ...prev, [time + task]: !prev[time + task] }))} 
-                    className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none scale-110 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-black/20"}`}>
+                  <button onClick={() => setChecks(prev => ({ ...prev, [time + task]: !prev[time + task] }))} className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none scale-110 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-black/20"}`}>
                     {checks[time + task] && <span className="text-[10px] font-black">✓</span>}
                   </button>
                   <span className={`flex-1 text-sm font-bold transition-all ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>
                     {task.startsWith('!') ? <span className="text-orange-400">🌟 {task.substring(1)}</span> : task}
                   </span>
-                  <button onClick={() => {
-                     const nl = [...tasks[time]]; nl.splice(index,1);
-                     setTasks({...tasks, [time]: nl});
-                  }} className="opacity-0 group-hover/item:opacity-100 text-red-500 transition-all p-2 text-sm">✕</button>
+                  <button onClick={() => { const nl = [...tasks[time]]; nl.splice(index,1); setTasks({...tasks, [time]: nl}); }} className="opacity-0 group-hover/item:opacity-100 text-red-500 transition-all p-2 text-sm">✕</button>
                 </div>
               ))}
             </div>
             <div className="flex mt-6 gap-2">
-              <button onClick={() => {
-                const val = newTasks[time] || "";
-                setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val });
-              }} className={`w-11 h-11 rounded-xl flex items-center justify-center border-2 transition-all shadow-lg ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300 scale-105" : "bg-white/5 border-white/10 opacity-40"}`}>
-                <span className="text-lg">🌟</span>
-              </button>
+              <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }} className={`w-11 h-11 rounded-xl flex items-center justify-center border-2 transition-all shadow-lg ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300 scale-105" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
               <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })} className="flex-1 bg-black/40 text-xs p-3 rounded-xl border border-white/5 outline-none focus:border-white/20 transition-all" placeholder="新しいタスク..." />
-              <button onClick={() => {
-                if (!newTasks[time]) return;
-                setTasks({...tasks, [time]: [...tasks[time], newTasks[time]]});
-                setNewTasks({...newTasks, [time]: ""});
-              }} className="bg-white text-black px-5 rounded-xl font-black text-[10px] shadow-lg active:scale-90">ADD</button>
+              <button onClick={() => { if (!newTasks[time]) return; setTasks({...tasks, [time]: [...tasks[time], newTasks[time]]}); setNewTasks({...newTasks, [time]: ""}); }} className="bg-white text-black px-5 rounded-xl font-black text-[10px] shadow-lg active:scale-90">ADD</button>
             </div>
           </div>
         ))}
 
-        <button onClick={saveProgress} className={`w-full py-5 bg-gradient-to-r ${currentTheme.accent} text-gray-950 rounded-[2.5rem] font-black shadow-2xl active:scale-95 transition-all uppercase tracking-[0.2em] text-sm mt-4`}>
-          Save Progress
-        </button>
+        <button onClick={saveProgress} className={`w-full py-5 bg-gradient-to-r ${currentTheme.accent} text-gray-950 rounded-[2.5rem] font-black shadow-2xl active:scale-95 transition-all uppercase tracking-[0.2em] text-sm mt-4`}>Save Progress</button>
       </div>
 
       {/* --- Settings Menu --- */}
@@ -301,6 +328,22 @@ export default function Home() {
             </div>
             
             <div className="space-y-12 pb-10">
+              {/* My ID Section */}
+              <section className="bg-white/5 p-6 rounded-[2rem] border border-white/10 text-center">
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-2 tracking-widest">My Routine ID</p>
+                <p className="text-2xl font-mono font-black tracking-widest text-white mb-2">{myDisplayId}</p>
+                <p className="text-[8px] text-gray-500">このIDを友達に教えてね！</p>
+              </section>
+
+              {/* Add Friend Section */}
+              <section>
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Add Friend</p>
+                <div className="flex gap-2">
+                  <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value.substring(0,8))} className="flex-1 bg-black/40 text-sm p-3 rounded-xl border border-white/5 outline-none focus:border-white/20" placeholder="友達のIDを入力..." />
+                  <button onClick={addFriend} className="bg-white text-black px-4 rounded-xl font-black text-[10px]">ADD</button>
+                </div>
+              </section>
+
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Character Select</p>
                 <div className="grid grid-cols-2 gap-3">
@@ -308,29 +351,16 @@ export default function Home() {
                     <button key={i} onClick={() => setCharIndex(i)} className={`p-4 rounded-[2rem] border-2 transition-all flex flex-col items-center ${charIndex === i ? 'border-white bg-white/10' : 'border-transparent opacity-30 hover:opacity-60'}`}>
                       <div className={`w-10 h-10 rounded-full ${c.color} mb-3 shadow-lg`}></div>
                       <p className="text-[10px] font-black mb-1">{c.name}</p>
-                      <p className="text-[7px] text-gray-500 uppercase font-black">{c.personality}</p>
                     </button>
                   ))}
                 </div>
               </section>
 
               <section>
-                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Visual Themes ({THEMES.length})</p>
-                <div className="grid grid-cols-4 gap-3 justify-items-center">
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Visual Themes</p>
+                <div className="grid grid-cols-4 gap-3">
                   {THEMES.map((t, i) => (
-                    <button key={i} onClick={() => setThemeIndex(i)} className={`w-10 h-10 rounded-full border-2 shadow-xl transition-all ${themeIndex === i ? 'border-white scale-110 ring-4 ring-white/10' : 'border-transparent active:scale-90 hover:scale-105'}`} style={{ backgroundColor: t.color }} title={t.name}></button>
-                  ))}
-                </div>
-              </section>
-
-              <section>
-                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Rank System</p>
-                <div className="space-y-2.5">
-                  {RANK_LIST.map((r, i) => (
-                    <div key={i} className={`p-4 rounded-[1.5rem] border transition-all ${percent >= r.min ? 'bg-white/10 border-white/20 shadow-lg' : 'border-white/5 opacity-20'}`}>
-                      <div className="flex justify-between font-black text-[10px] mb-1.5"><span className={r.color}>● {r.name}</span><span className="opacity-50">{r.min}%+</span></div>
-                      <p className="text-[9px] text-gray-400 font-bold italic">{r.desc}</p>
-                    </div>
+                    <button key={i} onClick={() => setThemeIndex(i)} className={`w-10 h-10 rounded-full border-2 transition-all ${themeIndex === i ? 'border-white scale-110' : 'border-transparent'}`} style={{ backgroundColor: t.color }}></button>
                   ))}
                 </div>
               </section>
