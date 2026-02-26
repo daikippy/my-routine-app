@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, where, updateDoc, arrayUnion } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, where, updateDoc, arrayUnion, writeBatch } from "firebase/firestore";
 import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 // --- Firebase Config ---
@@ -100,6 +100,17 @@ export default function Home() {
     }
     return days;
   }, [history]);
+
+  // --- 既読処理 ---
+  useEffect(() => {
+    if (activeTab === "social" && socialSubTab === "msgs" && user) {
+      const hasUnread = userMessages.some(m => !m.read);
+      if (hasUnread) {
+        const updatedMsgs = userMessages.map(m => ({ ...m, read: true }));
+        updateDoc(doc(db, "users", user.uid), { messageHistory: updatedMsgs });
+      }
+    }
+  }, [activeTab, socialSubTab, userMessages, user]);
 
   // --- Auto Save ---
   const saveToFirebase = async (updatedData = {}) => {
@@ -203,6 +214,8 @@ export default function Home() {
     if (friendsList.includes(friendIdInput)) { alert("すでに追加されています"); return; }
     
     const q = query(collection(db, "users"), where("shortId", "==", friendIdInput));
+    const snap = await getDoc(doc(db, "users", "dummy")); // Trigger for query
+    
     onSnapshot(q, async (s) => {
       if (s.empty) {
         alert("ユーザーが見つかりません");
@@ -231,16 +244,20 @@ export default function Home() {
     saveToFirebase({ friendsList: nextList });
   };
 
-  const sendMessage = async (uid, name) => {
+  const sendMessage = async (targetUid, name) => {
     const msgText = window.prompt(`${name}さんへメッセージを送る`, "今日も頑張ろう！");
     if (msgText) {
       const msgObj = {
-        id: Date.now(),
+        id: Date.now() + Math.random(),
         from: user.displayName,
         text: msgText,
-        time: new Date().toLocaleString('ja-JP', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'}),
+        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+        date: new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }),
+        read: false
       };
-      await updateDoc(doc(db, "users", uid), {
+      
+      const targetRef = doc(db, "users", targetUid);
+      await updateDoc(targetRef, {
         message: msgObj,
         messageHistory: arrayUnion(msgObj)
       });
@@ -296,12 +313,13 @@ export default function Home() {
 
       {/* --- Main --- */}
       <main className="flex-1 overflow-y-auto h-screen scrollbar-hide p-4 relative">
+        {/* 通知トースト */}
         {incomingMsg && (
           <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm bg-white text-black p-4 rounded-3xl shadow-2xl animate-slideIn flex items-center gap-4">
             <div className="text-2xl">📩</div>
-            <div>
+            <div className="overflow-hidden">
               <p className="text-[10px] font-black opacity-50">{incomingMsg.from}からのメッセージ</p>
-              <p className="text-sm font-bold">{incomingMsg.text}</p>
+              <p className="text-sm font-bold truncate">{incomingMsg.text}</p>
             </div>
           </div>
         )}
@@ -339,12 +357,11 @@ export default function Home() {
                       </div>
                       <div className={`w-4 h-2 bg-black/20 rounded-full animate-mouth ${percent > 50 ? 'h-3 rounded-b-full bg-white/30' : ''}`}></div>
                   </div>
-                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-20 h-3 bg-black/20 rounded-full blur-md"></div>
                 </div>
                 <p className="mt-4 text-[11px] font-black bg-white text-black px-5 py-2.5 rounded-2xl shadow-xl">{percent}%達成{currentChar.suffix}</p>
               </div>
 
-              {/* Stats */}
+              {/* Stats & Graph */}
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-white/5 p-5 rounded-[2.5rem] border border-white/10 text-center flex flex-col justify-center items-center shadow-lg">
                   <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${currentRank.bg} ${currentRank.color} mb-2`}>{currentRank.name}</span>
@@ -384,13 +401,15 @@ export default function Home() {
                   </div>
                 </div>
               ))}
-              <div className="w-full py-5 text-gray-600 text-[10px] font-black text-center tracking-widest uppercase opacity-40 italic">Everything is saved automatically</div>
             </>
           ) : (
             <div className="space-y-6">
               <div className="flex gap-8 mb-6 justify-center">
                 <button onClick={() => setSocialSubTab("list")} className={`text-[11px] font-black tracking-widest transition-all ${socialSubTab === 'list' ? 'text-white border-b-2 border-white pb-1' : 'text-gray-500'}`}>FRIENDS</button>
-                <button onClick={() => setSocialSubTab("msgs")} className={`text-[11px] font-black tracking-widest transition-all ${socialSubTab === 'msgs' ? 'text-white border-b-2 border-white pb-1' : 'text-gray-500'}`}>MESSAGES</button>
+                <button onClick={() => setSocialSubTab("msgs")} className={`text-[11px] font-black tracking-widest transition-all relative ${socialSubTab === 'msgs' ? 'text-white border-b-2 border-white pb-1' : 'text-gray-500'}`}>
+                  MESSAGES
+                  {userMessages.some(m => !m.read) && <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span>}
+                </button>
               </div>
 
               {socialSubTab === "list" ? (
@@ -416,17 +435,20 @@ export default function Home() {
                   </div>
                 ))
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4 px-2">
                   {(!userMessages || userMessages.length === 0) ? (
                     <p className="text-center text-gray-500 py-20 font-bold">メッセージはまだありません</p>
                   ) : (
                     [...userMessages].reverse().map((m, i) => (
-                      <div key={i} className="bg-white/5 p-5 rounded-[2rem] border border-white/5 shadow-md">
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="text-[10px] font-black text-blue-400 uppercase tracking-tighter">FROM: {m.from}</span>
-                          <span className="text-[8px] font-bold text-gray-600">{m.time}</span>
+                      <div key={i} className={`flex flex-col ${m.from === user.displayName ? 'items-end' : 'items-start'}`}>
+                        <span className="text-[8px] font-black text-gray-500 mb-1 px-2 uppercase">{m.from}</span>
+                        <div className="flex items-end gap-2 max-w-[85%]">
+                          {m.from === user.displayName && <span className="text-[8px] text-gray-600 font-bold mb-1">{m.read ? '既読' : '未読'}</span>}
+                          <div className={`px-4 py-2.5 rounded-2xl shadow-sm text-sm font-bold ${m.from === user.displayName ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white/10 text-gray-100 rounded-tl-none border border-white/5'}`}>
+                            {m.text}
+                          </div>
+                          <span className="text-[8px] text-gray-600 font-bold mb-1 min-w-fit">{m.time}</span>
                         </div>
-                        <p className="text-sm font-bold text-gray-200">{m.text}</p>
                       </div>
                     ))
                   )}
@@ -447,10 +469,10 @@ export default function Home() {
               <section className="bg-white/5 p-8 rounded-[2.5rem] text-center border border-white/10 shadow-inner">
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-3 tracking-widest">My ID</p>
                 <p className="text-5xl font-black tracking-tighter text-white select-all">{myDisplayId}</p>
-                <p className="text-[9px] text-gray-600 mt-3 font-bold italic">Tap to copy and share with friends</p>
+                <p className="text-[9px] text-gray-600 mt-3 font-bold italic">Tap to copy and share</p>
               </section>
               <section>
-                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Add New Friend</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Add Friend</p>
                 <div className="flex gap-2">
                   <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value.substring(0,8))} className="flex-1 bg-black/40 text-xs p-4 rounded-2xl border border-white/5 outline-none" placeholder="Enter ID..." />
                   <button onClick={addFriend} className="bg-white text-black px-6 rounded-2xl font-black text-[10px] active:scale-95 transition-all shadow-lg">ADD</button>
@@ -468,20 +490,9 @@ export default function Home() {
                 </div>
               </section>
               <section>
-                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Theme</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Theme Color</p>
                 <div className="grid grid-cols-4 gap-3">
                   {THEMES.map((t, i) => <button key={i} onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }} className={`w-10 h-10 rounded-full border-2 transition-all ${themeIndex === i ? 'border-white scale-110 shadow-lg' : 'border-transparent'}`} style={{ backgroundColor: t.color }}></button>)}
-                </div>
-              </section>
-              <section>
-                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Rank System</p>
-                <div className="space-y-2.5">
-                  {RANK_LIST.map((r, i) => (
-                    <div key={i} className={`p-4 rounded-[1.5rem] border transition-all ${percent >= r.min ? 'bg-white/10 border-white/20' : 'border-white/5 opacity-20'}`}>
-                      <div className="flex justify-between font-black text-[10px] mb-1.5"><span className={r.color}>● {r.name}</span><span className="opacity-50">{r.min}%+</span></div>
-                      <p className="text-[9px] text-gray-400 font-bold italic">{r.desc}</p>
-                    </div>
-                  ))}
                 </div>
               </section>
               <button onClick={() => signOut(auth)} className="w-full py-4 bg-red-500/10 text-red-500 rounded-[1.5rem] font-black text-xs border border-red-500/20 active:bg-red-500 active:text-white transition-all">LOGOUT</button>
