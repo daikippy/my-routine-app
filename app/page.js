@@ -22,12 +22,12 @@ const db = getFirestore(app);
 
 // --- 定数 ---
 const CHARACTERS = [
-  { id: "blob", name: "ぷるぷる", color: "bg-blue-500", suffix: "だね！", accent: "from-blue-400 to-blue-600" },
-  { id: "fluff", name: "もふもふ", color: "bg-orange-400", suffix: "ですよぉ", accent: "from-orange-300 to-orange-500" },
-  { id: "spark", name: "ぴかぴか", color: "bg-yellow-400", suffix: "だよっ☆", accent: "from-yellow-300 to-yellow-500" },
-  { id: "fire", name: "メラメラ", color: "bg-red-500", suffix: "だぜッ！", accent: "from-red-400 to-red-600" },
-  { id: "cool", name: "しっとり", color: "bg-indigo-600", suffix: "ですね。", accent: "from-indigo-500 to-indigo-700" },
-  { id: "ghost", name: "ふわふわ", color: "bg-purple-400", suffix: "なの…？", accent: "from-purple-300 to-purple-500" }
+  { id: "blob", name: "ぷるぷる", color: "bg-blue-500", accent: "from-blue-400 to-blue-600" },
+  { id: "fluff", name: "もふもふ", color: "bg-orange-400", accent: "from-orange-300 to-orange-500" },
+  { id: "spark", name: "ぴかぴか", color: "bg-yellow-400", accent: "from-yellow-300 to-yellow-500" },
+  { id: "fire", name: "メラメラ", color: "bg-red-500", accent: "from-red-400 to-red-600" },
+  { id: "cool", name: "しっとり", color: "bg-indigo-600", accent: "from-indigo-500 to-indigo-700" },
+  { id: "ghost", name: "ふわふわ", color: "bg-purple-400", accent: "from-purple-300 to-purple-500" }
 ];
 
 const RANK_LIST = [
@@ -68,7 +68,6 @@ export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [friendIdInput, setFriendIdInput] = useState("");
   
-  // チャット・友達
   const [selectedChatFriend, setSelectedChatFriend] = useState(null); 
   const [friendsList, setFriendsList] = useState([]);
   const [friendsData, setFriendsData] = useState([]);
@@ -86,15 +85,15 @@ export default function Home() {
   const currentChar = CHARACTERS[charIndex];
   const currentTheme = THEMES[themeIndex];
 
-  // 達成度別キャラセリフ判定
+  // 達成度別メッセージ（語尾を削除し、標準的な話し方に統一）
   const characterMessage = useMemo(() => {
-    if (percent === 0) return `これから一緒に頑張っていこう${currentChar.suffix}`;
-    if (percent < 30) return `まずは一歩ずつだね。応援してる${currentChar.suffix}`;
-    if (percent < 50) return `調子が出てきたね！その調子${currentChar.suffix}`;
-    if (percent < 80) return `半分以上クリア！すごいすごーい${currentChar.suffix}`;
-    if (percent < 100) return `あと少し！最後まで走り抜けよう${currentChar.suffix}`;
-    return `パーフェクト！君は最高の結果を出した${currentChar.suffix}`;
-  }, [percent, currentChar]);
+    if (percent === 0) return "さあ、これから一緒に頑張っていきましょう。";
+    if (percent < 30) return "まずは一歩ずつですね。応援しています。";
+    if (percent < 50) return "調子が出てきましたね。その調子です。";
+    if (percent < 80) return "半分以上クリアしましたね。素晴らしいです。";
+    if (percent < 100) return "あと少しです。最後まで走り抜けましょう。";
+    return "パーフェクト！最高の結果を出せましたね。";
+  }, [percent]);
 
   const streakCount = useMemo(() => {
     let count = 0;
@@ -189,7 +188,6 @@ export default function Home() {
     return () => clearInterval(timerRef.current);
   }, [isTimerActive, timeLeft]);
 
-  // トーク画面を開いた時に既読にする
   useEffect(() => {
     if (selectedChatFriend && user) {
       const chatId = [myDisplayId, selectedChatFriend.shortId].sort().join("_");
@@ -347,7 +345,6 @@ export default function Home() {
                     </div>
                     <div className={`transition-all duration-500 ${percent >= 50 ? 'w-10 h-6 bg-white/30 rounded-b-full' : 'w-8 h-1 bg-black/20 rounded-full'}`}></div>
                   </div>
-                  {/* セリフ表示部分 */}
                   <div className="mt-8 text-center space-y-2">
                     <div className="bg-white text-black px-6 py-3 rounded-2xl shadow-2xl inline-block hover:scale-105 transition-transform max-w-[250px]">
                       <p className="text-[9px] font-black opacity-40 mb-1">{percent}% 達成中</p>
@@ -421,7 +418,6 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            /* 交流タブ：友達リストから直接トークへ */
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {friendsData.map((f, i) => {
                 const chatId = [myDisplayId, f.shortId].sort().join("_");
@@ -432,7 +428,6 @@ export default function Home() {
                     <div className="flex items-center gap-4">
                       <div className={`w-16 h-16 rounded-full ${CHARACTERS[f.charIndex || 0].color} flex items-center justify-center animate-bounce-rich shadow-lg relative`}>
                         <div className="flex gap-1.5"><div className="w-2 h-2 bg-white rounded-full"></div><div className="w-2 h-2 bg-white rounded-full"></div></div>
-                        {/* 通知バッジ */}
                         {unreadCount > 0 && (
                           <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-black animate-pulse shadow-lg">
                             {unreadCount}
