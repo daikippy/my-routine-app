@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, where } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, where, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
-// --- Firebase Config ---
+// --- Firebase Config (Your credentials) ---
 const firebaseConfig = {
   apiKey: "AIzaSyDNkvB6F_niXtk3SmmgTVm1wK418Fq7t9Q",
   authDomain: "routine-app-94afe.firebaseapp.com",
@@ -69,6 +69,7 @@ export default function Home() {
   const [friendIdInput, setFriendIdInput] = useState("");
   const [friendsList, setFriendsList] = useState([]);
   const [friendsData, setFriendsData] = useState([]);
+  const [incomingMsg, setIncomingMsg] = useState(null);
 
   const [timeLeft, setTimeLeft] = useState(1500);
   const [isTimerActive, setIsTimerActive] = useState(false);
@@ -98,7 +99,7 @@ export default function Home() {
     return days;
   }, [history]);
 
-  // --- Auto Save Core ---
+  // --- Auto Save & Sync ---
   const saveToFirebase = async (updatedData = {}) => {
     if (!user) return;
     const currentTasks = updatedData.tasks || tasks;
@@ -121,7 +122,7 @@ export default function Home() {
     };
 
     await setDoc(doc(db, "users", user.uid), { 
-      tasks: currentTasks, checks: currentChecks, lastCheckDate: today, 
+      uid: user.uid, tasks: currentTasks, checks: currentChecks, lastCheckDate: today, 
       history: nextHistory, displayName: user.displayName, shortId: myDisplayId,
       rank: newRank, percent: newPercent, friends: currentFriendsList,
       sectionStats, themeIndex: currentThemeIdx, charIndex: currentCharIdx, lastActive: Date.now()
@@ -133,16 +134,21 @@ export default function Home() {
       setUser(u);
       if (u) {
         const docRef = doc(db, "users", u.uid);
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          const d = snap.data();
-          if (d.tasks) setTasks(d.tasks);
-          if (d.history) setHistory(d.history);
-          if (d.friends) setFriendsList(d.friends);
-          setThemeIndex(d.themeIndex || 0);
-          setCharIndex(d.charIndex || 0);
-          if (d.lastCheckDate === today) setChecks(d.checks || {});
-        }
+        onSnapshot(docRef, (snap) => {
+          if (snap.exists()) {
+            const d = snap.data();
+            setTasks(d.tasks || { morning: [], afternoon: [], night: [] });
+            setHistory(d.history || []);
+            setFriendsList(d.friends || []);
+            setThemeIndex(d.themeIndex || 0);
+            setCharIndex(d.charIndex || 0);
+            if (d.lastCheckDate === today) setChecks(d.checks || {});
+            if (d.message) {
+              setIncomingMsg(d.message);
+              setTimeout(() => updateDoc(docRef, { message: null }), 5000);
+            }
+          }
+        });
       }
       setLoading(false);
     });
@@ -193,17 +199,33 @@ export default function Home() {
     if (!friendIdInput || friendIdInput === myDisplayId) return;
     if (friendsList.includes(friendIdInput)) { alert("すでに追加されています"); return; }
     const q = query(collection(db, "users"), where("shortId", "==", friendIdInput));
-    const snap = await getDoc(doc(db, "users", "dummy")); // Trigger check
     onSnapshot(q, (s) => {
       if (s.empty) alert("ユーザーが見つかりません");
       else { 
         const nextList = [...friendsList, friendIdInput];
         setFriendsList(nextList); 
         setFriendIdInput(""); 
-        saveToFirebase({ friendsList: nextList }); // ここで即座にクラウド保存
+        saveToFirebase({ friendsList: nextList });
         alert("フレンドを追加しました！"); 
       }
     }, {onlyOnce: true});
+  };
+
+  const removeFriend = async (fid) => {
+    if (!window.confirm("フレンドを削除しますか？")) return;
+    const nextList = friendsList.filter(id => id !== fid);
+    setFriendsList(nextList);
+    saveToFirebase({ friendsList: nextList });
+  };
+
+  const sendMessage = async (uid, name) => {
+    const msg = window.prompt(`${name}さんへメッセージを送る`, "今日も頑張ろう！");
+    if (msg) {
+      await updateDoc(doc(db, "users", uid), {
+        message: { from: user.displayName, text: msg, time: Date.now() }
+      });
+      alert("送信しました！");
+    }
   };
 
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-black animate-pulse">LOADING...</div>;
@@ -211,19 +233,21 @@ export default function Home() {
   if (!user) return (
     <div className={`min-h-screen w-full flex flex-col items-center justify-center px-6 transition-all ${currentTheme.bg}`}>
        <h1 className={`text-5xl font-black italic bg-clip-text text-transparent bg-gradient-to-r ${currentTheme.accent}`}>ROUTINE MASTER</h1>
-       <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest">GOOGLE LOGIN</button>
+       <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="mt-10 bg-white text-black px-12 py-5 rounded-full font-black shadow-2xl active:scale-95 text-sm tracking-widest uppercase">Start Journey</button>
     </div>
   );
 
   return (
-    <div className={`min-h-screen text-white transition-all duration-700 ${currentTheme.bg} flex overflow-hidden`}>
+    <div className={`min-h-screen text-white transition-all duration-700 ${currentTheme.bg} flex overflow-hidden font-sans`}>
       <style jsx global>{`
         @keyframes bounce-rich { 0%, 100% { transform: translateY(0) scale(1, 1); } 50% { transform: translateY(-15px) scale(0.95, 1.05); } }
         @keyframes blink { 0%, 90%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
         @keyframes mouth { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(1.2) scaleY(0.8); } }
+        @keyframes slideIn { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .animate-bounce-rich { animation: bounce-rich 2s infinite ease-in-out; }
         .animate-blink { animation: blink 4s infinite; }
         .animate-mouth { animation: mouth 3s infinite ease-in-out; }
+        .animate-slideIn { animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
 
@@ -243,7 +267,7 @@ export default function Home() {
           </div>
         </section>
         <section className="flex-1 overflow-y-auto scrollbar-hide space-y-4">
-          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">RECENT</p>
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">RECENT HISTORY</p>
           {history.slice(-10).reverse().map((h, i) => (
             <div key={i} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5"><span className="text-xs font-bold text-gray-400">{h.date}</span><span className="text-xs font-black">{h.percent}%</span></div>
           ))}
@@ -251,7 +275,18 @@ export default function Home() {
       </aside>
 
       {/* --- Main --- */}
-      <main className="flex-1 overflow-y-auto h-screen scrollbar-hide p-4">
+      <main className="flex-1 overflow-y-auto h-screen scrollbar-hide p-4 relative">
+        {/* Message Toast */}
+        {incomingMsg && (
+          <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm bg-white text-black p-4 rounded-3xl shadow-2xl animate-slideIn flex items-center gap-4">
+            <div className="text-2xl">📩</div>
+            <div>
+              <p className="text-[10px] font-black opacity-50">{incomingMsg.from}からのメッセージ</p>
+              <p className="text-sm font-bold">{incomingMsg.text}</p>
+            </div>
+          </div>
+        )}
+
         <div className="max-w-xl mx-auto pb-24">
           <header className="flex justify-between items-center py-4 mb-4">
             <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 shadow-lg active:scale-90">☰</button>
@@ -266,7 +301,7 @@ export default function Home() {
 
           {activeTab === "main" ? (
             <>
-              {/* Character Hero */}
+              {/* Hero Section */}
               <div className="bg-white/5 p-6 sm:p-8 rounded-[3.5rem] border border-white/10 mb-6 flex flex-col items-center relative shadow-2xl">
                 <div className="w-full flex flex-col items-center mb-8 bg-black/20 p-4 rounded-[2.5rem] border border-white/5">
                     <div className="flex gap-2 mb-3">
@@ -278,26 +313,22 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* --- Expressive Character --- */}
                 <div className="relative mb-6">
                   <div className={`w-32 h-32 rounded-full ${currentChar.color} shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col items-center justify-center animate-bounce-rich relative overflow-hidden`}>
-                      {/* Eyes */}
                       <div className="flex gap-7 mb-2 animate-blink">
-                        <div className="w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center"><div className="w-1.5 h-1.5 bg-black rounded-full translate-y-[-1px]"></div></div>
-                        <div className="w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center"><div className="w-1.5 h-1.5 bg-black rounded-full translate-y-[-1px]"></div></div>
+                        <div className="w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center"><div className="w-1.5 h-1.5 bg-black rounded-full"></div></div>
+                        <div className="w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center"><div className="w-1.5 h-1.5 bg-black rounded-full"></div></div>
                       </div>
-                      {/* Mouth */}
                       <div className={`w-4 h-2 bg-black/20 rounded-full animate-mouth ${percent > 50 ? 'h-3 rounded-b-full bg-white/30' : ''}`}></div>
-                      {/* Shine */}
                       <div className="absolute top-4 left-6 w-6 h-3 bg-white/20 rounded-full rotate-[-30deg]"></div>
                   </div>
-                  {/* Shadow */}
                   <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-20 h-3 bg-black/20 rounded-full blur-md"></div>
                 </div>
                 
                 <p className="mt-4 text-[11px] font-black bg-white text-black px-5 py-2.5 rounded-2xl shadow-xl">{percent}%達成{currentChar.suffix}</p>
               </div>
 
+              {/* Stats & Graph */}
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-white/5 p-5 rounded-[2.5rem] border border-white/10 text-center flex flex-col justify-center items-center">
                   <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${currentRank.bg} ${currentRank.color} mb-2`}>{currentRank.name}</span>
@@ -305,22 +336,25 @@ export default function Home() {
                 </div>
                 <div className="bg-white/5 p-3 rounded-[2.5rem] border border-white/10 h-32 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}><Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={false} /></LineChart>
+                    <LineChart data={chartData}>
+                      <XAxis dataKey="displayDate" hide={false} stroke="#444" fontSize={8} fontWeight="bold" />
+                      <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={false} />
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
+              {/* Tasks */}
               {["morning", "afternoon", "night"].map(time => (
                 <div key={time} className="bg-white/5 p-6 rounded-[2.5rem] mb-6 border border-white/10 shadow-xl group">
                   <h2 className="text-[10px] font-black text-gray-500 uppercase mb-5 tracking-[0.3em] text-center opacity-40">{time}</h2>
                   <div className="space-y-4">
                     {tasks[time].map((task, index) => (
                       <div key={index} className="flex items-center group/item transition-all">
-                        <button onClick={() => toggleCheck(time + task)} className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none shadow-lg shadow-emerald-500/30" : "bg-black/20"}`}>
+                        <button onClick={() => toggleCheck(time + task)} className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all ${checks[time + task] ? "bg-emerald-500 border-none shadow-lg" : "bg-black/20"}`}>
                           {checks[time + task] && <span className="text-[10px] font-black">✓</span>}
                         </button>
                         <span className={`flex-1 text-sm font-bold ${checks[time + task] ? 'opacity-20 line-through' : 'text-gray-200'}`}>
-                          {/* --- Important Star (🌟) --- */}
                           {task.startsWith('!') ? <span className="text-orange-400 font-black">🌟 {task.substring(1)}</span> : task}
                         </span>
                         <button onClick={() => removeTask(time, index)} className="opacity-0 group-hover/item:opacity-100 text-red-500 p-2">✕</button>
@@ -330,11 +364,11 @@ export default function Home() {
                   <div className="flex mt-6 gap-2">
                     <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }} className={`w-11 h-11 rounded-xl flex items-center justify-center border-2 transition-all ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
                     <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })} className="flex-1 bg-black/40 text-xs p-3 rounded-xl border border-white/5 outline-none" placeholder="新しいタスク..." />
-                    <button onClick={() => addTask(time)} className="bg-white text-black px-5 rounded-xl font-black text-[10px] shadow-lg active:scale-90">ADD</button>
+                    <button onClick={() => addTask(time)} className="bg-white text-black px-5 rounded-xl font-black text-[10px] active:scale-90">ADD</button>
                   </div>
                 </div>
               ))}
-              <div className={`w-full py-5 bg-white/5 text-gray-500 rounded-[2.5rem] font-black text-center text-xs border border-white/5 uppercase tracking-[0.2em]`}>Real-time Auto Saving...</div>
+              <div className="w-full py-5 text-gray-600 text-[10px] font-black text-center tracking-widest uppercase opacity-40 italic">Synced with cloud</div>
             </>
           ) : (
             <div className="space-y-6">
@@ -342,14 +376,22 @@ export default function Home() {
                 const fChar = CHARACTERS[f.charIndex || 0];
                 const fRank = RANK_LIST.find(r => r.name === f.rank) || RANK_LIST[4];
                 return (
-                  <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 shadow-xl">
+                  <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 shadow-xl relative group">
+                    <button onClick={() => removeFriend(f.shortId)} className="absolute top-6 right-6 text-gray-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">✕</button>
                     <div className="flex items-center gap-4 mb-6">
-                      <div className={`w-12 h-12 rounded-full ${fChar.color} flex items-center justify-center animate-bounce-rich`}><div className="flex gap-1.5"><div className="w-1 h-1 bg-white rounded-full"></div><div className="w-1 h-1 bg-white rounded-full"></div></div></div>
-                      <div className="flex-1"><h3 className="text-sm font-black tracking-tight">{f.displayName}</h3><div className="flex items-center gap-2"><span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${fRank.bg} ${fRank.color}`}>{f.rank}</span><span className="text-lg font-black">{f.percent}%</span></div></div>
+                      <div className={`w-14 h-14 rounded-full ${fChar.color} flex items-center justify-center animate-bounce-rich shadow-lg`}><div className="flex gap-1.5"><div className="w-1.5 h-1.5 bg-white rounded-full"></div><div className="w-1.5 h-1.5 bg-white rounded-full"></div></div></div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-black tracking-tight">{f.displayName}</h3>
+                          <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${fRank.bg} ${fRank.color}`}>{f.rank}</span>
+                        </div>
+                        <div className="text-2xl font-black">{f.percent}%</div>
+                      </div>
+                      <button onClick={() => sendMessage(f.uid, f.displayName)} className="bg-white/10 p-3 rounded-2xl text-xl hover:bg-white hover:text-black transition-all">✉️</button>
                     </div>
                     <div className="space-y-2 bg-black/20 p-4 rounded-3xl">
-                      {[{ label: "Morning", val: f.sectionStats?.morning || 0 }, { label: "Afternoon", val: f.sectionStats?.afternoon || 0 }, { label: "Night", val: f.sectionStats?.night || 0 }].map((sec, si) => (
-                        <div key={si} className="flex items-center gap-3"><span className="text-[7px] font-black w-12 opacity-40">{sec.label}</span><div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-blue-400" style={{ width: `${sec.val}%` }}></div></div></div>
+                      {[{ label: "AM", val: f.sectionStats?.morning || 0 }, { label: "PM", val: f.sectionStats?.afternoon || 0 }, { label: "NG", val: f.sectionStats?.night || 0 }].map((sec, si) => (
+                        <div key={si} className="flex items-center gap-3"><span className="text-[7px] font-black w-8 opacity-40">{sec.label}</span><div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-blue-400" style={{ width: `${sec.val}%` }}></div></div></div>
                       ))}
                     </div>
                   </div>
@@ -360,23 +402,27 @@ export default function Home() {
         </div>
       </main>
 
-      {/* --- Settings Menu --- */}
+      {/* --- Settings --- */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setIsMenuOpen(false)}></div>
           <div className={`relative w-full max-w-sm p-8 rounded-[3.5rem] ${currentTheme.bg} border border-white/10 shadow-2xl max-h-[85vh] overflow-y-auto scrollbar-hide`}>
             <div className="flex justify-between items-center mb-10"><h2 className="text-xl font-black italic text-gray-500">SETTINGS</h2><button onClick={() => setIsMenuOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center">✕</button></div>
             <div className="space-y-12">
-              <section className="bg-white/5 p-6 rounded-[2rem] text-center border border-white/10"><p className="text-[10px] font-black text-gray-500 uppercase mb-2">My ID: {myDisplayId}</p></section>
+              <section className="bg-white/5 p-8 rounded-[2.5rem] text-center border border-white/10 shadow-inner">
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-3 tracking-widest">My Personal ID</p>
+                <p className="text-4xl font-black tracking-tighter text-white select-all">{myDisplayId}</p>
+                <p className="text-[9px] text-gray-600 mt-2 font-bold italic">Tap to copy and share with friends</p>
+              </section>
               <section>
-                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Add Friend</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Add New Friend</p>
                 <div className="flex gap-2">
-                  <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value.substring(0,8))} className="flex-1 bg-black/40 text-xs p-3 rounded-xl border border-white/5 outline-none" placeholder="IDを入力..." />
-                  <button onClick={addFriend} className="bg-white text-black px-4 rounded-xl font-black text-[10px] active:scale-95 transition-all">ADD</button>
+                  <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value.substring(0,8))} className="flex-1 bg-black/40 text-xs p-4 rounded-2xl border border-white/5 outline-none" placeholder="Enter 8-digit ID..." />
+                  <button onClick={addFriend} className="bg-white text-black px-6 rounded-2xl font-black text-[10px] active:scale-95 transition-all">ADD</button>
                 </div>
               </section>
               <section>
-                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Character</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Character Select</p>
                 <div className="grid grid-cols-2 gap-3">
                   {CHARACTERS.map((c, i) => (
                     <button key={i} onClick={() => { setCharIndex(i); saveToFirebase({ charIndex: i }); }} className={`p-4 rounded-[2rem] border-2 transition-all flex flex-col items-center ${charIndex === i ? 'border-white bg-white/10' : 'border-transparent opacity-30'}`}>
@@ -392,7 +438,6 @@ export default function Home() {
                   {THEMES.map((t, i) => <button key={i} onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }} className={`w-10 h-10 rounded-full border-2 transition-all ${themeIndex === i ? 'border-white scale-110' : 'border-transparent'}`} style={{ backgroundColor: t.color }}></button>)}
                 </div>
               </section>
-              {/* --- Rank System Explained (Restored) --- */}
               <section>
                 <p className="text-[10px] font-black text-gray-500 uppercase mb-4 tracking-widest">Rank System</p>
                 <div className="space-y-2.5">
