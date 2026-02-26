@@ -20,10 +20,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// アラーム音の設定 (ループ対応)
-const alarmSound = typeof Audio !== "undefined" ? new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3") : null;
-if (alarmSound) alarmSound.loop = true;
-
 // --- 定数 ---
 const CHARACTERS = [
   { id: "blob", name: "ぷるぷる", color: "bg-blue-500", accent: "from-blue-400 to-blue-600" },
@@ -45,16 +41,16 @@ const RANK_LIST = [
 const THEMES = [
   { name: "漆黒", color: "#030712", bg: "bg-gray-950", accent: "from-blue-400 to-emerald-400" },
   { name: "深夜", color: "#0f172a", bg: "bg-slate-900", accent: "from-indigo-400 to-cyan-400" },
-  { name: "深森", color: "#064e3b", bg: "bg-emerald-950", accent: "from-green-400 to-yellow-200" },
-  { name: "紫紅", color: "#2e1065", bg: "bg-neutral-950", accent: "from-purple-500 to-pink-400" },
-  { name: "紅蓮", color: "#450a0a", bg: "bg-red-950", accent: "from-orange-500 to-red-400" },
-  { name: "深海", color: "#1e1b4b", bg: "bg-indigo-950", accent: "from-blue-600 to-blue-300" },
-  { name: "桜", color: "#500724", bg: "bg-rose-950", accent: "from-pink-400 to-rose-300" },
-  { name: "黄金", color: "#422006", bg: "bg-yellow-950", accent: "from-yellow-500 to-amber-200" },
-  { name: "白銀", color: "#1f2937", bg: "bg-gray-900", accent: "from-gray-300 to-slate-100" },
-  { name: "空", color: "#0c4a6e", bg: "bg-sky-950", accent: "from-sky-400 to-blue-200" },
-  { name: "毒", color: "#3b0764", bg: "bg-violet-950", accent: "from-purple-400 to-fuchsia-300" },
-  { name: "灰", color: "#18181b", bg: "bg-zinc-950", accent: "from-zinc-400 to-zinc-200" }
+  { name: "サイバー", color: "#000000", bg: "bg-black", accent: "from-fuchsia-500 to-cyan-400" },
+  { name: "オーロラ", color: "#020617", bg: "bg-slate-950", accent: "from-emerald-400 via-cyan-400 to-indigo-500" },
+  { name: "夕暮れ", color: "#450a0a", bg: "bg-red-950", accent: "from-orange-500 to-rose-500" },
+  { name: "深海", color: "#1e1b4b", bg: "bg-indigo-950", accent: "from-blue-600 to-teal-400" },
+  { name: "紫紅", color: "#2e1065", bg: "bg-neutral-950", accent: "from-purple-600 to-pink-500" },
+  { name: "ネオン", color: "#000000", bg: "bg-zinc-950", accent: "from-lime-400 to-blue-500" },
+  { name: "火山", color: "#1c1917", bg: "bg-stone-950", accent: "from-red-600 to-yellow-500" },
+  { name: "宇宙", color: "#020617", bg: "bg-slate-950", accent: "from-indigo-900 via-purple-600 to-blue-400" },
+  { name: "森", color: "#064e3b", bg: "bg-emerald-950", accent: "from-green-400 to-yellow-300" },
+  { name: "灰", color: "#18181b", bg: "bg-zinc-950", accent: "from-zinc-400 to-slate-300" }
 ];
 
 export default function Home() {
@@ -77,11 +73,13 @@ export default function Home() {
   const [friendsData, setFriendsData] = useState([]);
   const [userMessages, setUserMessages] = useState([]);
 
+  // タイマー用
   const [timeLeft, setTimeLeft] = useState(300); 
   const [baseTime, setBaseTime] = useState(300); 
   const [isTimerActive, setIsTimerActive] = useState(false);
   const endTimeRef = useRef(null);
   const timerRef = useRef(null);
+  const audioRef = useRef(null);
 
   const totalTasks = tasks.morning.length + tasks.afternoon.length + tasks.night.length;
   const completedTasks = Object.values(checks).filter(Boolean).length;
@@ -90,6 +88,20 @@ export default function Home() {
   const myDisplayId = user ? user.uid.substring(0, 8) : "";
   const currentChar = CHARACTERS[charIndex];
   const currentTheme = THEMES[themeIndex];
+
+  // 通知許可のリクエスト
+  const requestNotification = () => {
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+  };
+
+  useEffect(() => {
+    if (typeof Audio !== "undefined") {
+      audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+      audioRef.current.loop = true;
+    }
+  }, []);
 
   const taskLibrary = useMemo(() => {
     const all = [...tasks.morning, ...tasks.afternoon, ...tasks.night];
@@ -188,27 +200,39 @@ export default function Home() {
     return () => unsub();
   }, [friendsList, user]);
 
+  // タイマー：ループ再生と通知
   useEffect(() => {
     if (isTimerActive) {
       endTimeRef.current = Date.now() + timeLeft * 1000;
       timerRef.current = setInterval(() => {
         const remaining = Math.round((endTimeRef.current - Date.now()) / 1000);
+        
+        // 残り3秒でオーディオを無音再生してアクティブにする（iOS/Androidバックグラウンド対策）
+        if (remaining === 3 && audioRef.current) {
+          audioRef.current.volume = 0.01;
+          audioRef.current.play().catch(() => {});
+        }
+
         if (remaining <= 0) {
           setIsTimerActive(false);
           setTimeLeft(0);
           clearInterval(timerRef.current);
-          if (alarmSound) {
-            alarmSound.currentTime = 0;
-            alarmSound.play().catch(e => console.log("Audio play failed:", e));
+          
+          if (audioRef.current) {
+            audioRef.current.volume = 1.0;
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(e => console.log("Play failed:", e));
           }
-          if (typeof navigator !== "undefined" && navigator.vibrate) {
-            navigator.vibrate([500, 200, 500, 200, 500]);
+
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("ROUTINE MASTER", { body: "時間です！" });
           }
+
           setTimeout(() => {
             alert("時間です！");
-            if (alarmSound) {
-              alarmSound.pause();
-              alarmSound.currentTime = 0;
+            if (audioRef.current) {
+              audioRef.current.pause();
+              audioRef.current.currentTime = 0;
             }
           }, 100); 
         } else {
@@ -344,7 +368,6 @@ export default function Home() {
         .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* --- MENUサイドバーの外部クリック対応 --- */}
       {isSidebarOpen && (
         <div className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)}></div>
       )}
@@ -364,7 +387,7 @@ export default function Home() {
         </section>
 
         <section className="mb-8">
-          <p className="text-[10px] font-black text-gray-500 tracking-widest mb-4 uppercase">タスクライブラリ（振分）</p>
+          <p className="text-[10px] font-black text-gray-500 tracking-widest mb-4 uppercase">タスクライブラリ</p>
           <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide pr-2">
             {taskLibrary.map((t, i) => (
               <div key={i} className="bg-white/5 p-2 rounded-xl border border-white/5 flex items-center justify-between gap-2">
@@ -461,7 +484,7 @@ export default function Home() {
                     <div className="text-center">
                       <p className="text-[28px] font-mono font-black tabular-nums">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
                       <div className="flex gap-2 mt-1">
-                        <button onClick={() => setIsTimerActive(!isTimerActive)} className={`px-4 py-1.5 text-[9px] font-black rounded-full transition-all ${isTimerActive ? "bg-red-500" : "bg-white text-black"}`}>{isTimerActive ? "停止" : "開始"}</button>
+                        <button onClick={() => { setIsTimerActive(!isTimerActive); requestNotification(); }} className={`px-4 py-1.5 text-[9px] font-black rounded-full transition-all ${isTimerActive ? "bg-red-500" : "bg-white text-black"}`}>{isTimerActive ? "停止" : "開始"}</button>
                         <button onClick={() => { setIsTimerActive(false); setTimeLeft(baseTime); }} className="px-4 py-1.5 text-[9px] font-black rounded-full bg-white/10 border border-white/10 hover:bg-white/20 transition-all">リセット</button>
                       </div>
                     </div>
@@ -538,6 +561,7 @@ export default function Home() {
         </div>
       </main>
 
+      {/* 各種モーダル */}
       {selectedChatFriend && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSelectedChatFriend(null)}></div>
@@ -582,7 +606,7 @@ export default function Home() {
               <div className="grid grid-cols-3 gap-2">
                 {THEMES.map((t, i) => (
                   <button key={i} onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }} className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${themeIndex === i ? 'border-white bg-white/10' : 'border-white/10 bg-white/5 opacity-60'}`}>
-                    <div className="w-full h-2 rounded-full bg-gradient-to-r" style={{ background: `linear-gradient(to right, ${t.color}, #666)` }}></div>
+                    <div className={`w-full h-3 rounded-full bg-gradient-to-r ${t.accent}`}></div>
                     <span className="text-[9px] font-black">{t.name}</span>
                   </button>
                 ))}
