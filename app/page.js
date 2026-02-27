@@ -32,15 +32,22 @@ const CHARACTERS = [
 
 const EMOJI_ICONS = ["😊","😎","🥳","🤩","😇","🦊","🐼","🐸","🐯","🦁","🐙","🐳","🦄","🐲","🌸","⭐","🔥","💎","🎯","🚀","👑","🎸","🏆","🌈"];
 
-function UserIcon({ photoURL, charIndex, emojiIcon, size = "w-16 h-16", textSize = "text-2xl" }: {
-  photoURL?: string; charIndex?: number; emojiIcon?: string; size?: string; textSize?: string;
+function UserIcon({ 
+  photoURL, 
+  charIndex, 
+  emojiIcon, 
+  size = "w-16 h-16", 
+  textSize = "text-2xl" 
 }) {
   const char = CHARACTERS[charIndex || 0];
   if (photoURL) return <img src={photoURL} alt="icon" className={`${size} rounded-full object-cover`} />;
   if (emojiIcon) return <div className={`${size} rounded-full bg-white/10 flex items-center justify-center ${textSize}`}>{emojiIcon}</div>;
   return (
     <div className={`${size} rounded-full ${char.color} flex items-center justify-center`}>
-      <div className="flex gap-1.5"><div className="w-2 h-2 bg-white rounded-full" /><div className="w-2 h-2 bg-white rounded-full" /></div>
+      <div className="flex gap-1.5">
+        <div className="w-2 h-2 bg-white rounded-full" />
+        <div className="w-2 h-2 bg-white rounded-full" />
+      </div>
     </div>
   );
 }
