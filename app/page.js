@@ -96,6 +96,10 @@ export default function Home() {
   const [editingTask, setEditingTask] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isTimerActive, setIsTimerActive] = useState(false);
+  
+  // --- 機能追加：チュートリアル用ステート ---
+  const [showTutorial, setShowTutorial] = useState(false);
+
   const endTimeRef = useRef(null);
   const timerRef = useRef(null);
   const audioRef = useRef(null);
@@ -215,6 +219,7 @@ export default function Home() {
     const avg = nextHistory.slice(-7).reduce((acc, cur) => acc + (cur.percent || 0), 0) / Math.min(nextHistory.length, 7);
     const newRank = RANK_LIST.find(r => avg >= r.min)?.name || "ビギナー";
     const awardName = DAILY_AWARDS.find(a => newPercent >= a.min)?.name || "休息中";
+
     await setDoc(doc(db, "users", user.uid), {
       uid: user.uid, tasks: currentTasks, checks: currentChecks, lastCheckDate: today,
       history: nextHistory, displayName: currentName, shortId: myDisplayId,
@@ -222,6 +227,14 @@ export default function Home() {
       streak: streakCount,
       themeIndex: currentThemeIdx, charIndex: currentCharIdx, lastActive: Date.now()
     }, { merge: true });
+  };
+
+  // --- 機能追加：チュートリアルを閉じる処理 ---
+  const closeTutorial = async () => {
+    setShowTutorial(false);
+    if (user) {
+      await updateDoc(doc(db, "users", user.uid), { hasSeenTutorial: true });
+    }
   };
 
   useEffect(() => {
@@ -243,6 +256,14 @@ export default function Home() {
             setUserMessages(sortedMsgs);
             if (d.lastCheckDate === today) setChecks(d.checks || {});
             else setChecks({});
+            
+            // --- チュートリアル表示判定 ---
+            if (!d.hasSeenTutorial) {
+              setShowTutorial(true);
+            }
+          } else {
+            // 新規ユーザーの場合も表示
+            setShowTutorial(true);
           }
           setLoading(false);
         });
@@ -376,6 +397,7 @@ export default function Home() {
   };
 
   if (loading) return <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white"><div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div></div>;
+
   if (!user) return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 bg-gray-950">
       <h1 className="text-7xl font-black italic tracking-tighter text-center">
@@ -516,9 +538,7 @@ export default function Home() {
                     <div className="h-28 w-full bg-black/20 rounded-2xl p-2">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData}>
-                          {/* 修正：縦線・横線を復活 */}
                           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={true} horizontal={true} />
-                          {/* 修正：日付（X軸）を表示し、デザイン調整 */}
                           <XAxis 
                             dataKey="displayDate" 
                             hide={false} 
@@ -586,7 +606,7 @@ export default function Home() {
               <section>
                 <div className="flex items-center gap-3 mb-4 px-2"><div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div><p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Achievement Log</p></div>
                 <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-6 shadow-2xl">
-                    <div className="space-y-4 max-h-[400px] overflow-y-auto scrollbar-hide">
+                  <div className="space-y-4 max-h-[400px] overflow-y-auto scrollbar-hide">
                     {timeline.map((log) => (
                       <div key={log.id} className="flex gap-4 items-start bg-white/[0.03] p-4 rounded-2xl border border-white/5">
                         <div className={`w-10 h-10 rounded-full shrink-0 ${CHARACTERS[log.charIndex || 0].color} flex items-center justify-center text-[10px]`}>✨</div>
@@ -708,7 +728,7 @@ export default function Home() {
                       if (!user || !displayName.trim()) return;
                       await updateProfile(auth.currentUser, { displayName: displayName.trim() });
                       await saveToFirebase({ displayName: displayName.trim() }); alert("更新しました");
-                  }} className="bg-white text-black px-6 rounded-xl font-black text-[10px]">保存</button>
+                    }} className="bg-white text-black px-6 rounded-xl font-black text-[10px]">保存</button>
                 </div>
               </section>
               <section>
@@ -735,6 +755,35 @@ export default function Home() {
                 </div>
               </section>
               <button onClick={() => signOut(auth)} className="w-full bg-red-500/10 text-red-500 py-4 rounded-2xl font-black text-[11px] uppercase border border-red-500/20">Sign Out</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- 機能追加：初回限定チュートリアルメッセージ --- */}
+      {showTutorial && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-md p-6 animate-in fade-in duration-300">
+          <div className="bg-white text-black p-8 rounded-[3rem] max-w-sm w-full relative shadow-2xl animate-bounce-rich">
+            <button 
+              onClick={closeTutorial}
+              className="absolute top-6 right-8 text-2xl font-black text-gray-300 hover:text-black transition-colors"
+            >
+              ✕
+            </button>
+            <div className="text-center">
+              <span className="text-5xl mb-6 block">🚀</span>
+              <h2 className="text-2xl font-black mb-4 italic tracking-tighter">ROUTINE MASTERへようこそ！</h2>
+              <div className="space-y-4 text-left text-[11px] font-black text-gray-500 uppercase tracking-widest mb-8 border-y border-gray-100 py-6">
+                <p className="flex items-center gap-3"><span className="text-blue-500">01</span> タスクを追加してチェックしよう</p>
+                <p className="flex items-center gap-3"><span className="text-blue-500">02</span> キャラクターがあなたの頑張りを応援</p>
+                <p className="flex items-center gap-3"><span className="text-blue-500">03</span> 友達をフォローして競い合おう</p>
+              </div>
+              <button 
+                onClick={closeTutorial}
+                className="w-full bg-black text-white py-4 rounded-2xl font-black text-[10px] tracking-[0.2em] shadow-xl hover:scale-[0.98] transition-transform"
+              >
+                START TRAINING
+              </button>
             </div>
           </div>
         </div>
