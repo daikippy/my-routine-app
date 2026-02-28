@@ -32,9 +32,7 @@ const CHARACTERS = [
 
 const EMOJI_ICONS = ["😊","😎","🥳","🤩","😇","🦊","🐼","🐸","🐯","🦁","🐙","🐳","🦄","🐲","🌸","⭐","🔥","💎","🎯","🚀","👑","🎸","🏆","🌈"];
 
-function UserIcon({ photoURL, charIndex, emojiIcon, size = "w-16 h-16", textSize = "text-2xl" }: {
-  photoURL?: string; charIndex?: number; emojiIcon?: string; size?: string; textSize?: string;
-}) {
+function UserIcon({ photoURL, charIndex, emojiIcon, size = "w-16 h-16", textSize = "text-2xl" }) {
   const char = CHARACTERS[charIndex || 0];
   if (photoURL) return <img src={photoURL} alt="icon" className={`${size} rounded-full object-cover`} />;
   if (emojiIcon) return <div className={`${size} rounded-full bg-white/10 flex items-center justify-center ${textSize}`}>{emojiIcon}</div>;
@@ -91,24 +89,24 @@ export default function Home() {
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
   const [activeTab, setActiveTab] = useState("main");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [tasks, setTasks] = useState<{ morning: string[]; afternoon: string[]; night: string[] }>({ morning: [], afternoon: [], night: [] });
-  const [checks, setChecks] = useState<Record<string, boolean>>({});
-  const [history, setHistory] = useState<{ date: string; percent: number }[]>([]);
+  const [tasks, setTasks] = useState({ morning: [], afternoon: [], night: [] });
+  const [checks, setChecks] = useState({});
+  const [history, setHistory] = useState([]);
   const [newTasks, setNewTasks] = useState({ morning: "", afternoon: "", night: "" });
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState(null);
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(true);
   const [themeIndex, setThemeIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [friendIdInput, setFriendIdInput] = useState("");
-  const [selectedChatFriend, setSelectedChatFriend] = useState<any>(null);
-  const [friendsList, setFriendsList] = useState<string[]>([]);
-  const [friendsData, setFriendsData] = useState<any[]>([]);
-  const [userMessages, setUserMessages] = useState<any[]>([]);
-  const [timeline, setTimeline] = useState<any[]>([]);
-  const [draggedItem, setDraggedItem] = useState<any>(null);
-  const [editingTask, setEditingTask] = useState<any>(null);
+  const [selectedChatFriend, setSelectedChatFriend] = useState(null);
+  const [friendsList, setFriendsList] = useState([]);
+  const [friendsData, setFriendsData] = useState([]);
+  const [userMessages, setUserMessages] = useState([]);
+  const [timeline, setTimeline] = useState([]);
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [editingTask, setEditingTask] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [timerFinished, setTimerFinished] = useState(false);
@@ -116,20 +114,20 @@ export default function Home() {
   const [emojiIcon, setEmojiIcon] = useState("");
   const [showTutorial, setShowTutorial] = useState(false);
   // ⑩ トースト
-  const [toast, setToast] = useState<{ msg: string; type?: "ok" | "err" } | null>(null);
+  const [toast, setToast] = useState(null);
   // ② チャット入力
   const [chatInput, setChatInput] = useState("");
   // ⑦ テーマ名ホバー
-  const [hoveredTheme, setHoveredTheme] = useState<number | null>(null);
+  const [hoveredTheme, setHoveredTheme] = useState(null);
 
-  const endTimeRef = useRef<number | null>(null);
-  const timerRef = useRef<any>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const chatBottomRef = useRef<HTMLDivElement>(null);
-  const iconFileRef = useRef<HTMLInputElement>(null);
+  const endTimeRef = useRef(null);
+  const timerRef = useRef(null);
+  const audioRef = useRef(null);
+  const chatBottomRef = useRef(null);
+  const iconFileRef = useRef(null);
 
   // ⑩ トースト表示ヘルパー
-  const showToast = (msg: string, type: "ok" | "err" = "ok") => {
+  const showToast = (msg, type = "ok") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 2500);
   };
@@ -145,7 +143,7 @@ export default function Home() {
 
   // ⑧ 時間帯別進捗
   const timeProgress = useMemo(() => {
-    return (["morning", "afternoon", "night"] as const).map(t => {
+    return (["morning", "afternoon", "night"]).map(t => {
       const total = tasks[t].length;
       const done = tasks[t].filter((_, i) => checks[`${t}_${i}`]).length;
       return { time: t, total, done };
@@ -217,7 +215,7 @@ export default function Home() {
     const month = currentCalendarDate.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const days: any[] = [];
+    const days = [];
     for (let i = 0; i < firstDay.getDay(); i++) days.push(null);
     for (let i = 1; i <= lastDay.getDate(); i++) {
       const dStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
@@ -227,9 +225,9 @@ export default function Home() {
     return days;
   }, [currentCalendarDate, history]);
 
-  const changeMonth = (offset: number) => setCurrentCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
+  const changeMonth = (offset) => setCurrentCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
 
-  const postToTimeline = async (message: string) => {
+  const postToTimeline = async (message) => {
     if (!user) return;
     try {
       await addDoc(collection(db, "timeline"), {
@@ -241,7 +239,7 @@ export default function Home() {
     } catch (e) { console.error("Timeline post error:", e); }
   };
 
-  const removeFromTimeline = async (taskName: string) => {
+  const removeFromTimeline = async (taskName) => {
     if (!user) return;
     try {
       const q = query(collection(db, "timeline"), where("uid", "==", user.uid));
@@ -254,7 +252,7 @@ export default function Home() {
     } catch (e) { console.error("Timeline remove error:", e); }
   };
 
-  const saveToFirebase = async (updatedData: any = {}) => {
+  const saveToFirebase = async (updatedData = {}) => {
     if (!user) return;
     const currentTasks = updatedData.tasks || tasks;
     const currentChecks = updatedData.checks || checks;
@@ -271,11 +269,11 @@ export default function Home() {
     const newPercent = total === 0 ? 0 : Math.round((comp / total) * 100);
 
     let nextHistory = [...currentHistory];
-    const existingIdx = nextHistory.findIndex((h: any) => h.date === today);
+    const existingIdx = nextHistory.findIndex((h) => h.date === today);
     if (existingIdx >= 0) nextHistory[existingIdx] = { date: today, percent: newPercent };
     else nextHistory.push({ date: today, percent: newPercent });
 
-    const avg = nextHistory.slice(-7).reduce((acc: number, cur: any) => acc + (cur.percent || 0), 0) / Math.min(nextHistory.length, 7);
+    const avg = nextHistory.slice(-7).reduce((acc, cur) => acc + (cur.percent || 0), 0) / Math.min(nextHistory.length, 7);
     const newRank = RANK_LIST.find(r => avg >= r.min)?.name || "ビギナー";
     const awardName = DAILY_AWARDS.find(a => newPercent >= a.min)?.name || "休息中";
 
@@ -295,7 +293,7 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u: any) => {
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
         setDisplayName(u.displayName || "");
@@ -311,7 +309,7 @@ export default function Home() {
             if (d.displayName) setDisplayName(d.displayName);
             if (d.photoURL !== undefined) setPhotoURL(d.photoURL || "");
             if (d.emojiIcon !== undefined) setEmojiIcon(d.emojiIcon || "");
-            const sortedMsgs = (d.messageHistory || []).sort((a: any, b: any) => a.id - b.id);
+            const sortedMsgs = (d.messageHistory || []).sort((a, b) => a.id - b.id);
             setUserMessages(sortedMsgs);
             if (d.lastCheckDate === today) setChecks(d.checks || {});
             else setChecks({});
@@ -336,7 +334,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!user) return;
-    const allowedUids = [user.uid, ...friendsData.map((f: any) => f.uid)].slice(0, 10);
+    const allowedUids = [user.uid, ...friendsData.map((f) => f.uid)].slice(0, 10);
     const qTimeline = query(collection(db, "timeline"), where("uid", "in", allowedUids), orderBy("timestamp", "desc"), limit(20));
     const unsub = onSnapshot(qTimeline, (snap) => {
       setTimeline(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -351,7 +349,7 @@ export default function Home() {
     return () => unsub();
   }, [friendsList, user]);
 
-  const addTimerMinutes = (minutes: number) => {
+  const addTimerMinutes = (minutes) => {
     const addSeconds = minutes * 60;
     setTimeLeft(prev => prev + addSeconds);
     if (isTimerActive && endTimeRef.current) endTimeRef.current += addSeconds * 1000;
@@ -361,7 +359,7 @@ export default function Home() {
     if (isTimerActive) {
       if (!endTimeRef.current) endTimeRef.current = Date.now() + timeLeft * 1000;
       timerRef.current = setInterval(() => {
-        const remaining = Math.round((endTimeRef.current! - Date.now()) / 1000);
+        const remaining = Math.round((endTimeRef.current - Date.now()) / 1000);
         if (remaining <= 0) {
           setIsTimerActive(false); setTimeLeft(0); endTimeRef.current = null;
           clearInterval(timerRef.current);
@@ -383,7 +381,7 @@ export default function Home() {
     if (selectedChatFriend && chatBottomRef.current) chatBottomRef.current.scrollIntoView({ behavior: "smooth" });
   }, [userMessages, selectedChatFriend]);
 
-  const toggleCheck = (time: string, index: number, taskName: string) => {
+  const toggleCheck = (time, index, taskName) => {
     const checkId = `${time}_${index}`;
     const isChecked = !checks[checkId];
     const nextChecks = { ...checks, [checkId]: isChecked };
@@ -393,7 +391,7 @@ export default function Home() {
     else removeFromTimeline(taskName);
   };
 
-  const addTask = (time: string) => {
+  const addTask = (time) => {
     if (!newTasks[time]) return;
     const nextTasks = { ...tasks, [time]: [...tasks[time], newTasks[time]] };
     setTasks(nextTasks);
@@ -401,14 +399,14 @@ export default function Home() {
     saveToFirebase({ tasks: nextTasks });
   };
 
-  const updateTaskValue = (time: string, index: number, newValue: string) => {
+  const updateTaskValue = (time, index, newValue) => {
     const nl = [...tasks[time]]; nl[index] = newValue;
     const nextTasks = { ...tasks, [time]: nl };
     setTasks(nextTasks); saveToFirebase({ tasks: nextTasks }); setEditingTask(null);
   };
 
-  const onDragStart = (e: any, time: string, index: number) => { setDraggedItem({ time, index }); e.dataTransfer.effectAllowed = "move"; };
-  const onDragOver = (e: any, time: string, index: number) => {
+  const onDragStart = (e, time, index) => { setDraggedItem({ time, index }); e.dataTransfer.effectAllowed = "move"; };
+  const onDragOver = (e, time, index) => {
     e.preventDefault();
     if (!draggedItem || draggedItem.time !== time || draggedItem.index === index) return;
     const newList = [...tasks[time]];
@@ -419,7 +417,7 @@ export default function Home() {
   const onDragEnd = () => { saveToFirebase({ tasks }); setDraggedItem(null); };
 
   // ② チャット送信：prompt廃止
-  const sendMessage = async (customText: string | null = null) => {
+  const sendMessage = async (customText = null) => {
     if (!selectedChatFriend) return;
     const msgText = customText || chatInput.trim();
     if (!msgText) return;
@@ -436,7 +434,7 @@ export default function Home() {
     await batch.commit();
   };
 
-  const deleteMessage = async (messageObj: any) => {
+  const deleteMessage = async (messageObj) => {
     if (!selectedChatFriend) return;
     const batch = writeBatch(db);
     batch.update(doc(db, "users", user.uid), { messageHistory: arrayRemove(messageObj) });
@@ -444,12 +442,12 @@ export default function Home() {
     await batch.commit();
   };
 
-  const handleIconPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIconPhotoUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async () => {
-      const base64 = reader.result as string;
+      const base64 = reader.result;
       setPhotoURL(base64); setEmojiIcon("");
       await saveToFirebase({ photoURL: base64, emojiIcon: "" });
       showToast("アイコンを更新しました");
@@ -672,7 +670,7 @@ export default function Home() {
 
               {/* タスクカード */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-                {(["morning", "afternoon", "night"] as const).map((time, ti) => {
+                {(["morning", "afternoon", "night"]).map((time, ti) => {
                   const tp = timeProgress[ti];
                   return (
                     <div key={time} className="bg-white/5 p-7 rounded-[3rem] border border-white/10 shadow-xl flex flex-col h-auto min-h-[400px]">
