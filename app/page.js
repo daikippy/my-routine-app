@@ -19,12 +19,18 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const CHARACTERS = [
-  { id: "blob",  name: "ぷるぷる", color: "bg-blue-500",   accent: "from-blue-400 to-blue-600 shadow-blue-500/50" },
-  { id: "fluff", name: "もふもふ", color: "bg-orange-400", accent: "from-orange-300 to-orange-500 shadow-orange-500/50" },
-  { id: "spark", name: "ぴかぴか", color: "bg-yellow-400", accent: "from-yellow-300 to-yellow-500 shadow-yellow-500/50" },
-  { id: "fire",  name: "メラメラ", color: "bg-red-500",    accent: "from-red-400 to-red-600 shadow-red-500/50" },
-  { id: "cool",  name: "しっとり", color: "bg-indigo-600", accent: "from-indigo-500 to-indigo-700 shadow-indigo-500/50" },
-  { id: "ghost", name: "ふわふわ", color: "bg-purple-400", accent: "from-purple-300 to-purple-500 shadow-purple-500/50" }
+  { id: "blob",   name: "ぷるぷる",   color: "bg-blue-500",    accent: "from-blue-400 to-blue-600" },
+  { id: "fluff",  name: "もふもふ",   color: "bg-orange-400",  accent: "from-orange-300 to-orange-500" },
+  { id: "spark",  name: "ぴかぴか",   color: "bg-yellow-400",  accent: "from-yellow-300 to-yellow-500" },
+  { id: "fire",   name: "メラメラ",   color: "bg-red-500",     accent: "from-red-400 to-red-600" },
+  { id: "cool",   name: "しっとり",   color: "bg-indigo-600",  accent: "from-indigo-500 to-indigo-700" },
+  { id: "ghost",  name: "ふわふわ",   color: "bg-purple-400",  accent: "from-purple-300 to-purple-500" },
+  { id: "forest", name: "もりもり",   color: "bg-emerald-500", accent: "from-emerald-400 to-emerald-600" },
+  { id: "rose",   name: "ふわら",     color: "bg-pink-400",    accent: "from-pink-300 to-pink-500" },
+  { id: "sky",    name: "そらそら",   color: "bg-cyan-400",    accent: "from-cyan-300 to-cyan-500" },
+  { id: "night",  name: "よるよる",   color: "bg-slate-700",   accent: "from-slate-600 to-slate-800" },
+  { id: "lemon",  name: "れもんれもん", color: "bg-lime-400",  accent: "from-lime-300 to-lime-500" },
+  { id: "sakura", name: "さくらさくら", color: "bg-rose-300",  accent: "from-rose-200 to-rose-400" }
 ];
 
 const EMOJI_ICONS = ["😊","😎","🥳","🤩","😇","🦊","🐼","🐸","🐯","🦁","🐙","🐳","🦄","🐲","🌸","⭐","🔥","💎","🎯","🚀","👑","🎸","🏆","🌈"];
@@ -57,27 +63,43 @@ const DAILY_AWARDS = [
 ];
 
 const THEMES = [
-  { name: "Passion",     color: "#ef4444", bg: "bg-red-500",     title: "text-white" },
-  { name: "Soft Red",    color: "#fca5a5", bg: "bg-red-300",     title: "text-red-950" },
-  { name: "Deep Red",    color: "#7f1d1d", bg: "bg-red-950",     title: "text-white" },
-  { name: "Sun",         color: "#f97316", bg: "bg-orange-500",  title: "text-white" },
-  { name: "Apricot",     color: "#fdba74", bg: "bg-orange-300",  title: "text-orange-950" },
-  { name: "Deep Orange", color: "#9a3412", bg: "bg-orange-900",  title: "text-white" },
-  { name: "Lemon",       color: "#facc15", bg: "bg-yellow-400",  title: "text-yellow-950" },
-  { name: "Cream",       color: "#fef9c3", bg: "bg-yellow-100",  title: "text-yellow-950" },
-  { name: "Gold",        color: "#ca8a04", bg: "bg-yellow-600",  title: "text-white" },
-  { name: "Emerald",     color: "#10b981", bg: "bg-emerald-500", title: "text-white" },
-  { name: "Mint",        color: "#a7f3d0", bg: "bg-emerald-200", title: "text-emerald-950" },
-  { name: "Forest",      color: "#064e3b", bg: "bg-emerald-950", title: "text-white" },
-  { name: "Sky Blue",    color: "#3b82f6", bg: "bg-blue-500",    title: "text-white" },
-  { name: "Pale Blue",   color: "#dbeafe", bg: "bg-blue-100",    title: "text-blue-950" },
-  { name: "Ocean",       color: "#1e3a8a", bg: "bg-blue-900",    title: "text-white" },
-  { name: "Indigo",      color: "#6366f1", bg: "bg-indigo-500",  title: "text-white" },
-  { name: "Lavender",    color: "#c7d2fe", bg: "bg-indigo-200",  title: "text-indigo-950" },
-  { name: "Midnight",    color: "#312e81", bg: "bg-indigo-950",  title: "text-white" },
-  { name: "Grape",       color: "#a855f7", bg: "bg-purple-500",  title: "text-white" },
-  { name: "Lilac",       color: "#f3e8ff", bg: "bg-purple-100",  title: "text-purple-950" },
-  { name: "Dark Purple", color: "#581c87", bg: "bg-purple-950",  title: "text-white" }
+  { name: "Passion",     bg: "bg-red-500",     title: "text-white" },
+  { name: "Soft Red",    bg: "bg-red-300",     title: "text-red-950" },
+  { name: "Deep Red",    bg: "bg-red-950",     title: "text-white" },
+  { name: "Sun",         bg: "bg-orange-500",  title: "text-white" },
+  { name: "Apricot",     bg: "bg-orange-300",  title: "text-orange-950" },
+  { name: "Deep Orange", bg: "bg-orange-900",  title: "text-white" },
+  { name: "Lemon",       bg: "bg-yellow-400",  title: "text-yellow-950" },
+  { name: "Cream",       bg: "bg-yellow-100",  title: "text-yellow-950" },
+  { name: "Gold",        bg: "bg-yellow-600",  title: "text-white" },
+  { name: "Amber",       bg: "bg-amber-500",   title: "text-white" },
+  { name: "Warm Sand",   bg: "bg-amber-200",   title: "text-amber-950" },
+  { name: "Dark Amber",  bg: "bg-amber-900",   title: "text-white" },
+  { name: "Emerald",     bg: "bg-emerald-500", title: "text-white" },
+  { name: "Mint",        bg: "bg-emerald-200", title: "text-emerald-950" },
+  { name: "Forest",      bg: "bg-emerald-950", title: "text-white" },
+  { name: "Teal",        bg: "bg-teal-500",    title: "text-white" },
+  { name: "Pale Teal",   bg: "bg-teal-200",    title: "text-teal-950" },
+  { name: "Deep Teal",   bg: "bg-teal-900",    title: "text-white" },
+  { name: "Cyan",        bg: "bg-cyan-500",    title: "text-white" },
+  { name: "Ice",         bg: "bg-cyan-100",    title: "text-cyan-950" },
+  { name: "Sky Blue",    bg: "bg-blue-500",    title: "text-white" },
+  { name: "Pale Blue",   bg: "bg-blue-100",    title: "text-blue-950" },
+  { name: "Ocean",       bg: "bg-blue-900",    title: "text-white" },
+  { name: "Indigo",      bg: "bg-indigo-500",  title: "text-white" },
+  { name: "Lavender",    bg: "bg-indigo-200",  title: "text-indigo-950" },
+  { name: "Midnight",    bg: "bg-indigo-950",  title: "text-white" },
+  { name: "Grape",       bg: "bg-purple-500",  title: "text-white" },
+  { name: "Lilac",       bg: "bg-purple-100",  title: "text-purple-950" },
+  { name: "Dark Purple", bg: "bg-purple-950",  title: "text-white" },
+  { name: "Rose",        bg: "bg-rose-500",    title: "text-white" },
+  { name: "Petal",       bg: "bg-rose-200",    title: "text-rose-950" },
+  { name: "Crimson",     bg: "bg-rose-900",    title: "text-white" },
+  { name: "Pink",        bg: "bg-pink-400",    title: "text-white" },
+  { name: "Blush",       bg: "bg-pink-100",    title: "text-pink-950" },
+  { name: "Charcoal",    bg: "bg-zinc-800",    title: "text-white" },
+  { name: "Graphite",    bg: "bg-slate-600",   title: "text-white" },
+  { name: "Pure Black",  bg: "bg-black",       title: "text-white" }
 ];
 
 const MEDAL = ["🥇","🥈","🥉"];
@@ -205,10 +227,8 @@ export default function Home() {
     }
   }, []);
 
-  const taskLibrary = useMemo(() => {
-    const all = [...tasks.morning, ...tasks.afternoon, ...tasks.night];
-    return Array.from(new Set(all)).filter(t => t !== "");
-  }, [tasks]);
+  // 修正1: ライブラリーはFirestoreに保存された履歴（最新30件）
+  const [libraryHistory, setLibraryHistory] = useState([]);
 
   const characterMessage = useMemo(() => {
     if (totalTasks === 0) return "まずは朝・昼・夜にルーティンを追加してみよう！";
@@ -293,6 +313,7 @@ export default function Home() {
     const currentName = updatedData.displayName || displayName || user.displayName;
     const currentPhotoURL = updatedData.photoURL !== undefined ? updatedData.photoURL : photoURL;
     const currentEmojiIcon = updatedData.emojiIcon !== undefined ? updatedData.emojiIcon : emojiIcon;
+    const currentLibraryHistory = updatedData.libraryHistory !== undefined ? updatedData.libraryHistory : libraryHistory;
 
     const comp = Object.values(currentChecks).filter(Boolean).length;
     const total = currentTasks.morning.length + currentTasks.afternoon.length + currentTasks.night.length;
@@ -302,6 +323,8 @@ export default function Home() {
     const existingIdx = nextHistory.findIndex(h => h.date === today);
     if (existingIdx >= 0) nextHistory[existingIdx] = { date: today, percent: newPercent };
     else nextHistory.push({ date: today, percent: newPercent });
+    // 修正2: historyは最新90件に制限（表示は最新20件）
+    if (nextHistory.length > 90) nextHistory = nextHistory.slice(-90);
 
     const avg = nextHistory.slice(-7).reduce((acc, cur) => acc + (cur.percent || 0), 0) / Math.min(nextHistory.length, 7);
     const newRank = RANK_LIST.find(r => avg >= r.min)?.name || "ビギナー";
@@ -313,6 +336,7 @@ export default function Home() {
       rank: newRank, percent: newPercent, award: awardName, avg: Math.round(avg),
       friends: currentFriendsList, streak: streakCount,
       photoURL: currentPhotoURL, emojiIcon: currentEmojiIcon,
+      libraryHistory: currentLibraryHistory,
       themeIndex: currentThemeIdx, charIndex: currentCharIdx, lastActive: Date.now()
     }, { merge: true });
   };
@@ -339,6 +363,7 @@ export default function Home() {
             // 修正1: photoURL/emojiIconをFirestoreから確実に読み込む
             setPhotoURL(d.photoURL ?? "");
             setEmojiIcon(d.emojiIcon ?? "");
+            setLibraryHistory(d.libraryHistory || []);
             setUserMessages((d.messageHistory || []).sort((a, b) => a.id - b.id));
             if (d.lastCheckDate === today) setChecks(d.checks || {});
             else setChecks({});
@@ -414,8 +439,13 @@ export default function Home() {
 
   const addTask = (time) => {
     if (!newTasks[time]) return;
-    const next = { ...tasks, [time]: [...tasks[time], newTasks[time]] };
-    setTasks(next); setNewTasks({ ...newTasks, [time]: "" }); saveToFirebase({ tasks: next });
+    const taskName = newTasks[time];
+    const next = { ...tasks, [time]: [...tasks[time], taskName] };
+    setTasks(next); setNewTasks({ ...newTasks, [time]: "" });
+    // 修正1: ライブラリー履歴に追加（重複除去、最新30件）
+    const newLib = [taskName, ...libraryHistory.filter(t => t !== taskName)].slice(0, 30);
+    setLibraryHistory(newLib);
+    saveToFirebase({ tasks: next, libraryHistory: newLib });
   };
 
   const updateTaskValue = (time, index, newValue) => {
@@ -551,9 +581,9 @@ export default function Home() {
         <div className="flex-1 overflow-hidden flex flex-col gap-3 min-h-0">
           <div className="flex flex-col min-h-0">
             <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase mb-2 shrink-0">Library</p>
-            {/* 修正3: ライブラリーのみ高さ固定スクロール */}
+            {/* ライブラリーは固定高さ・独立スクロール（最新30件） */}
             <div className="overflow-y-auto scrollbar-hide max-h-36 space-y-1.5 pr-1">
-              {taskLibrary.map((t, i) => (
+              {libraryHistory.map((t, i) => (
                 <div key={i} className="bg-white/5 p-2 rounded-xl flex items-center justify-between gap-2">
                   <span className="text-[10px] font-bold truncate flex-1">{t}</span>
                   <div className="flex gap-1">
@@ -572,7 +602,7 @@ export default function Home() {
           <div className="flex flex-col flex-1 min-h-0">
             <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase mb-2 shrink-0">History</p>
             <div className="overflow-y-auto scrollbar-hide space-y-1.5 pr-1 flex-1">
-              {history.slice(-10).reverse().map((h, i) => (
+              {history.slice(-20).reverse().map((h, i) => (
                 <div key={i} className="flex justify-between items-center bg-white/5 p-3 rounded-xl">
                   <span className="text-[10px] text-gray-400 font-bold">{h.date}</span>
                   <span className="text-[10px] font-black">{h.percent}%</span>
@@ -880,7 +910,7 @@ export default function Home() {
                       const charColor = CHARACTERS[f.charIndex || 0];
                       return (
                         <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 relative shadow-2xl transition-transform hover:scale-[1.02]">
-                          <div className={`absolute top-0 left-0 w-2 h-full rounded-l-[3rem] bg-gradient-to-b ${charColor.accent} opacity-80`}></div>
+                          <div className={`absolute inset-y-0 left-0 w-2 rounded-l-[3rem] bg-gradient-to-b ${charColor.accent}`}></div>
                           <div className="flex items-center gap-4">
                             {/* 修正7: ラッパーdivをoverflow-visibleにしてバッジがはみ出せるように */}
                             <div className="relative shrink-0 w-16 h-16">
@@ -1057,7 +1087,7 @@ export default function Home() {
               <section>
                 <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase mb-2">Theme</p>
                 <p className="text-[9px] font-black text-gray-400 mb-3 h-4">{hoveredTheme !== null ? THEMES[hoveredTheme].name : THEMES[themeIndex].name}</p>
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-6 gap-2">
                   {THEMES.map((t, i) => (
                     <button key={i}
                       onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }}
