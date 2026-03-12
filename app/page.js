@@ -123,7 +123,7 @@ export default function Home() {
   const [scheduleEvents, setScheduleEvents] = useState([]);
   const [scheduleDate, setScheduleDate] = useState(new Date().toISOString().split('T')[0]);
   const [showEventForm, setShowEventForm] = useState(false);
-  const [newEvent, setNewEvent] = useState({ title: "", startHour: "09", startMin: "00", endHour: "10", endMin: "00", color: "#3b82f6", memo: "" });
+  const [newEvent, setNewEvent] = useState({ title: "", startHour: "09", startMin: "00", endHour: "10", endMin: "00", color: "#3b82f6", memo: "", repeat: "none", repeatDays: [], repeatEnd: "" });
   const [editingEvent, setEditingEvent] = useState(null);
 
   const endTimeRef = useRef(null);
@@ -749,118 +749,178 @@ export default function Home() {
           ) : activeTab === "schedule" ? (
             (() => {
               const EVENT_COLORS = ["#3b82f6","#ef4444","#10b981","#f97316","#a855f7","#eab308","#06b6d4","#ec4899"];
-              const HOUR_HEIGHT = 64; // px per hour
-              const SNAP = 15; // minutes snap
+              const HOUR_HEIGHT = 64;
+              const SNAP = 15;
+              const DOW_LABELS = ["日","月","火","水","木","金","土"];
+
+              // ── repeat helpers ──────────────────────────────────────────
+              const doesRepeatOnDate = (ev, dateStr) => {
+                if (!ev.repeat || ev.repeat === "none") return ev.date === dateStr;
+                // respect repeatEnd
+                if (ev.repeatEnd && dateStr > ev.repeatEnd) return false;
+                if (dateStr < ev.date) return false;
+                const dow = new Date(dateStr + "T00:00:00").getDay(); // 0=Sun
+                if (ev.repeat === "daily")    return true;
+                if (ev.repeat === "weekly")   return new Date(ev.date + "T00:00:00").getDay() === dow;
+                if (ev.repeat === "weekdays") return dow >= 1 && dow <= 5;
+                if (ev.repeat === "weekends") return dow === 0 || dow === 6;
+                if (ev.repeat === "custom")   return (ev.repeatDays || []).includes(dow);
+                return false;
+              };
+
+              // build visible events for current date (base + repeat instances)
               const todayEventsForDate = scheduleEvents
-                .filter(e => e.date === scheduleDate)
+                .filter(ev => doesRepeatOnDate(ev, scheduleDate))
                 .sort((a,b) => (parseInt(a.startHour)*60+parseInt(a.startMin)) - (parseInt(b.startHour)*60+parseInt(b.startMin)));
 
-              const minsToTop = (m) => (m / 60) * HOUR_HEIGHT;
-              const topToMins = (px) => Math.round(px / HOUR_HEIGHT * 60 / SNAP) * SNAP;
-              const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-              const minsToHM = (m) => ({ h: Math.floor(m/60).toString().padStart(2,'0'), m: (m%60).toString().padStart(2,'0') });
+              // ── geometry ────────────────────────────────────────────────
+              const minsToTop  = (m) => (m / 60) * HOUR_HEIGHT;
+              const topToMins  = (px) => Math.round(px / HOUR_HEIGHT * 60 / SNAP) * SNAP;
+              const clamp      = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+              const minsToHM   = (m) => ({ h: Math.floor(m/60).toString().padStart(2,'0'), m: (m%60).toString().padStart(2,'0') });
+              const getTop     = (ev) => minsToTop(parseInt(ev.startHour)*60+parseInt(ev.startMin));
+              const getHeight  = (ev) => Math.max(minsToTop(parseInt(ev.endHour)*60+parseInt(ev.endMin)) - getTop(ev), HOUR_HEIGHT/4);
 
-              const getEventTop = (ev) => minsToTop(parseInt(ev.startHour)*60+parseInt(ev.startMin));
-              const getEventHeight = (ev) => Math.max(minsToTop(parseInt(ev.endHour)*60+parseInt(ev.endMin)) - getEventTop(ev), HOUR_HEIGHT/4);
-
+              // ── persistence ─────────────────────────────────────────────
               const saveEvents = (evs) => { setScheduleEvents(evs); saveToFirebase({ scheduleEvents: evs }); };
 
+              const REPEAT_OPTS = [
+                { value:"none",     label:"繰り返しなし" },
+                { value:"daily",    label:"毎日" },
+                { value:"weekly",   label:"毎週同じ曜日" },
+                { value:"weekdays", label:"平日（月〜金）" },
+                { value:"weekends", label:"週末（土・日）" },
+                { value:"custom",   label:"曜日を選択" },
+              ];
+
+              const blankEvent = () => ({ title:"", startHour:"09", startMin:"00", endHour:"10", endMin:"00", color:"#3b82f6", memo:"", repeat:"none", repeatDays:[], repeatEnd:"" });
+
               const addOrUpdateEvent = () => {
-                const ev = editingEvent
+                const base = editingEvent
                   ? { ...editingEvent, ...newEvent, id: editingEvent.id }
                   : { ...newEvent, id: Date.now().toString(), date: scheduleDate };
-                saveEvents(editingEvent ? scheduleEvents.map(e => e.id===editingEvent.id ? ev : e) : [...scheduleEvents, ev]);
-                setShowEventForm(false); setEditingEvent(null);
-                setNewEvent({ title:"", startHour:"09", startMin:"00", endHour:"10", endMin:"00", color:"#3b82f6", memo:"" });
+                saveEvents(editingEvent
+                  ? scheduleEvents.map(e => e.id === editingEvent.id ? base : e)
+                  : [...scheduleEvents, base]);
+                setShowEventForm(false); setEditingEvent(null); setNewEvent(blankEvent());
               };
-              const deleteEvent = (id) => saveEvents(scheduleEvents.filter(e => e.id !== id));
+
+              // delete options: this day only (exception) or all
+              const deleteEvent = (id, onlyToday = false) => {
+                if (onlyToday) {
+                  // add exception date
+                  saveEvents(scheduleEvents.map(e => e.id === id
+                    ? { ...e, exceptions: [...(e.exceptions||[]), scheduleDate] }
+                    : e));
+                } else {
+                  saveEvents(scheduleEvents.filter(e => e.id !== id));
+                }
+                setShowEventForm(false); setEditingEvent(null);
+              };
+
               const openEdit = (ev) => {
                 setEditingEvent(ev);
-                setNewEvent({ title:ev.title, startHour:ev.startHour, startMin:ev.startMin, endHour:ev.endHour, endMin:ev.endMin, color:ev.color, memo:ev.memo||"" });
+                setNewEvent({ title:ev.title, startHour:ev.startHour, startMin:ev.startMin,
+                  endHour:ev.endHour, endMin:ev.endMin, color:ev.color, memo:ev.memo||"",
+                  repeat:ev.repeat||"none", repeatDays:ev.repeatDays||[], repeatEnd:ev.repeatEnd||"" });
                 setShowEventForm(true);
               };
+
+              // filter exceptions
+              const visibleEvents = todayEventsForDate.filter(ev =>
+                !(ev.exceptions||[]).includes(scheduleDate));
+
               const prevDay = () => { const d=new Date(scheduleDate); d.setDate(d.getDate()-1); setScheduleDate(d.toISOString().split('T')[0]); };
               const nextDay = () => { const d=new Date(scheduleDate); d.setDate(d.getDate()+1); setScheduleDate(d.toISOString().split('T')[0]); };
               const isToday = scheduleDate === today;
               const currentNowMins = now.getHours()*60+now.getMinutes();
 
-              // --- Tap on timeline to add ---
+              // ── tap timeline ────────────────────────────────────────────
               const handleTimelineTap = (e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-                const rawMins = topToMins(y);
-                const startMins = clamp(rawMins, 0, 23*60);
-                const endMins = clamp(startMins + 60, 0, 24*60);
+                const startMins = clamp(topToMins(y), 0, 23*60);
+                const endMins   = clamp(startMins+60, 0, 24*60);
                 const s = minsToHM(startMins); const en = minsToHM(endMins);
                 setEditingEvent(null);
-                setNewEvent({ title:"", startHour:s.h, startMin:s.m, endHour:en.h, endMin:en.m, color:"#3b82f6", memo:"" });
+                setNewEvent({ ...blankEvent(), startHour:s.h, startMin:s.m, endHour:en.h, endMin:en.m });
                 setShowEventForm(true);
               };
 
-              // --- Drag to move/resize ---
-              // dragState ref lives outside render but we use a closure trick via state
+              // ── drag move ───────────────────────────────────────────────
               const handleMoveStart = (e, ev) => {
                 e.stopPropagation(); e.preventDefault();
                 const startY = e.touches ? e.touches[0].clientY : e.clientY;
                 const origStart = parseInt(ev.startHour)*60+parseInt(ev.startMin);
-                const origEnd = parseInt(ev.endHour)*60+parseInt(ev.endMin);
+                const origEnd   = parseInt(ev.endHour)*60+parseInt(ev.endMin);
                 const onMove = (me) => {
-                  const curY = me.touches ? me.touches[0].clientY : me.clientY;
-                  const deltaMins = topToMins(curY - startY);
-                  const snapped = Math.round(deltaMins/SNAP)*SNAP;
-                  let ns = clamp(origStart+snapped, 0, 23*60);
-                  let ne = clamp(origEnd+snapped, ns+SNAP, 24*60);
-                  const sh = minsToHM(ns); const eh = minsToHM(ne);
-                  setScheduleEvents(prev => prev.map(x => x.id===ev.id ? {...x, startHour:sh.h, startMin:sh.m, endHour:eh.h, endMin:eh.m} : x));
+                  const d = Math.round(topToMins((me.touches?me.touches[0].clientY:me.clientY)-startY)/SNAP)*SNAP;
+                  const ns = clamp(origStart+d,0,23*60); const ne = clamp(origEnd+d,ns+SNAP,24*60);
+                  const sh=minsToHM(ns); const eh=minsToHM(ne);
+                  setScheduleEvents(prev=>prev.map(x=>x.id===ev.id?{...x,startHour:sh.h,startMin:sh.m,endHour:eh.h,endMin:eh.m}:x));
                 };
                 const onEnd = () => {
-                  document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onEnd);
-                  document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd);
-                  setScheduleEvents(prev => { saveToFirebase({ scheduleEvents: prev }); return prev; });
+                  document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onEnd);
+                  document.removeEventListener('touchmove',onMove); document.removeEventListener('touchend',onEnd);
+                  setScheduleEvents(prev=>{saveToFirebase({scheduleEvents:prev});return prev;});
                 };
-                document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd);
-                document.addEventListener('touchmove', onMove, {passive:false}); document.addEventListener('touchend', onEnd);
+                document.addEventListener('mousemove',onMove); document.addEventListener('mouseup',onEnd);
+                document.addEventListener('touchmove',onMove,{passive:false}); document.addEventListener('touchend',onEnd);
               };
 
+              // ── drag resize ─────────────────────────────────────────────
               const handleResizeStart = (e, ev, edge) => {
                 e.stopPropagation(); e.preventDefault();
                 const startY = e.touches ? e.touches[0].clientY : e.clientY;
                 const origStart = parseInt(ev.startHour)*60+parseInt(ev.startMin);
-                const origEnd = parseInt(ev.endHour)*60+parseInt(ev.endMin);
+                const origEnd   = parseInt(ev.endHour)*60+parseInt(ev.endMin);
                 const onMove = (me) => {
-                  const curY = me.touches ? me.touches[0].clientY : me.clientY;
-                  const deltaMins = topToMins(curY - startY);
-                  const snapped = Math.round(deltaMins/SNAP)*SNAP;
-                  let ns = origStart, ne = origEnd;
-                  if (edge==='top') ns = clamp(origStart+snapped, 0, origEnd-SNAP);
-                  else ne = clamp(origEnd+snapped, origStart+SNAP, 24*60);
-                  const sh = minsToHM(ns); const eh = minsToHM(ne);
-                  setScheduleEvents(prev => prev.map(x => x.id===ev.id ? {...x, startHour:sh.h, startMin:sh.m, endHour:eh.h, endMin:eh.m} : x));
+                  const d = Math.round(topToMins((me.touches?me.touches[0].clientY:me.clientY)-startY)/SNAP)*SNAP;
+                  const ns = edge==='top' ? clamp(origStart+d,0,origEnd-SNAP) : origStart;
+                  const ne = edge==='bottom' ? clamp(origEnd+d,origStart+SNAP,24*60) : origEnd;
+                  const sh=minsToHM(ns); const eh=minsToHM(ne);
+                  setScheduleEvents(prev=>prev.map(x=>x.id===ev.id?{...x,startHour:sh.h,startMin:sh.m,endHour:eh.h,endMin:eh.m}:x));
                 };
                 const onEnd = () => {
-                  document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onEnd);
-                  document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd);
-                  setScheduleEvents(prev => { saveToFirebase({ scheduleEvents: prev }); return prev; });
+                  document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onEnd);
+                  document.removeEventListener('touchmove',onMove); document.removeEventListener('touchend',onEnd);
+                  setScheduleEvents(prev=>{saveToFirebase({scheduleEvents:prev});return prev;});
                 };
-                document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd);
-                document.addEventListener('touchmove', onMove, {passive:false}); document.addEventListener('touchend', onEnd);
+                document.addEventListener('mousemove',onMove); document.addEventListener('mouseup',onEnd);
+                document.addEventListener('touchmove',onMove,{passive:false}); document.addEventListener('touchend',onEnd);
               };
 
-              // all routine tasks flattened
+              // ── routine strip ───────────────────────────────────────────
               const allRoutineTasks = [
-                ...tasks.morning.map(t=>({t,time:'morning',color:'#3b82f6'})),
-                ...tasks.afternoon.map(t=>({t,time:'afternoon',color:'#10b981'})),
-                ...tasks.night.map(t=>({t,time:'night',color:'#a855f7'}))
+                ...tasks.morning.map(t=>({t,color:'#3b82f6'})),
+                ...tasks.afternoon.map(t=>({t,color:'#10b981'})),
+                ...tasks.night.map(t=>({t,color:'#a855f7'}))
               ];
               const addRoutineToSchedule = (task, color) => {
-                const ev = { id:Date.now().toString(), date:scheduleDate, title:task, startHour:"09", startMin:"00", endHour:"10", endMin:"00", color, memo:"" };
+                const ev = { id:Date.now().toString(), date:scheduleDate, title:task,
+                  startHour:"09", startMin:"00", endHour:"10", endMin:"00", color, memo:"",
+                  repeat:"none", repeatDays:[], repeatEnd:"" };
                 saveEvents([...scheduleEvents, ev]);
                 showToast(`「${task}」をスケジュールに追加しました`);
               };
 
+              // repeat badge label
+              const repeatBadge = (ev) => {
+                if (!ev.repeat || ev.repeat==="none") return null;
+                if (ev.repeat==="daily")    return "毎日";
+                if (ev.repeat==="weekly")   return "毎週";
+                if (ev.repeat==="weekdays") return "平日";
+                if (ev.repeat==="weekends") return "週末";
+                if (ev.repeat==="custom")   return (ev.repeatDays||[]).map(d=>DOW_LABELS[d]).join("");
+                return null;
+              };
+
+              const isRepeatEvent = (ev) => ev.repeat && ev.repeat !== "none";
+
               return (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  {/* Date nav */}
+
+                  {/* ── Date nav ── */}
                   <div className="flex items-center justify-between mb-5 px-1">
                     <button onClick={prevDay} className="w-10 h-10 bg-white/5 rounded-xl border border-white/10 font-black flex items-center justify-center text-lg">‹</button>
                     <div className="text-center">
@@ -870,7 +930,7 @@ export default function Home() {
                     <button onClick={nextDay} className="w-10 h-10 bg-white/5 rounded-xl border border-white/10 font-black flex items-center justify-center text-lg">›</button>
                   </div>
 
-                  {/* Routine quick-add strip */}
+                  {/* ── Routine strip ── */}
                   {allRoutineTasks.length > 0 && (
                     <div className="mb-4">
                       <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 px-1">ルーティンを追加 ↓</p>
@@ -886,15 +946,13 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* hint */}
-                  <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest text-center mb-3">タイムラインをタップして予定を追加 · ドラッグで移動 · 上下端をドラッグでリサイズ</p>
+                  <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest text-center mb-3">タイムラインをタップして追加 · ドラッグで移動 · 上下端でリサイズ</p>
 
-                  {/* Timeline */}
+                  {/* ── Timeline ── */}
                   <div className="bg-white/5 rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
                     <div className="overflow-y-auto" style={{maxHeight:'62vh'}}>
-                      <div className="relative select-none" style={{height:`${24*HOUR_HEIGHT}px`}}
-                        onClick={handleTimelineTap}>
-                        {/* hour rows */}
+                      <div className="relative select-none" style={{height:`${24*HOUR_HEIGHT}px`}} onClick={handleTimelineTap}>
+
                         {Array.from({length:24},(_,h)=>(
                           <div key={h} className="absolute w-full border-t border-white/5 flex pointer-events-none" style={{top:`${h*HOUR_HEIGHT}px`,height:`${HOUR_HEIGHT}px`}}>
                             <div className="w-14 shrink-0 flex items-start pt-1 justify-end pr-3">
@@ -905,33 +963,34 @@ export default function Home() {
                             </div>
                           </div>
                         ))}
-                        {/* current time */}
+
                         {isToday && (
                           <div className="absolute left-0 right-0 z-20 flex items-center pointer-events-none" style={{top:`${minsToTop(currentNowMins)}px`}}>
-                            <div className="w-14 flex justify-end pr-2"><div className="w-2.5 h-2.5 bg-red-500 rounded-full shadow-lg shadow-red-500/60 animate-pulse"></div></div>
+                            <div className="w-14 flex justify-end pr-2"><div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-red-500/60 shadow-lg"></div></div>
                             <div className="flex-1 h-[2px] bg-red-500/80"></div>
                           </div>
                         )}
-                        {/* events */}
+
                         <div className="absolute left-14 right-2 top-0 bottom-0">
-                          {todayEventsForDate.map(ev => {
-                            const top = getEventTop(ev);
-                            const height = getEventHeight(ev);
+                          {visibleEvents.map(ev => {
+                            const top = getTop(ev); const height = getHeight(ev);
+                            const badge = repeatBadge(ev);
                             return (
-                              <div key={ev.id}
-                                className="absolute left-0 right-0 rounded-xl overflow-visible shadow-lg group"
-                                style={{top:`${top}px`, height:`${height}px`, zIndex:10}}>
+                              <div key={ev.id} className="absolute left-0 right-0 rounded-xl overflow-visible shadow-lg group" style={{top:`${top}px`,height:`${height}px`,zIndex:10}}>
                                 {/* resize top */}
                                 <div className="absolute top-0 left-0 right-0 h-3 cursor-ns-resize flex items-center justify-center z-30 touch-none"
                                   onMouseDown={e=>handleResizeStart(e,ev,'top')} onTouchStart={e=>handleResizeStart(e,ev,'top')}>
                                   <div className="w-8 h-1 rounded-full bg-white/30 group-hover:bg-white/60 transition-colors"></div>
                                 </div>
-                                {/* body – drag to move */}
+                                {/* body */}
                                 <div className="absolute inset-0 rounded-xl px-3 py-1.5 cursor-grab active:cursor-grabbing touch-none overflow-hidden"
                                   style={{backgroundColor:ev.color+'2e', borderLeft:`3px solid ${ev.color}`}}
                                   onMouseDown={e=>handleMoveStart(e,ev)} onTouchStart={e=>handleMoveStart(e,ev)}
                                   onClick={e=>{e.stopPropagation(); openEdit(ev);}}>
-                                  <p className="text-[10px] font-black truncate" style={{color:ev.color}}>{ev.title}</p>
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="text-[10px] font-black truncate flex-1" style={{color:ev.color}}>{ev.title}</p>
+                                    {badge && <span className="text-[7px] font-black px-1.5 py-0.5 rounded-full shrink-0" style={{backgroundColor:ev.color+'44',color:ev.color}}>🔁 {badge}</span>}
+                                  </div>
                                   <p className="text-[8px] font-bold opacity-50 text-white tabular-nums">{ev.startHour}:{ev.startMin}–{ev.endHour}:{ev.endMin}</p>
                                   {height>44 && ev.memo && <p className="text-[8px] text-gray-400 mt-0.5 truncate">{ev.memo}</p>}
                                 </div>
@@ -948,22 +1007,24 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {todayEventsForDate.length > 0 && (
-                    <p className="text-center text-[9px] font-black text-gray-600 mt-4 uppercase tracking-widest">{todayEventsForDate.length} 件の予定</p>
+                  {visibleEvents.length > 0 && (
+                    <p className="text-center text-[9px] font-black text-gray-600 mt-4 uppercase tracking-widest">{visibleEvents.length} 件の予定</p>
                   )}
 
-                  {/* Event form modal */}
+                  {/* ── Event form modal ── */}
                   {showEventForm && (
                     <div className="fixed inset-0 z-[400] flex items-end justify-center bg-black/60 backdrop-blur-md p-4" onClick={()=>setShowEventForm(false)}>
-                      <div className="bg-zinc-900 w-full max-w-md rounded-[2.5rem] border border-white/10 p-6 shadow-2xl mb-4" onClick={e=>e.stopPropagation()}>
+                      <div className="bg-zinc-900 w-full max-w-md rounded-[2.5rem] border border-white/10 p-6 shadow-2xl mb-4 max-h-[90vh] overflow-y-auto scrollbar-hide" onClick={e=>e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-5">
                           <h3 className="font-black text-sm uppercase tracking-widest">{editingEvent?"予定を編集":"予定を追加"}</h3>
                           <button onClick={()=>setShowEventForm(false)} className="text-gray-500 font-black text-lg">✕</button>
                         </div>
                         <div className="space-y-4">
+                          {/* title */}
                           <input value={newEvent.title} onChange={e=>setNewEvent({...newEvent,title:e.target.value})}
                             className="w-full bg-black/40 text-sm font-bold p-4 rounded-2xl border border-white/10 outline-none" placeholder="タイトル" autoFocus />
-                          {/* time row */}
+
+                          {/* time */}
                           {[['開始','startHour','startMin'],['終了','endHour','endMin']].map(([label,hk,mk])=>(
                             <div key={label} className="flex gap-3 items-center">
                               <span className="text-[10px] font-black text-gray-500 w-10 shrink-0">{label}</span>
@@ -978,6 +1039,50 @@ export default function Home() {
                               </select>
                             </div>
                           ))}
+
+                          {/* ── repeat ── */}
+                          <div className="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-3">
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">🔁 繰り返し</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {REPEAT_OPTS.map(opt=>(
+                                <button key={opt.value} onClick={()=>setNewEvent({...newEvent,repeat:opt.value})}
+                                  className={`py-2.5 px-3 rounded-xl text-[10px] font-black transition-all text-left border ${newEvent.repeat===opt.value?'bg-white text-black border-transparent':'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}>
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* custom day picker */}
+                            {newEvent.repeat==="custom" && (
+                              <div className="flex gap-1.5 justify-center pt-1">
+                                {DOW_LABELS.map((d,i)=>{
+                                  const active = (newEvent.repeatDays||[]).includes(i);
+                                  return (
+                                    <button key={i} onClick={()=>{
+                                      const cur = newEvent.repeatDays||[];
+                                      setNewEvent({...newEvent, repeatDays: active?cur.filter(x=>x!==i):[...cur,i].sort()});
+                                    }} className={`w-9 h-9 rounded-xl text-[11px] font-black transition-all border ${active?'bg-white text-black border-transparent':'bg-white/5 text-gray-500 border-white/5'}`}>
+                                      {d}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {/* repeat end date */}
+                            {newEvent.repeat && newEvent.repeat!=="none" && (
+                              <div className="flex items-center gap-3 pt-1">
+                                <span className="text-[10px] font-black text-gray-500 shrink-0">終了日</span>
+                                <input type="date" value={newEvent.repeatEnd||""} onChange={e=>setNewEvent({...newEvent,repeatEnd:e.target.value})}
+                                  className="flex-1 bg-black/40 text-[11px] font-black p-3 rounded-xl border border-white/10 outline-none"
+                                  placeholder="未設定（無期限）" />
+                                {newEvent.repeatEnd && (
+                                  <button onClick={()=>setNewEvent({...newEvent,repeatEnd:""})} className="text-gray-600 font-black text-sm">✕</button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
                           {/* color */}
                           <div>
                             <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2">カラー</p>
@@ -989,19 +1094,33 @@ export default function Home() {
                               ))}
                             </div>
                           </div>
+
+                          {/* memo */}
                           <textarea value={newEvent.memo} onChange={e=>setNewEvent({...newEvent,memo:e.target.value})}
                             className="w-full bg-black/40 text-[11px] font-bold p-4 rounded-2xl border border-white/10 outline-none resize-none h-14"
                             placeholder="メモ（任意）" />
-                          <div className="flex gap-3">
-                            {editingEvent && (
-                              <button onClick={()=>{deleteEvent(editingEvent.id);setShowEventForm(false);setEditingEvent(null);}}
-                                className="flex-1 py-4 bg-red-500/20 text-red-400 rounded-2xl font-black text-[10px]">削除</button>
-                            )}
+
+                          {/* actions */}
+                          {editingEvent ? (
+                            <div className="space-y-2">
+                              <button onClick={addOrUpdateEvent}
+                                className="w-full py-4 bg-white text-black rounded-2xl font-black text-[11px] shadow-xl">更新</button>
+                              {isRepeatEvent(editingEvent) ? (
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button onClick={()=>deleteEvent(editingEvent.id, true)}
+                                    className="py-3 bg-orange-500/20 text-orange-400 rounded-2xl font-black text-[9px]">この日だけ削除</button>
+                                  <button onClick={()=>deleteEvent(editingEvent.id, false)}
+                                    className="py-3 bg-red-500/20 text-red-400 rounded-2xl font-black text-[9px]">すべて削除</button>
+                                </div>
+                              ) : (
+                                <button onClick={()=>deleteEvent(editingEvent.id, false)}
+                                  className="w-full py-3 bg-red-500/20 text-red-400 rounded-2xl font-black text-[10px]">削除</button>
+                              )}
+                            </div>
+                          ) : (
                             <button onClick={addOrUpdateEvent}
-                              className="flex-1 py-4 bg-white text-black rounded-2xl font-black text-[11px] shadow-xl">
-                              {editingEvent?"更新":"追加"}
-                            </button>
-                          </div>
+                              className="w-full py-4 bg-white text-black rounded-2xl font-black text-[11px] shadow-xl">追加</button>
+                          )}
                         </div>
                       </div>
                     </div>
