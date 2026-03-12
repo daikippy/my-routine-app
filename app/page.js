@@ -749,61 +749,119 @@ export default function Home() {
           ) : activeTab === "schedule" ? (
             (() => {
               const EVENT_COLORS = ["#3b82f6","#ef4444","#10b981","#f97316","#a855f7","#eab308","#06b6d4","#ec4899"];
-              const todayEventsForDate = scheduleEvents.filter(e => e.date === scheduleDate).sort((a,b) => (parseInt(a.startHour)*60+parseInt(a.startMin)) - (parseInt(b.startHour)*60+parseInt(b.startMin)));
-              const hours = Array.from({length:24},(_,i)=>i);
-              const HOUR_HEIGHT = 60;
+              const HOUR_HEIGHT = 64; // px per hour
+              const SNAP = 15; // minutes snap
+              const todayEventsForDate = scheduleEvents
+                .filter(e => e.date === scheduleDate)
+                .sort((a,b) => (parseInt(a.startHour)*60+parseInt(a.startMin)) - (parseInt(b.startHour)*60+parseInt(b.startMin)));
 
-              const getEventStyle = (ev) => {
-                const top = (parseInt(ev.startHour)*60 + parseInt(ev.startMin)) / 60 * HOUR_HEIGHT;
-                const startMins = parseInt(ev.startHour)*60+parseInt(ev.startMin);
-                const endMins = parseInt(ev.endHour)*60+parseInt(ev.endMin);
-                const height = Math.max(((endMins - startMins)/60)*HOUR_HEIGHT, 24);
-                return { top, height };
-              };
+              const minsToTop = (m) => (m / 60) * HOUR_HEIGHT;
+              const topToMins = (px) => Math.round(px / HOUR_HEIGHT * 60 / SNAP) * SNAP;
+              const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+              const minsToHM = (m) => ({ h: Math.floor(m/60).toString().padStart(2,'0'), m: (m%60).toString().padStart(2,'0') });
 
-              const saveEvents = (evs) => {
-                setScheduleEvents(evs);
-                saveToFirebase({ scheduleEvents: evs });
-              };
+              const getEventTop = (ev) => minsToTop(parseInt(ev.startHour)*60+parseInt(ev.startMin));
+              const getEventHeight = (ev) => Math.max(minsToTop(parseInt(ev.endHour)*60+parseInt(ev.endMin)) - getEventTop(ev), HOUR_HEIGHT/4);
+
+              const saveEvents = (evs) => { setScheduleEvents(evs); saveToFirebase({ scheduleEvents: evs }); };
 
               const addOrUpdateEvent = () => {
                 const ev = editingEvent
                   ? { ...editingEvent, ...newEvent, id: editingEvent.id }
                   : { ...newEvent, id: Date.now().toString(), date: scheduleDate };
-                const filtered = editingEvent
-                  ? scheduleEvents.map(e => e.id === editingEvent.id ? ev : e)
-                  : [...scheduleEvents, ev];
-                saveEvents(filtered);
-                setShowEventForm(false);
-                setEditingEvent(null);
+                saveEvents(editingEvent ? scheduleEvents.map(e => e.id===editingEvent.id ? ev : e) : [...scheduleEvents, ev]);
+                setShowEventForm(false); setEditingEvent(null);
                 setNewEvent({ title:"", startHour:"09", startMin:"00", endHour:"10", endMin:"00", color:"#3b82f6", memo:"" });
               };
-
-              const deleteEvent = (id) => {
-                saveEvents(scheduleEvents.filter(e => e.id !== id));
-              };
-
+              const deleteEvent = (id) => saveEvents(scheduleEvents.filter(e => e.id !== id));
               const openEdit = (ev) => {
                 setEditingEvent(ev);
                 setNewEvent({ title:ev.title, startHour:ev.startHour, startMin:ev.startMin, endHour:ev.endHour, endMin:ev.endMin, color:ev.color, memo:ev.memo||"" });
                 setShowEventForm(true);
               };
-
-              const prevDay = () => {
-                const d = new Date(scheduleDate); d.setDate(d.getDate()-1);
-                setScheduleDate(d.toISOString().split('T')[0]);
-              };
-              const nextDay = () => {
-                const d = new Date(scheduleDate); d.setDate(d.getDate()+1);
-                setScheduleDate(d.toISOString().split('T')[0]);
-              };
-
-              const currentNowMins = now.getHours()*60+now.getMinutes();
+              const prevDay = () => { const d=new Date(scheduleDate); d.setDate(d.getDate()-1); setScheduleDate(d.toISOString().split('T')[0]); };
+              const nextDay = () => { const d=new Date(scheduleDate); d.setDate(d.getDate()+1); setScheduleDate(d.toISOString().split('T')[0]); };
               const isToday = scheduleDate === today;
+              const currentNowMins = now.getHours()*60+now.getMinutes();
+
+              // --- Tap on timeline to add ---
+              const handleTimelineTap = (e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+                const rawMins = topToMins(y);
+                const startMins = clamp(rawMins, 0, 23*60);
+                const endMins = clamp(startMins + 60, 0, 24*60);
+                const s = minsToHM(startMins); const en = minsToHM(endMins);
+                setEditingEvent(null);
+                setNewEvent({ title:"", startHour:s.h, startMin:s.m, endHour:en.h, endMin:en.m, color:"#3b82f6", memo:"" });
+                setShowEventForm(true);
+              };
+
+              // --- Drag to move/resize ---
+              // dragState ref lives outside render but we use a closure trick via state
+              const handleMoveStart = (e, ev) => {
+                e.stopPropagation(); e.preventDefault();
+                const startY = e.touches ? e.touches[0].clientY : e.clientY;
+                const origStart = parseInt(ev.startHour)*60+parseInt(ev.startMin);
+                const origEnd = parseInt(ev.endHour)*60+parseInt(ev.endMin);
+                const onMove = (me) => {
+                  const curY = me.touches ? me.touches[0].clientY : me.clientY;
+                  const deltaMins = topToMins(curY - startY);
+                  const snapped = Math.round(deltaMins/SNAP)*SNAP;
+                  let ns = clamp(origStart+snapped, 0, 23*60);
+                  let ne = clamp(origEnd+snapped, ns+SNAP, 24*60);
+                  const sh = minsToHM(ns); const eh = minsToHM(ne);
+                  setScheduleEvents(prev => prev.map(x => x.id===ev.id ? {...x, startHour:sh.h, startMin:sh.m, endHour:eh.h, endMin:eh.m} : x));
+                };
+                const onEnd = () => {
+                  document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onEnd);
+                  document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd);
+                  setScheduleEvents(prev => { saveToFirebase({ scheduleEvents: prev }); return prev; });
+                };
+                document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd);
+                document.addEventListener('touchmove', onMove, {passive:false}); document.addEventListener('touchend', onEnd);
+              };
+
+              const handleResizeStart = (e, ev, edge) => {
+                e.stopPropagation(); e.preventDefault();
+                const startY = e.touches ? e.touches[0].clientY : e.clientY;
+                const origStart = parseInt(ev.startHour)*60+parseInt(ev.startMin);
+                const origEnd = parseInt(ev.endHour)*60+parseInt(ev.endMin);
+                const onMove = (me) => {
+                  const curY = me.touches ? me.touches[0].clientY : me.clientY;
+                  const deltaMins = topToMins(curY - startY);
+                  const snapped = Math.round(deltaMins/SNAP)*SNAP;
+                  let ns = origStart, ne = origEnd;
+                  if (edge==='top') ns = clamp(origStart+snapped, 0, origEnd-SNAP);
+                  else ne = clamp(origEnd+snapped, origStart+SNAP, 24*60);
+                  const sh = minsToHM(ns); const eh = minsToHM(ne);
+                  setScheduleEvents(prev => prev.map(x => x.id===ev.id ? {...x, startHour:sh.h, startMin:sh.m, endHour:eh.h, endMin:eh.m} : x));
+                };
+                const onEnd = () => {
+                  document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onEnd);
+                  document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd);
+                  setScheduleEvents(prev => { saveToFirebase({ scheduleEvents: prev }); return prev; });
+                };
+                document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd);
+                document.addEventListener('touchmove', onMove, {passive:false}); document.addEventListener('touchend', onEnd);
+              };
+
+              // all routine tasks flattened
+              const allRoutineTasks = [
+                ...tasks.morning.map(t=>({t,time:'morning',color:'#3b82f6'})),
+                ...tasks.afternoon.map(t=>({t,time:'afternoon',color:'#10b981'})),
+                ...tasks.night.map(t=>({t,time:'night',color:'#a855f7'}))
+              ];
+              const addRoutineToSchedule = (task, color) => {
+                const ev = { id:Date.now().toString(), date:scheduleDate, title:task, startHour:"09", startMin:"00", endHour:"10", endMin:"00", color, memo:"" };
+                saveEvents([...scheduleEvents, ev]);
+                showToast(`「${task}」をスケジュールに追加しました`);
+              };
 
               return (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex items-center justify-between mb-6 px-1">
+                  {/* Date nav */}
+                  <div className="flex items-center justify-between mb-5 px-1">
                     <button onClick={prevDay} className="w-10 h-10 bg-white/5 rounded-xl border border-white/10 font-black flex items-center justify-center text-lg">‹</button>
                     <div className="text-center">
                       <p className="text-lg font-black">{new Date(scheduleDate+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'})}</p>
@@ -812,38 +870,76 @@ export default function Home() {
                     <button onClick={nextDay} className="w-10 h-10 bg-white/5 rounded-xl border border-white/10 font-black flex items-center justify-center text-lg">›</button>
                   </div>
 
-                  <button onClick={() => { setEditingEvent(null); setNewEvent({ title:"", startHour:"09", startMin:"00", endHour:"10", endMin:"00", color:"#3b82f6", memo:"" }); setShowEventForm(true); }}
-                    className="w-full mb-6 py-3 bg-white text-black rounded-2xl font-black text-[11px] shadow-xl flex items-center justify-center gap-2">
-                    <span className="text-lg leading-none">＋</span> 予定を追加
-                  </button>
+                  {/* Routine quick-add strip */}
+                  {allRoutineTasks.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 px-1">ルーティンを追加 ↓</p>
+                      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                        {allRoutineTasks.map(({t,color},i) => (
+                          <button key={i} onClick={() => addRoutineToSchedule(t,color)}
+                            className="shrink-0 px-3 py-2 rounded-xl text-[10px] font-black border border-white/10 flex items-center gap-1.5 whitespace-nowrap hover:scale-105 transition-all"
+                            style={{backgroundColor:color+'22', color}}>
+                            <span>＋</span>{t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
+                  {/* hint */}
+                  <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest text-center mb-3">タイムラインをタップして予定を追加 · ドラッグで移動 · 上下端をドラッグでリサイズ</p>
+
+                  {/* Timeline */}
                   <div className="bg-white/5 rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
-                    <div className="overflow-y-auto" style={{maxHeight:'65vh'}}>
-                      <div className="relative" style={{height:`${24*HOUR_HEIGHT}px`}}>
-                        {hours.map(h => (
-                          <div key={h} className="absolute w-full border-t border-white/5 flex" style={{top:`${h*HOUR_HEIGHT}px`,height:`${HOUR_HEIGHT}px`}}>
+                    <div className="overflow-y-auto" style={{maxHeight:'62vh'}}>
+                      <div className="relative select-none" style={{height:`${24*HOUR_HEIGHT}px`}}
+                        onClick={handleTimelineTap}>
+                        {/* hour rows */}
+                        {Array.from({length:24},(_,h)=>(
+                          <div key={h} className="absolute w-full border-t border-white/5 flex pointer-events-none" style={{top:`${h*HOUR_HEIGHT}px`,height:`${HOUR_HEIGHT}px`}}>
                             <div className="w-14 shrink-0 flex items-start pt-1 justify-end pr-3">
                               <span className="text-[9px] font-black text-gray-600 tabular-nums">{h.toString().padStart(2,'0')}:00</span>
                             </div>
-                            <div className="flex-1 border-l border-white/5"></div>
+                            <div className="flex-1 border-l border-white/5">
+                              <div className="border-t border-white/[0.03] mt-[50%]"></div>
+                            </div>
                           </div>
                         ))}
+                        {/* current time */}
                         {isToday && (
-                          <div className="absolute left-0 right-0 z-20 flex items-center pointer-events-none" style={{top:`${currentNowMins/60*HOUR_HEIGHT}px`}}>
-                            <div className="w-14 flex justify-end pr-2"><div className="w-2 h-2 bg-red-500 rounded-full shadow-lg shadow-red-500/50"></div></div>
-                            <div className="flex-1 h-[2px] bg-red-500 shadow shadow-red-500/50"></div>
+                          <div className="absolute left-0 right-0 z-20 flex items-center pointer-events-none" style={{top:`${minsToTop(currentNowMins)}px`}}>
+                            <div className="w-14 flex justify-end pr-2"><div className="w-2.5 h-2.5 bg-red-500 rounded-full shadow-lg shadow-red-500/60 animate-pulse"></div></div>
+                            <div className="flex-1 h-[2px] bg-red-500/80"></div>
                           </div>
                         )}
+                        {/* events */}
                         <div className="absolute left-14 right-2 top-0 bottom-0">
                           {todayEventsForDate.map(ev => {
-                            const {top,height} = getEventStyle(ev);
+                            const top = getEventTop(ev);
+                            const height = getEventHeight(ev);
                             return (
-                              <div key={ev.id} onClick={() => openEdit(ev)}
-                                className="absolute left-0 right-0 rounded-xl px-3 py-1.5 cursor-pointer hover:brightness-110 transition-all shadow-lg overflow-hidden"
-                                style={{top:`${top}px`,height:`${height}px`,backgroundColor:ev.color+'2a',borderLeft:`3px solid ${ev.color}`}}>
-                                <p className="text-[10px] font-black truncate" style={{color:ev.color}}>{ev.title}</p>
-                                <p className="text-[8px] font-bold opacity-60 text-white">{ev.startHour}:{ev.startMin} – {ev.endHour}:{ev.endMin}</p>
-                                {height > 44 && ev.memo && <p className="text-[8px] text-gray-400 mt-0.5 truncate">{ev.memo}</p>}
+                              <div key={ev.id}
+                                className="absolute left-0 right-0 rounded-xl overflow-visible shadow-lg group"
+                                style={{top:`${top}px`, height:`${height}px`, zIndex:10}}>
+                                {/* resize top */}
+                                <div className="absolute top-0 left-0 right-0 h-3 cursor-ns-resize flex items-center justify-center z-30 touch-none"
+                                  onMouseDown={e=>handleResizeStart(e,ev,'top')} onTouchStart={e=>handleResizeStart(e,ev,'top')}>
+                                  <div className="w-8 h-1 rounded-full bg-white/30 group-hover:bg-white/60 transition-colors"></div>
+                                </div>
+                                {/* body – drag to move */}
+                                <div className="absolute inset-0 rounded-xl px-3 py-1.5 cursor-grab active:cursor-grabbing touch-none overflow-hidden"
+                                  style={{backgroundColor:ev.color+'2e', borderLeft:`3px solid ${ev.color}`}}
+                                  onMouseDown={e=>handleMoveStart(e,ev)} onTouchStart={e=>handleMoveStart(e,ev)}
+                                  onClick={e=>{e.stopPropagation(); openEdit(ev);}}>
+                                  <p className="text-[10px] font-black truncate" style={{color:ev.color}}>{ev.title}</p>
+                                  <p className="text-[8px] font-bold opacity-50 text-white tabular-nums">{ev.startHour}:{ev.startMin}–{ev.endHour}:{ev.endMin}</p>
+                                  {height>44 && ev.memo && <p className="text-[8px] text-gray-400 mt-0.5 truncate">{ev.memo}</p>}
+                                </div>
+                                {/* resize bottom */}
+                                <div className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize flex items-end justify-center pb-0.5 z-30 touch-none"
+                                  onMouseDown={e=>handleResizeStart(e,ev,'bottom')} onTouchStart={e=>handleResizeStart(e,ev,'bottom')}>
+                                  <div className="w-8 h-1 rounded-full bg-white/30 group-hover:bg-white/60 transition-colors"></div>
+                                </div>
                               </div>
                             );
                           })}
@@ -851,43 +947,38 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
+
                   {todayEventsForDate.length > 0 && (
                     <p className="text-center text-[9px] font-black text-gray-600 mt-4 uppercase tracking-widest">{todayEventsForDate.length} 件の予定</p>
                   )}
+
+                  {/* Event form modal */}
                   {showEventForm && (
                     <div className="fixed inset-0 z-[400] flex items-end justify-center bg-black/60 backdrop-blur-md p-4" onClick={()=>setShowEventForm(false)}>
                       <div className="bg-zinc-900 w-full max-w-md rounded-[2.5rem] border border-white/10 p-6 shadow-2xl mb-4" onClick={e=>e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-6">
+                        <div className="flex justify-between items-center mb-5">
                           <h3 className="font-black text-sm uppercase tracking-widest">{editingEvent?"予定を編集":"予定を追加"}</h3>
-                          <button onClick={()=>setShowEventForm(false)} className="text-gray-500 font-black">✕</button>
+                          <button onClick={()=>setShowEventForm(false)} className="text-gray-500 font-black text-lg">✕</button>
                         </div>
                         <div className="space-y-4">
                           <input value={newEvent.title} onChange={e=>setNewEvent({...newEvent,title:e.target.value})}
-                            className="w-full bg-black/40 text-sm font-bold p-4 rounded-2xl border border-white/10 outline-none" placeholder="タイトル" />
-                          <div className="flex gap-3 items-center">
-                            <span className="text-[10px] font-black text-gray-500 w-10 shrink-0">開始</span>
-                            <select value={newEvent.startHour} onChange={e=>setNewEvent({...newEvent,startHour:e.target.value})}
-                              className="flex-1 bg-black/40 text-sm font-black p-3 rounded-xl border border-white/10 outline-none">
-                              {Array.from({length:24},(_,i)=>i.toString().padStart(2,'0')).map(h=><option key={h} value={h}>{h}</option>)}
-                            </select>
-                            <span className="font-black text-gray-500">:</span>
-                            <select value={newEvent.startMin} onChange={e=>setNewEvent({...newEvent,startMin:e.target.value})}
-                              className="flex-1 bg-black/40 text-sm font-black p-3 rounded-xl border border-white/10 outline-none">
-                              {["00","15","30","45"].map(m=><option key={m} value={m}>{m}</option>)}
-                            </select>
-                          </div>
-                          <div className="flex gap-3 items-center">
-                            <span className="text-[10px] font-black text-gray-500 w-10 shrink-0">終了</span>
-                            <select value={newEvent.endHour} onChange={e=>setNewEvent({...newEvent,endHour:e.target.value})}
-                              className="flex-1 bg-black/40 text-sm font-black p-3 rounded-xl border border-white/10 outline-none">
-                              {Array.from({length:24},(_,i)=>i.toString().padStart(2,'0')).map(h=><option key={h} value={h}>{h}</option>)}
-                            </select>
-                            <span className="font-black text-gray-500">:</span>
-                            <select value={newEvent.endMin} onChange={e=>setNewEvent({...newEvent,endMin:e.target.value})}
-                              className="flex-1 bg-black/40 text-sm font-black p-3 rounded-xl border border-white/10 outline-none">
-                              {["00","15","30","45"].map(m=><option key={m} value={m}>{m}</option>)}
-                            </select>
-                          </div>
+                            className="w-full bg-black/40 text-sm font-bold p-4 rounded-2xl border border-white/10 outline-none" placeholder="タイトル" autoFocus />
+                          {/* time row */}
+                          {[['開始','startHour','startMin'],['終了','endHour','endMin']].map(([label,hk,mk])=>(
+                            <div key={label} className="flex gap-3 items-center">
+                              <span className="text-[10px] font-black text-gray-500 w-10 shrink-0">{label}</span>
+                              <select value={newEvent[hk]} onChange={e=>setNewEvent({...newEvent,[hk]:e.target.value})}
+                                className="flex-1 bg-black/40 text-sm font-black p-3 rounded-xl border border-white/10 outline-none">
+                                {Array.from({length:24},(_,i)=>i.toString().padStart(2,'0')).map(h=><option key={h} value={h}>{h}</option>)}
+                              </select>
+                              <span className="font-black text-gray-500">:</span>
+                              <select value={newEvent[mk]} onChange={e=>setNewEvent({...newEvent,[mk]:e.target.value})}
+                                className="flex-1 bg-black/40 text-sm font-black p-3 rounded-xl border border-white/10 outline-none">
+                                {["00","15","30","45"].map(m=><option key={m} value={m}>{m}</option>)}
+                              </select>
+                            </div>
+                          ))}
+                          {/* color */}
                           <div>
                             <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2">カラー</p>
                             <div className="flex gap-2 flex-wrap">
@@ -899,7 +990,7 @@ export default function Home() {
                             </div>
                           </div>
                           <textarea value={newEvent.memo} onChange={e=>setNewEvent({...newEvent,memo:e.target.value})}
-                            className="w-full bg-black/40 text-[11px] font-bold p-4 rounded-2xl border border-white/10 outline-none resize-none h-16"
+                            className="w-full bg-black/40 text-[11px] font-bold p-4 rounded-2xl border border-white/10 outline-none resize-none h-14"
                             placeholder="メモ（任意）" />
                           <div className="flex gap-3">
                             {editingEvent && (
