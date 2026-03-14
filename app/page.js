@@ -125,6 +125,9 @@ export default function Home() {
   const [showEventForm, setShowEventForm] = useState(false);
   const [newEvent, setNewEvent] = useState({ title: "", startHour: "09", startMin: "00", endHour: "10", endMin: "00", color: "#3b82f6", memo: "", repeat: "none", repeatDays: [], repeatEnd: "" });
   const [editingEvent, setEditingEvent] = useState(null);
+  // 目標
+  const [goals, setGoals] = useState({ year: "", month: "", week: "" });
+  const [editingGoal, setEditingGoal] = useState(null); // "year"|"month"|"week"|null
 
   const endTimeRef = useRef(null);
   const timerRef = useRef(null);
@@ -290,7 +293,8 @@ export default function Home() {
       friends: currentFriendsList, streak: streakCount,
       photoURL: currentPhotoURL, emojiIcon: currentEmojiIcon,
       themeIndex: currentThemeIdx, charIndex: currentCharIdx, lastActive: Date.now(),
-      scheduleEvents: updatedData.scheduleEvents !== undefined ? updatedData.scheduleEvents : scheduleEvents
+      scheduleEvents: updatedData.scheduleEvents !== undefined ? updatedData.scheduleEvents : scheduleEvents,
+      goals: updatedData.goals !== undefined ? updatedData.goals : goals
     }, { merge: true });
   };
 
@@ -321,6 +325,7 @@ export default function Home() {
             if (d.lastCheckDate === today) setChecks(d.checks || {});
             else setChecks({});
             setScheduleEvents(d.scheduleEvents || []);
+            if (d.goals) setGoals(d.goals);
             if (!d.hasSeenTutorial) setShowTutorial(true);
           } else {
             setShowTutorial(true);
@@ -570,6 +575,63 @@ export default function Home() {
 
           {activeTab === "main" ? (
             <div className="space-y-8">
+
+              {/* ── 目標セクション ── */}
+              {(() => {
+                const GOAL_DEFS = [
+                  { key:"year",  label:"今年の目標",  icon:"🏆", accent:"from-yellow-400 to-orange-400" },
+                  { key:"month", label:"今月の目標",  icon:"📅", accent:"from-blue-400 to-indigo-400" },
+                  { key:"week",  label:"今週の目標",  icon:"⚡", accent:"from-emerald-400 to-teal-400" },
+                ];
+                const saveGoal = (key, value) => {
+                  const next = { ...goals, [key]: value };
+                  setGoals(next);
+                  saveToFirebase({ goals: next });
+                  setEditingGoal(null);
+                };
+                return (
+                  <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-6 shadow-xl">
+                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4">MY GOALS</p>
+                    <div className="grid grid-cols-1 gap-3">
+                      {GOAL_DEFS.map(({key,label,icon,accent}) => (
+                        <div key={key} className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
+                          <div className={`h-0.5 bg-gradient-to-r ${accent}`}></div>
+                          <div className="px-4 py-3">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                                <span>{icon}</span>{label}
+                              </span>
+                              <button onClick={() => setEditingGoal(editingGoal===key ? null : key)}
+                                className="text-[9px] font-black text-gray-600 hover:text-white transition-colors px-2 py-0.5 rounded-lg bg-white/5">
+                                {editingGoal===key ? "✕" : goals[key] ? "編集" : "＋ 設定"}
+                              </button>
+                            </div>
+                            {editingGoal === key ? (
+                              <div className="flex gap-2 mt-2">
+                                <input
+                                  autoFocus
+                                  defaultValue={goals[key]}
+                                  onKeyDown={e => { if (e.key==='Enter') saveGoal(key, e.target.value); if (e.key==='Escape') setEditingGoal(null); }}
+                                  className="flex-1 bg-white/10 text-sm font-bold px-3 py-2 rounded-xl border border-white/10 outline-none placeholder:text-gray-600"
+                                  placeholder={`${label}を入力...`}
+                                  id={`goal-input-${key}`}
+                                />
+                                <button onClick={() => { const el = document.getElementById(`goal-input-${key}`); if(el) saveGoal(key, el.value); }}
+                                  className="bg-white text-black px-4 rounded-xl font-black text-[10px] shrink-0">保存</button>
+                              </div>
+                            ) : (
+                              <p className={`text-sm font-bold leading-snug ${goals[key] ? 'text-white' : 'text-gray-700 italic'}`}>
+                                {goals[key] || "未設定"}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
 
                 {/* キャラクターカード */}
@@ -946,7 +1008,7 @@ export default function Home() {
                     </div>
                   )}
 
-                  <p className="text-[8px] font-black text-gray-700 uppercase tracking-widest text-center mb-3">タイムラインをタップして追加 · ドラッグで移動 · 上下端でリサイズ</p>
+                  <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest text-center mb-3">タイムラインをタップして追加 · ドラッグで移動 · 上下端でリサイズ</p>
 
                   {/* ── Timeline ── */}
                   <div className="bg-white/5 rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
@@ -955,8 +1017,8 @@ export default function Home() {
 
                         {Array.from({length:24},(_,h)=>(
                           <div key={h} className="absolute w-full border-t border-white/5 flex pointer-events-none" style={{top:`${h*HOUR_HEIGHT}px`,height:`${HOUR_HEIGHT}px`}}>
-                            <div className="w-14 shrink-0 flex items-start pt-1 justify-end pr-3">
-                              <span className="text-[9px] font-black text-gray-600 tabular-nums">{h.toString().padStart(2,'0')}:00</span>
+                            <div className="w-16 shrink-0 flex items-start pt-1.5 justify-end pr-3">
+                              <span className="text-[11px] font-black text-gray-500 tabular-nums">{h.toString().padStart(2,'0')}:00</span>
                             </div>
                             <div className="flex-1 border-l border-white/5">
                               <div className="border-t border-white/[0.03] mt-[50%]"></div>
@@ -966,38 +1028,38 @@ export default function Home() {
 
                         {isToday && (
                           <div className="absolute left-0 right-0 z-20 flex items-center pointer-events-none" style={{top:`${minsToTop(currentNowMins)}px`}}>
-                            <div className="w-14 flex justify-end pr-2"><div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-red-500/60 shadow-lg"></div></div>
+                            <div className="w-16 flex justify-end pr-2"><div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-red-500/60 shadow-lg"></div></div>
                             <div className="flex-1 h-[2px] bg-red-500/80"></div>
                           </div>
                         )}
 
-                        <div className="absolute left-14 right-2 top-0 bottom-0">
+                        <div className="absolute left-16 right-2 top-0 bottom-0">
                           {visibleEvents.map(ev => {
                             const top = getTop(ev); const height = getHeight(ev);
                             const badge = repeatBadge(ev);
                             return (
                               <div key={ev.id} className="absolute left-0 right-0 rounded-xl overflow-visible shadow-lg group" style={{top:`${top}px`,height:`${height}px`,zIndex:10}}>
                                 {/* resize top */}
-                                <div className="absolute top-0 left-0 right-0 h-3 cursor-ns-resize flex items-center justify-center z-30 touch-none"
+                                <div className="absolute top-0 left-0 right-0 h-4 cursor-ns-resize flex items-center justify-center z-30 touch-none"
                                   onMouseDown={e=>handleResizeStart(e,ev,'top')} onTouchStart={e=>handleResizeStart(e,ev,'top')}>
-                                  <div className="w-8 h-1 rounded-full bg-white/30 group-hover:bg-white/60 transition-colors"></div>
+                                  <div className="w-10 h-1.5 rounded-full bg-white/30 group-hover:bg-white/70 transition-colors"></div>
                                 </div>
                                 {/* body */}
-                                <div className="absolute inset-0 rounded-xl px-3 py-1.5 cursor-grab active:cursor-grabbing touch-none overflow-hidden"
-                                  style={{backgroundColor:ev.color+'2e', borderLeft:`3px solid ${ev.color}`}}
+                                <div className="absolute inset-0 rounded-xl px-3 py-2 cursor-grab active:cursor-grabbing touch-none overflow-hidden"
+                                  style={{backgroundColor:ev.color+'2e', borderLeft:`4px solid ${ev.color}`}}
                                   onMouseDown={e=>handleMoveStart(e,ev)} onTouchStart={e=>handleMoveStart(e,ev)}
                                   onClick={e=>{e.stopPropagation(); openEdit(ev);}}>
-                                  <div className="flex items-center gap-1.5">
-                                    <p className="text-[10px] font-black truncate flex-1" style={{color:ev.color}}>{ev.title}</p>
-                                    {badge && <span className="text-[7px] font-black px-1.5 py-0.5 rounded-full shrink-0" style={{backgroundColor:ev.color+'44',color:ev.color}}>🔁 {badge}</span>}
+                                  <div className="flex items-start gap-1.5">
+                                    <p className="text-[13px] font-black truncate flex-1 leading-tight" style={{color:ev.color}}>{ev.title}</p>
+                                    {badge && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0 mt-0.5" style={{backgroundColor:ev.color+'44',color:ev.color}}>🔁{badge}</span>}
                                   </div>
-                                  <p className="text-[8px] font-bold opacity-50 text-white tabular-nums">{ev.startHour}:{ev.startMin}–{ev.endHour}:{ev.endMin}</p>
-                                  {height>44 && ev.memo && <p className="text-[8px] text-gray-400 mt-0.5 truncate">{ev.memo}</p>}
+                                  {height > 32 && <p className="text-[11px] font-bold opacity-60 text-white tabular-nums mt-0.5">{ev.startHour}:{ev.startMin}–{ev.endHour}:{ev.endMin}</p>}
+                                  {height > 52 && ev.memo && <p className="text-[10px] text-gray-400 mt-1 truncate">{ev.memo}</p>}
                                 </div>
                                 {/* resize bottom */}
-                                <div className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize flex items-end justify-center pb-0.5 z-30 touch-none"
+                                <div className="absolute bottom-0 left-0 right-0 h-4 cursor-ns-resize flex items-end justify-center pb-1 z-30 touch-none"
                                   onMouseDown={e=>handleResizeStart(e,ev,'bottom')} onTouchStart={e=>handleResizeStart(e,ev,'bottom')}>
-                                  <div className="w-8 h-1 rounded-full bg-white/30 group-hover:bg-white/60 transition-colors"></div>
+                                  <div className="w-10 h-1.5 rounded-full bg-white/30 group-hover:bg-white/70 transition-colors"></div>
                                 </div>
                               </div>
                             );
@@ -1008,119 +1070,128 @@ export default function Home() {
                   </div>
 
                   {visibleEvents.length > 0 && (
-                    <p className="text-center text-[9px] font-black text-gray-600 mt-4 uppercase tracking-widest">{visibleEvents.length} 件の予定</p>
+                    <p className="text-center text-[10px] font-black text-gray-600 mt-4 uppercase tracking-widest">{visibleEvents.length} 件の予定</p>
                   )}
 
                   {/* ── Event form modal ── */}
                   {showEventForm && (
-                    <div className="fixed inset-0 z-[400] flex items-end justify-center bg-black/60 backdrop-blur-md p-4" onClick={()=>setShowEventForm(false)}>
-                      <div className="bg-zinc-900 w-full max-w-md rounded-[2.5rem] border border-white/10 p-6 shadow-2xl mb-4 max-h-[90vh] overflow-y-auto scrollbar-hide" onClick={e=>e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-5">
-                          <h3 className="font-black text-sm uppercase tracking-widest">{editingEvent?"予定を編集":"予定を追加"}</h3>
-                          <button onClick={()=>setShowEventForm(false)} className="text-gray-500 font-black text-lg">✕</button>
-                        </div>
-                        <div className="space-y-4">
-                          {/* title */}
-                          <input value={newEvent.title} onChange={e=>setNewEvent({...newEvent,title:e.target.value})}
-                            className="w-full bg-black/40 text-sm font-bold p-4 rounded-2xl border border-white/10 outline-none" placeholder="タイトル" autoFocus />
+                    <div className="fixed inset-0 z-[400] flex items-end justify-center bg-black/70 backdrop-blur-md p-4" onClick={()=>{setShowEventForm(false);setEditingEvent(null);}}>
+                      <div className="bg-zinc-900 w-full max-w-md rounded-[2.5rem] border border-white/10 shadow-2xl mb-4 max-h-[92vh] overflow-y-auto scrollbar-hide" onClick={e=>e.stopPropagation()}>
 
-                          {/* time */}
-                          {[['開始','startHour','startMin'],['終了','endHour','endMin']].map(([label,hk,mk])=>(
-                            <div key={label} className="flex gap-3 items-center">
-                              <span className="text-[10px] font-black text-gray-500 w-10 shrink-0">{label}</span>
-                              <select value={newEvent[hk]} onChange={e=>setNewEvent({...newEvent,[hk]:e.target.value})}
-                                className="flex-1 bg-black/40 text-sm font-black p-3 rounded-xl border border-white/10 outline-none">
-                                {Array.from({length:24},(_,i)=>i.toString().padStart(2,'0')).map(h=><option key={h} value={h}>{h}</option>)}
-                              </select>
-                              <span className="font-black text-gray-500">:</span>
-                              <select value={newEvent[mk]} onChange={e=>setNewEvent({...newEvent,[mk]:e.target.value})}
-                                className="flex-1 bg-black/40 text-sm font-black p-3 rounded-xl border border-white/10 outline-none">
-                                {["00","15","30","45"].map(m=><option key={m} value={m}>{m}</option>)}
-                              </select>
-                            </div>
-                          ))}
+                        {/* header bar with color accent */}
+                        <div className="h-1.5 rounded-t-[2.5rem]" style={{backgroundColor: newEvent.color}}></div>
 
-                          {/* ── repeat ── */}
-                          <div className="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-3">
-                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">🔁 繰り返し</p>
-                            <div className="grid grid-cols-2 gap-2">
-                              {REPEAT_OPTS.map(opt=>(
-                                <button key={opt.value} onClick={()=>setNewEvent({...newEvent,repeat:opt.value})}
-                                  className={`py-2.5 px-3 rounded-xl text-[10px] font-black transition-all text-left border ${newEvent.repeat===opt.value?'bg-white text-black border-transparent':'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}>
-                                  {opt.label}
-                                </button>
+                        <div className="p-6">
+                          {/* title row */}
+                          <div className="flex justify-between items-center mb-5">
+                            <h3 className="font-black text-base">{editingEvent ? "✏️ 予定を編集" : "＋ 予定を追加"}</h3>
+                            <button onClick={()=>{setShowEventForm(false);setEditingEvent(null);}} className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center text-gray-400 hover:text-white font-black">✕</button>
+                          </div>
+
+                          <div className="space-y-4">
+                            {/* title input */}
+                            <input value={newEvent.title} onChange={e=>setNewEvent({...newEvent,title:e.target.value})}
+                              className="w-full bg-black/40 text-base font-bold px-4 py-3.5 rounded-2xl border border-white/10 outline-none placeholder:text-gray-600"
+                              placeholder="予定のタイトル" autoFocus />
+
+                            {/* time block */}
+                            <div className="bg-black/30 rounded-2xl border border-white/5 overflow-hidden">
+                              {[['開始','startHour','startMin'],['終了','endHour','endMin']].map(([label,hk,mk], li)=>(
+                                <div key={label} className={`flex items-center gap-3 px-4 py-3 ${li===0?'border-b border-white/5':''}`}>
+                                  <span className="text-sm font-black text-gray-400 w-10 shrink-0">{label}</span>
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <select value={newEvent[hk]} onChange={e=>setNewEvent({...newEvent,[hk]:e.target.value})}
+                                      className="flex-1 bg-white/10 text-base font-black py-2 px-2 rounded-xl border border-white/10 outline-none text-center">
+                                      {Array.from({length:24},(_,i)=>i.toString().padStart(2,'0')).map(h=><option key={h} value={h}>{h}</option>)}
+                                    </select>
+                                    <span className="font-black text-gray-400 text-lg">:</span>
+                                    <select value={newEvent[mk]} onChange={e=>setNewEvent({...newEvent,[mk]:e.target.value})}
+                                      className="flex-1 bg-white/10 text-base font-black py-2 px-2 rounded-xl border border-white/10 outline-none text-center">
+                                      {["00","15","30","45"].map(m=><option key={m} value={m}>{m}</option>)}
+                                    </select>
+                                  </div>
+                                </div>
                               ))}
                             </div>
 
-                            {/* custom day picker */}
-                            {newEvent.repeat==="custom" && (
-                              <div className="flex gap-1.5 justify-center pt-1">
-                                {DOW_LABELS.map((d,i)=>{
-                                  const active = (newEvent.repeatDays||[]).includes(i);
-                                  return (
-                                    <button key={i} onClick={()=>{
-                                      const cur = newEvent.repeatDays||[];
-                                      setNewEvent({...newEvent, repeatDays: active?cur.filter(x=>x!==i):[...cur,i].sort()});
-                                    }} className={`w-9 h-9 rounded-xl text-[11px] font-black transition-all border ${active?'bg-white text-black border-transparent':'bg-white/5 text-gray-500 border-white/5'}`}>
-                                      {d}
-                                    </button>
-                                  );
-                                })}
+                            {/* color row */}
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-black text-gray-400 w-10 shrink-0">色</span>
+                              <div className="flex gap-2.5 flex-wrap flex-1">
+                                {EVENT_COLORS.map(c=>(
+                                  <button key={c} onClick={()=>setNewEvent({...newEvent,color:c})}
+                                    className={`w-9 h-9 rounded-full transition-all shadow-md ${newEvent.color===c?'scale-125 ring-2 ring-white ring-offset-1 ring-offset-zinc-900':'opacity-60 hover:opacity-100'}`}
+                                    style={{backgroundColor:c}}></button>
+                                ))}
                               </div>
-                            )}
-
-                            {/* repeat end date */}
-                            {newEvent.repeat && newEvent.repeat!=="none" && (
-                              <div className="flex items-center gap-3 pt-1">
-                                <span className="text-[10px] font-black text-gray-500 shrink-0">終了日</span>
-                                <input type="date" value={newEvent.repeatEnd||""} onChange={e=>setNewEvent({...newEvent,repeatEnd:e.target.value})}
-                                  className="flex-1 bg-black/40 text-[11px] font-black p-3 rounded-xl border border-white/10 outline-none"
-                                  placeholder="未設定（無期限）" />
-                                {newEvent.repeatEnd && (
-                                  <button onClick={()=>setNewEvent({...newEvent,repeatEnd:""})} className="text-gray-600 font-black text-sm">✕</button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* color */}
-                          <div>
-                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2">カラー</p>
-                            <div className="flex gap-2 flex-wrap">
-                              {EVENT_COLORS.map(c=>(
-                                <button key={c} onClick={()=>setNewEvent({...newEvent,color:c})}
-                                  className={`w-8 h-8 rounded-full transition-all ${newEvent.color===c?'scale-125 ring-2 ring-white':'opacity-50'}`}
-                                  style={{backgroundColor:c}}></button>
-                              ))}
                             </div>
-                          </div>
 
-                          {/* memo */}
-                          <textarea value={newEvent.memo} onChange={e=>setNewEvent({...newEvent,memo:e.target.value})}
-                            className="w-full bg-black/40 text-[11px] font-bold p-4 rounded-2xl border border-white/10 outline-none resize-none h-14"
-                            placeholder="メモ（任意）" />
+                            {/* repeat block */}
+                            <div className="bg-black/30 rounded-2xl border border-white/5 p-4 space-y-3">
+                              <p className="text-sm font-black text-gray-300 flex items-center gap-2">🔁 <span>繰り返し</span></p>
+                              <div className="grid grid-cols-2 gap-2">
+                                {REPEAT_OPTS.map(opt=>(
+                                  <button key={opt.value} onClick={()=>setNewEvent({...newEvent,repeat:opt.value})}
+                                    className={`py-3 px-3 rounded-xl text-sm font-black transition-all border ${newEvent.repeat===opt.value?'bg-white text-black border-transparent shadow-lg':'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}>
+                                    {opt.label}
+                                  </button>
+                                ))}
+                              </div>
 
-                          {/* actions */}
-                          {editingEvent ? (
-                            <div className="space-y-2">
-                              <button onClick={addOrUpdateEvent}
-                                className="w-full py-4 bg-white text-black rounded-2xl font-black text-[11px] shadow-xl">更新</button>
-                              {isRepeatEvent(editingEvent) ? (
+                              {newEvent.repeat==="custom" && (
+                                <div className="flex gap-2 justify-center pt-1">
+                                  {DOW_LABELS.map((d,i)=>{
+                                    const active=(newEvent.repeatDays||[]).includes(i);
+                                    return (
+                                      <button key={i} onClick={()=>{
+                                        const cur=newEvent.repeatDays||[];
+                                        setNewEvent({...newEvent,repeatDays:active?cur.filter(x=>x!==i):[...cur,i].sort()});
+                                      }} className={`w-10 h-10 rounded-xl text-sm font-black transition-all border ${active?'bg-white text-black border-transparent':'bg-white/5 text-gray-500 border-white/5'}`}>
+                                        {d}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {newEvent.repeat && newEvent.repeat!=="none" && (
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm font-black text-gray-400 shrink-0">終了日</span>
+                                  <input type="date" value={newEvent.repeatEnd||""} onChange={e=>setNewEvent({...newEvent,repeatEnd:e.target.value})}
+                                    className="flex-1 bg-white/10 text-sm font-black p-2.5 rounded-xl border border-white/10 outline-none" />
+                                  {newEvent.repeatEnd && (
+                                    <button onClick={()=>setNewEvent({...newEvent,repeatEnd:""})} className="text-gray-500 font-black">✕</button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* memo */}
+                            <textarea value={newEvent.memo} onChange={e=>setNewEvent({...newEvent,memo:e.target.value})}
+                              className="w-full bg-black/40 text-sm font-bold px-4 py-3 rounded-2xl border border-white/10 outline-none resize-none h-16 placeholder:text-gray-600"
+                              placeholder="メモ（任意）" />
+
+                            {/* action buttons */}
+                            <button onClick={addOrUpdateEvent}
+                              className="w-full py-4 rounded-2xl font-black text-base shadow-xl text-white transition-all active:scale-95"
+                              style={{backgroundColor: newEvent.color}}>
+                              {editingEvent ? "更新する" : "追加する"}
+                            </button>
+
+                            {editingEvent && (
+                              isRepeatEvent(editingEvent) ? (
                                 <div className="grid grid-cols-2 gap-2">
                                   <button onClick={()=>deleteEvent(editingEvent.id, true)}
-                                    className="py-3 bg-orange-500/20 text-orange-400 rounded-2xl font-black text-[9px]">この日だけ削除</button>
+                                    className="py-3.5 bg-orange-500/15 text-orange-400 rounded-2xl font-black text-sm border border-orange-500/20">この日だけ削除</button>
                                   <button onClick={()=>deleteEvent(editingEvent.id, false)}
-                                    className="py-3 bg-red-500/20 text-red-400 rounded-2xl font-black text-[9px]">すべて削除</button>
+                                    className="py-3.5 bg-red-500/15 text-red-400 rounded-2xl font-black text-sm border border-red-500/20">すべて削除</button>
                                 </div>
                               ) : (
                                 <button onClick={()=>deleteEvent(editingEvent.id, false)}
-                                  className="w-full py-3 bg-red-500/20 text-red-400 rounded-2xl font-black text-[10px]">削除</button>
-                              )}
-                            </div>
-                          ) : (
-                            <button onClick={addOrUpdateEvent}
-                              className="w-full py-4 bg-white text-black rounded-2xl font-black text-[11px] shadow-xl">追加</button>
-                          )}
+                                  className="w-full py-3.5 bg-red-500/15 text-red-400 rounded-2xl font-black text-sm border border-red-500/20">削除</button>
+                              )
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
