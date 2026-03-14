@@ -581,7 +581,7 @@ export default function Home() {
           <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10">⚙️</button>
         </header>
 
-        <div className="max-w-4xl mx-auto px-4 pb-32">
+        <div className="max-w-screen-xl mx-auto px-4 pb-32">
           <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 my-8 mx-auto w-fit">
             <button onClick={() => setActiveTab("main")} className={`px-8 py-2 rounded-xl text-[10px] font-black transition-all ${activeTab === "main" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>ホーム</button>
             <button onClick={() => setActiveTab("schedule")} className={`px-8 py-2 rounded-xl text-[10px] font-black transition-all ${activeTab === "schedule" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>スケジュール</button>
@@ -731,79 +731,50 @@ export default function Home() {
                 );
               })()}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+              {/* ══ PC: 左右2カラム ／ SP: 縦積み ══ */}
+              <div className="flex flex-col lg:flex-row gap-6 items-start">
 
-                {/* キャラクターカード */}
-                <div className="bg-white/5 p-8 rounded-[3.5rem] border border-white/10 flex flex-col items-center justify-center relative shadow-2xl min-h-[350px]">
-                  <div className={`absolute top-6 right-8 px-4 py-1.5 rounded-full ${currentAward.bg} shadow-lg z-20`}>
-                    <p className={`text-[8px] font-black opacity-60 ${currentAward.color}`}>今日の称号</p>
-                    <p className={`text-[10px] font-black ${currentAward.color}`}>称号: {currentAward.name}</p>
-                  </div>
-                  <div className="absolute top-8 left-10 text-left z-10">
-                    <p className="text-[10px] font-black text-white/40 tracking-widest">{now.toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit', weekday: 'short' })}</p>
-                    <p className="text-2xl font-black italic tabular-nums">{now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</p>
-                  </div>
-                  <div className="mb-8 relative mt-12">
-                    <div className="bg-white text-black px-6 py-4 rounded-[1.8rem] shadow-xl relative text-center">
-                      <p className="text-[11px] font-black leading-relaxed">{characterMessage}</p>
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45"></div>
+                {/* ── 左カラム: 目標 + キャラ + タイマー ── */}
+                <div className="w-full lg:w-80 xl:w-96 shrink-0 flex flex-col gap-6">
+
+                  {/* キャラクターカード */}
+                  <div className="bg-white/5 p-8 rounded-[3.5rem] border border-white/10 flex flex-col items-center justify-center relative shadow-2xl min-h-[320px]">
+                    <div className={`absolute top-6 right-8 px-4 py-1.5 rounded-full ${currentAward.bg} shadow-lg z-20`}>
+                      <p className={`text-[8px] font-black opacity-60 ${currentAward.color}`}>今日の称号</p>
+                      <p className={`text-[10px] font-black ${currentAward.color}`}>称号: {currentAward.name}</p>
                     </div>
-                  </div>
-                  <div className={`w-36 h-36 rounded-full ${currentChar.color} shadow-2xl flex flex-col items-center justify-center animate-bounce-rich relative transition-all duration-700 ${percent === 100 ? 'animate-gold' : ''} overflow-hidden`}>
-                    {photoURL ? (
-                      <img src={photoURL} alt="icon" className="w-full h-full object-cover" />
-                    ) : emojiIcon ? (
-                      <span className="text-5xl">{emojiIcon}</span>
-                    ) : (
-                      <>
-                        <div className="flex gap-8 mb-4 animate-blink">
-                          {percent === 100 ? (<><span className="text-4xl">💎</span><span className="text-4xl">💎</span></>)
-                            : percent >= 80 ? (<><div className="w-5 h-6 bg-white rounded-full relative overflow-hidden"><div className="w-2.5 h-2.5 bg-black rounded-full absolute bottom-1 left-1"></div></div><div className="w-5 h-6 bg-white rounded-full relative overflow-hidden"><div className="w-2.5 h-2.5 bg-black rounded-full absolute bottom-1 left-1"></div></div></>)
-                            : percent >= 50 ? (<><div className="w-5 h-5 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div><div className="w-5 h-5 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div></>)
-                            : (<><div className="w-5 h-1 bg-black/40 rounded-full"></div><div className="w-5 h-1 bg-black/40 rounded-full"></div></>)}
-                        </div>
-                        <div className={`transition-all duration-500 bg-white/30 rounded-full ${percent === 100 ? 'w-12 h-8 rounded-b-full bg-white/40' : percent >= 50 ? 'w-10 h-5 rounded-b-full' : 'w-8 h-1'}`}></div>
-                      </>
-                    )}
-                  </div>
-                  {/* ⑨ 継続記録 + 説明 */}
-                  <p className="mt-4 text-[10px] font-bold text-gray-400 italic">継続中: {streakCount}日 🔥</p>
-                  <p className="text-[8px] text-gray-600 font-black mt-1 uppercase tracking-widest">80%以上達成した日が連続するとカウント</p>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                  {/* ランク・グラフカード */}
-                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex-1 flex flex-col justify-between shadow-lg">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">週間ランク (直近7日平均)</p>
-                        <span className={`text-[8px] font-black px-3 py-1 rounded-full ${currentRank.bg} ${currentRank.color}`}>RANK: {currentRank.name}</span>
-                        <p className="text-[10px] font-black text-gray-500 mt-2 uppercase tracking-widest">Week Avg: {lastWeekAvg}%</p>
-                        <p className="text-[8px] font-black text-gray-600 mt-3 mb-1 uppercase tracking-widest">今日の達成率</p>
-                        <h2 className="text-3xl font-black mt-1">Today: {percent}%</h2>
-                        {/* ④ プログレスバー */}
-                        <div className="mt-2 w-40 h-2 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full bg-emerald-400 rounded-full transition-all duration-700" style={{ width: `${percent}%` }}></div>
-                        </div>
-                      </div>
-                      <div className="text-[7px] font-black space-y-0.5 text-gray-500 border-l border-white/10 pl-3">
-                        <p className="mb-1 text-white opacity-50">RANK (Week Avg)</p>
-                        {RANK_LIST.map(r => <div key={r.name} className={lastWeekAvg >= r.min ? "text-white opacity-100" : "opacity-30"}>{r.name}: {r.min}%+</div>)}
+                    <div className="absolute top-8 left-10 text-left z-10">
+                      <p className="text-[10px] font-black text-white/40 tracking-widest">{now.toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit', weekday: 'short' })}</p>
+                      <p className="text-2xl font-black italic tabular-nums">{now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    <div className="mb-8 relative mt-12">
+                      <div className="bg-white text-black px-6 py-4 rounded-[1.8rem] shadow-xl relative text-center">
+                        <p className="text-[11px] font-black leading-relaxed">{characterMessage}</p>
+                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45"></div>
                       </div>
                     </div>
-                    <div className="h-28 w-full bg-black/20 rounded-2xl p-2">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                          <XAxis dataKey="displayDate" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 8, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
-                          <YAxis hide domain={[0, 100]} />
-                          <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
+                    <div className={`w-36 h-36 rounded-full ${currentChar.color} shadow-2xl flex flex-col items-center justify-center animate-bounce-rich relative transition-all duration-700 ${percent === 100 ? 'animate-gold' : ''} overflow-hidden`}>
+                      {photoURL ? (
+                        <img src={photoURL} alt="icon" className="w-full h-full object-cover" />
+                      ) : emojiIcon ? (
+                        <span className="text-5xl">{emojiIcon}</span>
+                      ) : (
+                        <>
+                          <div className="flex gap-8 mb-4 animate-blink">
+                            {percent === 100 ? (<><span className="text-4xl">💎</span><span className="text-4xl">💎</span></>)
+                              : percent >= 80 ? (<><div className="w-5 h-6 bg-white rounded-full relative overflow-hidden"><div className="w-2.5 h-2.5 bg-black rounded-full absolute bottom-1 left-1"></div></div><div className="w-5 h-6 bg-white rounded-full relative overflow-hidden"><div className="w-2.5 h-2.5 bg-black rounded-full absolute bottom-1 left-1"></div></div></>)
+                              : percent >= 50 ? (<><div className="w-5 h-5 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div><div className="w-5 h-5 bg-white rounded-full flex items-center justify-center"><div className="w-2 h-2 bg-black rounded-full"></div></div></>)
+                              : (<><div className="w-5 h-1 bg-black/40 rounded-full"></div><div className="w-5 h-1 bg-black/40 rounded-full"></div></>)}
+                          </div>
+                          <div className={`transition-all duration-500 bg-white/30 rounded-full ${percent === 100 ? 'w-12 h-8 rounded-b-full bg-white/40' : percent >= 50 ? 'w-10 h-5 rounded-b-full' : 'w-8 h-1'}`}></div>
+                        </>
+                      )}
                     </div>
+                    <p className="mt-4 text-[10px] font-bold text-gray-400 italic">継続中: {streakCount}日 🔥</p>
+                    <p className="text-[8px] text-gray-600 font-black mt-1 uppercase tracking-widest">80%以上達成した日が連続するとカウント</p>
                   </div>
 
-                  {/* ⑤ タイマーカード：アラーム音選択付き */}
+                  {/* タイマーカード */}
                   <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 shadow-lg">
                     <div className="flex items-center justify-around mb-4">
                       <div className="text-center">
@@ -834,14 +805,12 @@ export default function Home() {
                         ))}
                       </div>
                     </div>
-                    {/* アラーム音選択 */}
                     <div className="border-t border-white/5 pt-3">
                       <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-2">🔔 アラーム音</p>
                       <div className="grid grid-cols-2 gap-1.5">
                         {ALARM_SOUNDS.map(s => (
                           <button key={s.id} onClick={() => {
                             setAlarmSound(s.id);
-                            // preview
                             const prev = new Audio(s.url);
                             prev.volume = 0.5;
                             prev.play().catch(()=>{});
@@ -855,75 +824,107 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* タスクカード */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-                {(["morning", "afternoon", "night"]).map((time, ti) => {
-                  const tp = timeProgress[ti];
-                  return (
-                    <div key={time} className="bg-white/5 p-7 rounded-[3rem] border border-white/10 shadow-xl flex flex-col h-auto min-h-[400px]">
-                      {/* ⑧ 時間帯別ヘッダー＋件数 */}
-                      <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] opacity-40">
-                          {time === 'morning' ? 'MORNING' : time === 'afternoon' ? 'AFTERNOON' : 'NIGHT'}
-                        </h2>
-                        {tp.total > 0 && (
-                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${tp.done === tp.total ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500'}`}>
-                            {tp.done}/{tp.total}
-                          </span>
-                        )}
-                      </div>
-                      {/* ④ 時間帯別プログレスバー */}
-                      {tp.total > 0 && (
-                        <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mb-4">
-                          <div className="h-full bg-emerald-400 rounded-full transition-all duration-500" style={{ width: `${Math.round(tp.done / tp.total * 100)}%` }}></div>
+                {/* ── 右カラム: ランク + タスク3列 ── */}
+                <div className="flex-1 min-w-0 flex flex-col gap-6">
+
+                  {/* ランク・グラフカード */}
+                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 shadow-lg">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">週間ランク (直近7日平均)</p>
+                        <span className={`text-[8px] font-black px-3 py-1 rounded-full ${currentRank.bg} ${currentRank.color}`}>RANK: {currentRank.name}</span>
+                        <p className="text-[10px] font-black text-gray-500 mt-2 uppercase tracking-widest">Week Avg: {lastWeekAvg}%</p>
+                        <p className="text-[8px] font-black text-gray-600 mt-3 mb-1 uppercase tracking-widest">今日の達成率</p>
+                        <h2 className="text-3xl font-black mt-1">Today: {percent}%</h2>
+                        <div className="mt-2 w-40 h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-400 rounded-full transition-all duration-700" style={{ width: `${percent}%` }}></div>
                         </div>
-                      )}
-                      <div className="space-y-4 flex-1">
-                        {tasks[time].map((task, index) => (
-                          <div key={index} draggable onDragStart={(e) => onDragStart(e, time, index)} onDragOver={(e) => onDragOver(e, time, index)} onDragEnd={onDragEnd}
-                            className={`flex items-center ${draggedItem?.index === index && draggedItem?.time === time ? 'opacity-30' : ''}`}>
-                            <div className="cursor-grab active:cursor-grabbing mr-2 opacity-20 hover:opacity-100 font-mono text-[10px] shrink-0">::</div>
-                            <button onClick={() => toggleCheck(time, index, task)}
-                              className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all shrink-0 ${checks[`${time}_${index}`] ? "bg-emerald-500 border-none shadow-lg scale-110" : "bg-black/20"}`}>
-                              {checks[`${time}_${index}`] && <span className="text-[10px] font-black">✓</span>}
-                            </button>
-                            {editingTask?.time === time && editingTask?.index === index ? (
-                              <input autoFocus className="flex-1 bg-white/10 text-sm font-bold p-1 rounded outline-none"
-                                value={editingTask.value}
-                                onChange={(e) => setEditingTask({ ...editingTask, value: e.target.value })}
-                                onBlur={() => updateTaskValue(time, index, editingTask.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && updateTaskValue(time, index, editingTask.value)} />
-                            ) : (
-                              <span onClick={() => setEditingTask({ time, index, value: task })}
-                                className={`flex-1 text-sm font-bold cursor-text ${checks[`${time}_${index}`] ? 'opacity-20 line-through' : 'text-gray-200'}`}>
-                                {task.startsWith('!') ? <span className="text-orange-400 font-black">🌟 {task.substring(1)}</span> : task}
-                              </span>
-                            )}
-                            {/* ① 削除ボタン：常時薄く表示、タップで削除（スマホ対応） */}
-                            <button onClick={() => {
-                              const nl = [...tasks[time]]; nl.splice(index, 1);
-                              setTasks({ ...tasks, [time]: nl });
-                              saveToFirebase({ tasks: { ...tasks, [time]: nl } });
-                            }} className="ml-2 text-red-500/30 hover:text-red-500 active:text-red-400 p-1 text-[12px] transition-colors shrink-0">✕</button>
-                          </div>
-                        ))}
                       </div>
-                      <div className="mt-6 flex flex-col gap-2">
-                        <div className="flex gap-2">
-                          <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all shrink-0 ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
-                          <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })}
-                            onKeyDown={(e) => e.key === 'Enter' && addTask(time)}
-                            className="flex-1 bg-black/40 text-[11px] p-3 rounded-xl border border-white/5 outline-none" placeholder="習慣を入力..." />
-                        </div>
-                        <button onClick={() => addTask(time)} className="w-full bg-white text-black py-3 rounded-xl font-black text-[10px] shadow-lg">追加</button>
+                      <div className="text-[7px] font-black space-y-0.5 text-gray-500 border-l border-white/10 pl-3">
+                        <p className="mb-1 text-white opacity-50">RANK (Week Avg)</p>
+                        {RANK_LIST.map(r => <div key={r.name} className={lastWeekAvg >= r.min ? "text-white opacity-100" : "opacity-30"}>{r.name}: {r.min}%+</div>)}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="h-28 w-full bg-black/20 rounded-2xl p-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                          <XAxis dataKey="displayDate" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 8, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                          <YAxis hide domain={[0, 100]} />
+                          <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* タスク3列 */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    {(["morning", "afternoon", "night"]).map((time, ti) => {
+                      const tp = timeProgress[ti];
+                      return (
+                        <div key={time} className="bg-white/5 p-7 rounded-[3rem] border border-white/10 shadow-xl flex flex-col h-auto min-h-[400px]">
+                          <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] opacity-40">
+                              {time === 'morning' ? 'MORNING' : time === 'afternoon' ? 'AFTERNOON' : 'NIGHT'}
+                            </h2>
+                            {tp.total > 0 && (
+                              <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${tp.done === tp.total ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500'}`}>
+                                {tp.done}/{tp.total}
+                              </span>
+                            )}
+                          </div>
+                          {tp.total > 0 && (
+                            <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mb-4">
+                              <div className="h-full bg-emerald-400 rounded-full transition-all duration-500" style={{ width: `${Math.round(tp.done / tp.total * 100)}%` }}></div>
+                            </div>
+                          )}
+                          <div className="space-y-4 flex-1">
+                            {tasks[time].map((task, index) => (
+                              <div key={index} draggable onDragStart={(e) => onDragStart(e, time, index)} onDragOver={(e) => onDragOver(e, time, index)} onDragEnd={onDragEnd}
+                                className={`flex items-center ${draggedItem?.index === index && draggedItem?.time === time ? 'opacity-30' : ''}`}>
+                                <div className="cursor-grab active:cursor-grabbing mr-2 opacity-20 hover:opacity-100 font-mono text-[10px] shrink-0">::</div>
+                                <button onClick={() => toggleCheck(time, index, task)}
+                                  className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all shrink-0 ${checks[`${time}_${index}`] ? "bg-emerald-500 border-none shadow-lg scale-110" : "bg-black/20"}`}>
+                                  {checks[`${time}_${index}`] && <span className="text-[10px] font-black">✓</span>}
+                                </button>
+                                {editingTask?.time === time && editingTask?.index === index ? (
+                                  <input autoFocus className="flex-1 bg-white/10 text-sm font-bold p-1 rounded outline-none"
+                                    value={editingTask.value}
+                                    onChange={(e) => setEditingTask({ ...editingTask, value: e.target.value })}
+                                    onBlur={() => updateTaskValue(time, index, editingTask.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && updateTaskValue(time, index, editingTask.value)} />
+                                ) : (
+                                  <span onClick={() => setEditingTask({ time, index, value: task })}
+                                    className={`flex-1 text-sm font-bold cursor-text ${checks[`${time}_${index}`] ? 'opacity-20 line-through' : 'text-gray-200'}`}>
+                                    {task.startsWith('!') ? <span className="text-orange-400 font-black">🌟 {task.substring(1)}</span> : task}
+                                  </span>
+                                )}
+                                <button onClick={() => {
+                                  const nl = [...tasks[time]]; nl.splice(index, 1);
+                                  setTasks({ ...tasks, [time]: nl });
+                                  saveToFirebase({ tasks: { ...tasks, [time]: nl } });
+                                }} className="ml-2 text-red-500/30 hover:text-red-500 active:text-red-400 p-1 text-[12px] transition-colors shrink-0">✕</button>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-6 flex flex-col gap-2">
+                            <div className="flex gap-2">
+                              <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }}
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all shrink-0 ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
+                              <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })}
+                                onKeyDown={(e) => e.key === 'Enter' && addTask(time)}
+                                className="flex-1 bg-black/40 text-[11px] p-3 rounded-xl border border-white/5 outline-none" placeholder="習慣を入力..." />
+                            </div>
+                            <button onClick={() => addTask(time)} className="w-full bg-white text-black py-3 rounded-xl font-black text-[10px] shadow-lg">追加</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                </div>{/* end 右カラム */}
+              </div>{/* end PC 2カラム */}
             </div>
 
           ) : activeTab === "schedule" ? (
@@ -1110,95 +1111,123 @@ export default function Home() {
                     <button onClick={nextDay} className="w-10 h-10 bg-white/5 rounded-xl border border-white/10 font-black flex items-center justify-center text-lg">›</button>
                   </div>
 
-                  {/* ── Routine strip ── */}
-                  {allRoutineTasks.length > 0 && (
-                    <div className="mb-4">
-                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 px-1">ルーティンを追加 ↓</p>
-                      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-                        {allRoutineTasks.map(({t,color},i) => (
-                          <button key={i} onClick={() => addRoutineToSchedule(t,color)}
-                            className="shrink-0 px-3 py-2 rounded-xl text-[10px] font-black border border-white/10 flex items-center gap-1.5 whitespace-nowrap hover:scale-105 transition-all"
-                            style={{backgroundColor:color+'22', color}}>
-                            <span>＋</span>{t}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {/* ══ PC: タイムライン左 / サイドパネル右 ══ */}
+                  <div className="flex flex-col lg:flex-row gap-6 items-start">
 
-                  <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest text-center mb-3">タイムラインをタップして追加 · ドラッグで移動 · 上下端でリサイズ</p>
+                    {/* タイムライン */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest text-center mb-3">タイムラインをタップして追加 · ドラッグで移動 · 右端↕でリサイズ</p>
+                      <div className="bg-white/5 rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
+                        <div className="overflow-y-auto" style={{maxHeight:'78vh'}}>
+                          <div className="relative select-none" style={{height:`${24*HOUR_HEIGHT}px`}} onClick={handleTimelineTap}>
 
-                  {/* ── Timeline ── */}
-                  <div className="bg-white/5 rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
-                    <div className="overflow-y-auto" style={{maxHeight:'62vh'}}>
-                      <div className="relative select-none" style={{height:`${24*HOUR_HEIGHT}px`}} onClick={handleTimelineTap}>
-
-                        {Array.from({length:24},(_,h)=>(
-                          <div key={h} className="absolute w-full border-t border-white/5 flex pointer-events-none" style={{top:`${h*HOUR_HEIGHT}px`,height:`${HOUR_HEIGHT}px`}}>
-                            <div className="w-16 shrink-0 flex items-start pt-1.5 justify-end pr-3">
-                              <span className="text-[11px] font-black text-gray-500 tabular-nums">{h.toString().padStart(2,'0')}:00</span>
-                            </div>
-                            <div className="flex-1 border-l border-white/5">
-                              <div className="border-t border-white/[0.03] mt-[50%]"></div>
-                            </div>
-                          </div>
-                        ))}
-
-                        {isToday && (
-                          <div className="absolute left-0 right-0 z-20 flex items-center pointer-events-none" style={{top:`${minsToTop(currentNowMins)}px`}}>
-                            <div className="w-16 flex justify-end pr-2"><div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-red-500/60 shadow-lg"></div></div>
-                            <div className="flex-1 h-[2px] bg-red-500/80"></div>
-                          </div>
-                        )}
-
-                        <div className="absolute left-16 right-2 top-0 bottom-0">
-                          {visibleEvents.map(ev => {
-                            const top = getTop(ev); const height = getHeight(ev);
-                            const badge = repeatBadge(ev);
-                            // resize handle height: fixed 10px each side, leaving body in middle
-                            const handleH = Math.min(10, Math.floor(height / 4));
-                            return (
-                              <div key={ev.id} className="absolute left-0 right-0 rounded-xl overflow-visible shadow-lg group" style={{top:`${top}px`,height:`${height}px`,zIndex:10}}>
-
-                                {/* ── resize TOP strip (10px, right-side only to not block move) ── */}
-                                <div className="absolute top-0 right-0 w-6 cursor-ns-resize z-30 touch-none flex items-start justify-center pt-1"
-                                  style={{height:`${handleH}px`}}
-                                  onMouseDown={e=>handleResizeStart(e,ev,'top')} onTouchStart={e=>handleResizeStart(e,ev,'top')}>
-                                  <div className="w-4 h-1 rounded-full bg-white/50 group-hover:bg-white/90 transition-colors"></div>
+                            {Array.from({length:24},(_,h)=>(
+                              <div key={h} className="absolute w-full border-t border-white/5 flex pointer-events-none" style={{top:`${h*HOUR_HEIGHT}px`,height:`${HOUR_HEIGHT}px`}}>
+                                <div className="w-16 shrink-0 flex items-start pt-1.5 justify-end pr-3">
+                                  <span className="text-[11px] font-black text-gray-500 tabular-nums">{h.toString().padStart(2,'0')}:00</span>
                                 </div>
-
-                                {/* ── body: full area for move + click, padding avoids handle zones ── */}
-                                <div className="absolute inset-0 rounded-xl cursor-grab active:cursor-grabbing touch-none overflow-hidden"
-                                  style={{backgroundColor:ev.color+'2e', borderLeft:`4px solid ${ev.color}`}}
-                                  onMouseDown={e=>handleMoveStart(e,ev)} onTouchStart={e=>handleMoveStart(e,ev)}
-                                  onClick={e=>{e.stopPropagation(); openEdit(ev);}}>
-                                  <div className="px-3 pt-2 pb-1">
-                                    <div className="flex items-start gap-1.5">
-                                      <p className="text-[13px] font-black truncate flex-1 leading-tight" style={{color:ev.color}}>{ev.title}</p>
-                                      {badge && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0 mt-0.5" style={{backgroundColor:ev.color+'44',color:ev.color}}>🔁{badge}</span>}
-                                    </div>
-                                    {height > 32 && <p className="text-[11px] font-bold opacity-60 text-white tabular-nums mt-0.5">{ev.startHour}:{ev.startMin}–{ev.endHour}:{ev.endMin}</p>}
-                                    {height > 52 && ev.memo && <p className="text-[10px] text-gray-400 mt-1 truncate">{ev.memo}</p>}
-                                  </div>
-                                </div>
-
-                                {/* ── resize BOTTOM strip (10px, right-side only) ── */}
-                                <div className="absolute bottom-0 right-0 w-6 cursor-ns-resize z-30 touch-none flex items-end justify-center pb-1"
-                                  style={{height:`${handleH}px`}}
-                                  onMouseDown={e=>handleResizeStart(e,ev,'bottom')} onTouchStart={e=>handleResizeStart(e,ev,'bottom')}>
-                                  <div className="w-4 h-1 rounded-full bg-white/50 group-hover:bg-white/90 transition-colors"></div>
+                                <div className="flex-1 border-l border-white/5">
+                                  <div className="border-t border-white/[0.03] mt-[50%]"></div>
                                 </div>
                               </div>
-                            );
-                          })}
+                            ))}
+
+                            {isToday && (
+                              <div className="absolute left-0 right-0 z-20 flex items-center pointer-events-none" style={{top:`${minsToTop(currentNowMins)}px`}}>
+                                <div className="w-16 flex justify-end pr-2"><div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-red-500/60 shadow-lg"></div></div>
+                                <div className="flex-1 h-[2px] bg-red-500/80"></div>
+                              </div>
+                            )}
+
+                            <div className="absolute left-16 right-2 top-0 bottom-0">
+                              {visibleEvents.map(ev => {
+                                const top = getTop(ev); const height = getHeight(ev);
+                                const badge = repeatBadge(ev);
+                                const handleH = Math.min(10, Math.floor(height / 4));
+                                return (
+                                  <div key={ev.id} className="absolute left-0 right-0 rounded-xl overflow-visible shadow-lg group" style={{top:`${top}px`,height:`${height}px`,zIndex:10}}>
+                                    <div className="absolute top-0 right-0 w-6 cursor-ns-resize z-30 touch-none flex items-start justify-center pt-1"
+                                      style={{height:`${handleH}px`}}
+                                      onMouseDown={e=>handleResizeStart(e,ev,'top')} onTouchStart={e=>handleResizeStart(e,ev,'top')}>
+                                      <div className="w-4 h-1 rounded-full bg-white/50 group-hover:bg-white/90 transition-colors"></div>
+                                    </div>
+                                    <div className="absolute inset-0 rounded-xl cursor-grab active:cursor-grabbing touch-none overflow-hidden"
+                                      style={{backgroundColor:ev.color+'2e', borderLeft:`4px solid ${ev.color}`}}
+                                      onMouseDown={e=>handleMoveStart(e,ev)} onTouchStart={e=>handleMoveStart(e,ev)}
+                                      onClick={e=>{e.stopPropagation(); openEdit(ev);}}>
+                                      <div className="px-3 pt-2 pb-1">
+                                        <div className="flex items-start gap-1.5">
+                                          <p className="text-[13px] font-black truncate flex-1 leading-tight" style={{color:ev.color}}>{ev.title}</p>
+                                          {badge && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0 mt-0.5" style={{backgroundColor:ev.color+'44',color:ev.color}}>🔁{badge}</span>}
+                                        </div>
+                                        {height > 32 && <p className="text-[11px] font-bold opacity-60 text-white tabular-nums mt-0.5">{ev.startHour}:{ev.startMin}–{ev.endHour}:{ev.endMin}</p>}
+                                        {height > 52 && ev.memo && <p className="text-[10px] text-gray-400 mt-1 truncate">{ev.memo}</p>}
+                                      </div>
+                                    </div>
+                                    <div className="absolute bottom-0 right-0 w-6 cursor-ns-resize z-30 touch-none flex items-end justify-center pb-1"
+                                      style={{height:`${handleH}px`}}
+                                      onMouseDown={e=>handleResizeStart(e,ev,'bottom')} onTouchStart={e=>handleResizeStart(e,ev,'bottom')}>
+                                      <div className="w-4 h-1 rounded-full bg-white/50 group-hover:bg-white/90 transition-colors"></div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
                         </div>
                       </div>
+                      {visibleEvents.length > 0 && (
+                        <p className="text-center text-[10px] font-black text-gray-600 mt-3 uppercase tracking-widest">{visibleEvents.length} 件の予定</p>
+                      )}
                     </div>
-                  </div>
 
-                  {visibleEvents.length > 0 && (
-                    <p className="text-center text-[10px] font-black text-gray-600 mt-4 uppercase tracking-widest">{visibleEvents.length} 件の予定</p>
-                  )}
+                    {/* ── サイドパネル (PC: 右固定 / SP: 下) ── */}
+                    <div className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-4">
+
+                      {/* 追加ボタン */}
+                      <button onClick={() => { setEditingEvent(null); setNewEvent({ ...blankEvent() }); setShowEventForm(true); }}
+                        className="w-full py-3 bg-white text-black rounded-2xl font-black text-[11px] shadow-xl flex items-center justify-center gap-2">
+                        <span className="text-lg leading-none">＋</span> 予定を追加
+                      </button>
+
+                      {/* ルーティン追加 */}
+                      {allRoutineTasks.length > 0 && (
+                        <div className="bg-white/5 rounded-2xl border border-white/10 p-4">
+                          <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">ルーティンを追加</p>
+                          <div className="flex flex-col gap-2">
+                            {allRoutineTasks.map(({t,color},i) => (
+                              <button key={i} onClick={() => addRoutineToSchedule(t,color)}
+                                className="px-3 py-2 rounded-xl text-[11px] font-black border border-white/10 flex items-center gap-2 hover:scale-[1.02] transition-all text-left"
+                                style={{backgroundColor:color+'22', color}}>
+                                <span>＋</span><span className="truncate">{t}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 当日の予定一覧 */}
+                      {visibleEvents.length > 0 && (
+                        <div className="bg-white/5 rounded-2xl border border-white/10 p-4">
+                          <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">本日の予定</p>
+                          <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-hide">
+                            {visibleEvents.map(ev => (
+                              <button key={ev.id} onClick={() => openEdit(ev)}
+                                className="w-full flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-white/5 transition-colors text-left"
+                                style={{borderLeft:`3px solid ${ev.color}`}}>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[11px] font-black truncate" style={{color:ev.color}}>{ev.title}</p>
+                                  <p className="text-[9px] text-gray-500 tabular-nums">{ev.startHour}:{ev.startMin}–{ev.endHour}:{ev.endMin}</p>
+                                </div>
+                                {repeatBadge(ev) && <span className="text-[8px] font-black shrink-0" style={{color:ev.color}}>🔁</span>}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>{/* end PC 2カラム */}
 
                   {/* ── Event form modal ── */}
                   {showEventForm && (
@@ -1327,116 +1356,121 @@ export default function Home() {
               );
             })()
           ) : (
-            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-              {/* ⑥ Achievement Log：折りたたみ対応 */}
-              <section>
-                <button
-                  onClick={() => setIsLogOpen(v => !v)}
-                  className="flex items-center gap-3 mb-4 px-2 w-full group">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0"></div>
-                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] flex-1 text-left">Achievement Log</p>
-                  <span className={`text-gray-600 font-black text-xs transition-transform duration-300 ${isLogOpen ? 'rotate-180' : ''}`}>▲</span>
-                </button>
-                {isLogOpen && (
-                  <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-6 shadow-2xl">
-                    <div className="space-y-4 max-h-[400px] overflow-y-auto scrollbar-hide">
-                      {timeline.length === 0 && (
-                        <p className="text-center text-[10px] font-black text-gray-600 py-8">まだログがありません</p>
-                      )}
-                      {timeline.map((log) => (
-                        <div key={log.id} className="flex gap-4 items-start bg-white/[0.03] p-4 rounded-2xl border border-white/5">
-                          <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden">
-                            {log.photoURL
-                              ? <img src={log.photoURL} alt="icon" className="w-full h-full object-cover rounded-full" />
-                              : log.emojiIcon
-                              ? <div className={`w-full h-full rounded-full ${CHARACTERS[log.charIndex || 0].color} flex items-center justify-center text-lg`}>{log.emojiIcon}</div>
-                              : <div className={`w-full h-full rounded-full ${CHARACTERS[log.charIndex || 0].color} flex items-center justify-center text-[10px]`}>✨</div>
-                            }
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-[10px] font-black text-gray-400">{log.displayName} <span className="text-gray-600 font-bold ml-1">@{log.shortId}</span></span>
-                              <span className="text-[8px] text-gray-700 font-black">{log.timestamp?.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
-                            </div>
-                            <p className="text-xs font-bold text-gray-200">{log.message}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </section>
+              {/* ══ PC: 左Log / 右Friends ══ */}
+              <div className="flex flex-col lg:flex-row gap-6 items-start">
 
-              {/* Friends */}
-              <section>
-                <div className="flex items-center gap-3 mb-4 px-2">
-                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Friends</p>
-                </div>
-                <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex gap-2 mb-6">
-                  <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value)}
-                    className="flex-1 bg-black/40 text-[11px] p-4 rounded-xl border border-white/5 outline-none font-bold" placeholder="友達の8桁IDを入力..." />
-                  <button onClick={async () => {
-                    const id = friendIdInput.trim();
-                    if (!id || id === myDisplayId) return;
-                    const q = query(collection(db, "users"), where("shortId", "==", id));
-                    const snap = await getDocs(q);
-                    if (snap.empty) { showToast("見つかりません", "err"); }
-                    else {
-                      const target = snap.docs[0];
-                      const nl = [...friendsList, id];
-                      setFriendsList(nl); await saveToFirebase({ friendsList: nl });
-                      await updateDoc(doc(db, "users", target.id), { friends: arrayUnion(myDisplayId) });
-                      setFriendIdInput("");
-                      showToast("友達を追加しました！");
-                    }
-                  }} className="bg-white text-black px-6 rounded-xl font-black text-[10px]">追加</button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {friendsData.map((f, i) => {
-                    const isOnline = f.lastActive && (Date.now() - f.lastActive < 120000);
-                    const unread = userMessages.filter(m => m.chatId === [myDisplayId, f.shortId].sort().join("_") && m.fromId !== myDisplayId && !m.read).length;
-                    const friendRank = RANK_LIST.find(r => (f.avg || 0) >= r.min) || RANK_LIST[4];
-                    const friendAward = DAILY_AWARDS.find(a => (f.percent || 0) >= a.min) || DAILY_AWARDS[4];
-                    const charColor = CHARACTERS[f.charIndex || 0];
-                    return (
-                      <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 relative shadow-2xl transition-transform hover:scale-[1.02] overflow-hidden">
-                        <div className={`absolute top-0 left-0 w-2 h-full bg-gradient-to-b ${charColor.accent} opacity-80`}></div>
-                        <div className="flex items-center gap-4">
-                          <div className={`w-16 h-16 rounded-full ${charColor.color} flex items-center justify-center shadow-lg relative overflow-hidden shrink-0`}>
-                            {f.photoURL ? <img src={f.photoURL} alt="icon" className="w-full h-full object-cover" />
-                              : f.emojiIcon ? <span className="text-2xl">{f.emojiIcon}</span>
-                              : <div className="flex gap-1.5"><div className="w-2 h-2 bg-white rounded-full" /><div className="w-2 h-2 bg-white rounded-full" /></div>}
-                            {isOnline && <div className="absolute top-0 right-0 w-4 h-4 bg-emerald-500 rounded-full border-2 border-black animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>}
-                            {unread > 0 && <div className="absolute -bottom-1 -right-1 bg-red-600 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-black animate-pulse">{unread}</div>}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-black truncate">{f.displayName}</h3>
-                            <div className="mt-1 flex flex-wrap gap-1.5 items-center">
-                              <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${friendRank.bg} ${friendRank.color}`}>RANK: {friendRank.name}</span>
-                              <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${friendAward.bg} ${friendAward.color}`}>称号: {friendAward.name}</span>
-                              <span className="text-[10px] font-black text-orange-400">🔥 {f.streak || 0}日</span>
+                {/* ── 左: Achievement Log ── */}
+                <div className="w-full lg:w-96 shrink-0">
+                  <button
+                    onClick={() => setIsLogOpen(v => !v)}
+                    className="flex items-center gap-3 mb-4 px-2 w-full group">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0"></div>
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] flex-1 text-left">Achievement Log</p>
+                    <span className={`text-gray-600 font-black text-xs transition-transform duration-300 ${isLogOpen ? 'rotate-180' : ''}`}>▲</span>
+                  </button>
+                  {isLogOpen && (
+                    <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-6 shadow-2xl">
+                      <div className="space-y-4 max-h-[600px] overflow-y-auto scrollbar-hide">
+                        {timeline.length === 0 && (
+                          <p className="text-center text-[10px] font-black text-gray-600 py-8">まだログがありません</p>
+                        )}
+                        {timeline.map((log) => (
+                          <div key={log.id} className="flex gap-4 items-start bg-white/[0.03] p-4 rounded-2xl border border-white/5">
+                            <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden">
+                              {log.photoURL
+                                ? <img src={log.photoURL} alt="icon" className="w-full h-full object-cover rounded-full" />
+                                : log.emojiIcon
+                                ? <div className={`w-full h-full rounded-full ${CHARACTERS[log.charIndex || 0].color} flex items-center justify-center text-lg`}>{log.emojiIcon}</div>
+                                : <div className={`w-full h-full rounded-full ${CHARACTERS[log.charIndex || 0].color} flex items-center justify-center text-[10px]`}>✨</div>
+                              }
                             </div>
-                            <div className="flex items-end gap-3 mt-1">
-                              <span className="text-3xl font-black">{f.percent || 0}%</span>
-                              <span className="text-[8px] font-black text-gray-500 mb-1">AVG: {f.avg || 0}%</span>
+                            <div className="flex-1">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-[10px] font-black text-gray-400">{log.displayName} <span className="text-gray-600 font-bold ml-1">@{log.shortId}</span></span>
+                                <span className="text-[8px] text-gray-700 font-black">{log.timestamp?.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
+                              </div>
+                              <p className="text-xs font-bold text-gray-200">{log.message}</p>
                             </div>
                           </div>
-                          <div className="flex flex-col gap-2 shrink-0">
-                            <button onClick={() => setSelectedChatFriend(f)} className="bg-white text-black w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-xl">💬</button>
-                            <button onClick={async () => {
-                              const nl = friendsList.filter(id => id !== f.shortId);
-                              setFriendsList(nl); await saveToFirebase({ friendsList: nl });
-                              await updateDoc(doc(db, "users", f.uid), { friends: arrayRemove(myDisplayId) });
-                              showToast("友達を削除しました");
-                            }} className="bg-red-500/20 text-red-500 w-10 h-10 rounded-xl text-xs flex items-center justify-center">✕</button>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    );
-                  })}
+                    </div>
+                  )}
                 </div>
-              </section>
+
+                {/* ── 右: Friends ── */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-4 px-2">
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Friends</p>
+                  </div>
+                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex gap-2 mb-6">
+                    <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value)}
+                      className="flex-1 bg-black/40 text-[11px] p-4 rounded-xl border border-white/5 outline-none font-bold" placeholder="友達の8桁IDを入力..." />
+                    <button onClick={async () => {
+                      const id = friendIdInput.trim();
+                      if (!id || id === myDisplayId) return;
+                      const q = query(collection(db, "users"), where("shortId", "==", id));
+                      const snap = await getDocs(q);
+                      if (snap.empty) { showToast("見つかりません", "err"); }
+                      else {
+                        const target = snap.docs[0];
+                        const nl = [...friendsList, id];
+                        setFriendsList(nl); await saveToFirebase({ friendsList: nl });
+                        await updateDoc(doc(db, "users", target.id), { friends: arrayUnion(myDisplayId) });
+                        setFriendIdInput("");
+                        showToast("友達を追加しました！");
+                      }
+                    }} className="bg-white text-black px-6 rounded-xl font-black text-[10px]">追加</button>
+                  </div>
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    {friendsData.map((f, i) => {
+                      const isOnline = f.lastActive && (Date.now() - f.lastActive < 120000);
+                      const unread = userMessages.filter(m => m.chatId === [myDisplayId, f.shortId].sort().join("_") && m.fromId !== myDisplayId && !m.read).length;
+                      const friendRank = RANK_LIST.find(r => (f.avg || 0) >= r.min) || RANK_LIST[4];
+                      const friendAward = DAILY_AWARDS.find(a => (f.percent || 0) >= a.min) || DAILY_AWARDS[4];
+                      const charColor = CHARACTERS[f.charIndex || 0];
+                      return (
+                        <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 relative shadow-2xl transition-transform hover:scale-[1.02] overflow-hidden">
+                          <div className={`absolute top-0 left-0 w-2 h-full bg-gradient-to-b ${charColor.accent} opacity-80`}></div>
+                          <div className="flex items-center gap-4">
+                            <div className={`w-16 h-16 rounded-full ${charColor.color} flex items-center justify-center shadow-lg relative overflow-hidden shrink-0`}>
+                              {f.photoURL ? <img src={f.photoURL} alt="icon" className="w-full h-full object-cover" />
+                                : f.emojiIcon ? <span className="text-2xl">{f.emojiIcon}</span>
+                                : <div className="flex gap-1.5"><div className="w-2 h-2 bg-white rounded-full" /><div className="w-2 h-2 bg-white rounded-full" /></div>}
+                              {isOnline && <div className="absolute top-0 right-0 w-4 h-4 bg-emerald-500 rounded-full border-2 border-black animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>}
+                              {unread > 0 && <div className="absolute -bottom-1 -right-1 bg-red-600 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-black animate-pulse">{unread}</div>}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-black truncate">{f.displayName}</h3>
+                              <div className="mt-1 flex flex-wrap gap-1.5 items-center">
+                                <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${friendRank.bg} ${friendRank.color}`}>RANK: {friendRank.name}</span>
+                                <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${friendAward.bg} ${friendAward.color}`}>称号: {friendAward.name}</span>
+                                <span className="text-[10px] font-black text-orange-400">🔥 {f.streak || 0}日</span>
+                              </div>
+                              <div className="flex items-end gap-3 mt-1">
+                                <span className="text-3xl font-black">{f.percent || 0}%</span>
+                                <span className="text-[8px] font-black text-gray-500 mb-1">AVG: {f.avg || 0}%</span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-2 shrink-0">
+                              <button onClick={() => setSelectedChatFriend(f)} className="bg-white text-black w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-xl">💬</button>
+                              <button onClick={async () => {
+                                const nl = friendsList.filter(id => id !== f.shortId);
+                                setFriendsList(nl); await saveToFirebase({ friendsList: nl });
+                                await updateDoc(doc(db, "users", f.uid), { friends: arrayRemove(myDisplayId) });
+                                showToast("友達を削除しました");
+                              }} className="bg-red-500/20 text-red-500 w-10 h-10 rounded-xl text-xs flex items-center justify-center">✕</button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+              </div>{/* end PC 2カラム */}
             </div>
           )}
         </div>
