@@ -120,6 +120,7 @@ export default function Home() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [timerFinished, setTimerFinished] = useState(false);
+  const [initialTimerSeconds, setInitialTimerSeconds] = useState(0);
   const [photoURL, setPhotoURL] = useState("");
   const [emojiIcon, setEmojiIcon] = useState("");
   const [showTutorial, setShowTutorial] = useState(false);
@@ -379,7 +380,12 @@ export default function Home() {
 
   const addTimerMinutes = (minutes) => {
     const addSeconds = minutes * 60;
-    setTimeLeft(prev => prev + addSeconds);
+    setTimeLeft(prev => {
+      const next = prev + addSeconds;
+      // タイマーが動いていない（設定中）ときは initial も更新
+      if (!isTimerActive) setInitialTimerSeconds(next);
+      return next;
+    });
     if (isTimerActive && endTimeRef.current) endTimeRef.current += addSeconds * 1000;
   };
 
@@ -785,7 +791,7 @@ export default function Home() {
                               stroke={isTimerActive ? "#3b82f6" : "rgba(255,255,255,0.3)"}
                               strokeWidth="6"
                               strokeDasharray={`${2 * Math.PI * 34}`}
-                              strokeDashoffset={`${2 * Math.PI * 34 * (1 - Math.min(timeLeft / 3600, 1))}`}
+                              strokeDashoffset={`${2 * Math.PI * 34 * (1 - (initialTimerSeconds > 0 ? timeLeft / initialTimerSeconds : 0))}`}
                               strokeLinecap="round"
                               className="transition-all duration-1000"
                             />
@@ -795,8 +801,11 @@ export default function Home() {
                           </div>
                         </div>
                         <div className="flex gap-2 justify-center">
-                          <button onClick={() => setIsTimerActive(!isTimerActive)} className={`px-4 py-2 text-[9px] font-black rounded-full ${isTimerActive ? "bg-red-500" : "bg-white text-black"}`}>{isTimerActive ? "停止" : "開始"}</button>
-                          <button onClick={() => { setIsTimerActive(false); setTimeLeft(0); }} className="px-4 py-2 text-[9px] font-black rounded-full bg-white/10 border border-white/10">クリア</button>
+                          <button onClick={() => {
+                            if (!isTimerActive && timeLeft > 0) setInitialTimerSeconds(timeLeft);
+                            setIsTimerActive(!isTimerActive);
+                          }} className={`px-4 py-2 text-[9px] font-black rounded-full ${isTimerActive ? "bg-red-500" : "bg-white text-black"}`}>{isTimerActive ? "停止" : "開始"}</button>
+                          <button onClick={() => { setIsTimerActive(false); setTimeLeft(0); setInitialTimerSeconds(0); }} className="px-4 py-2 text-[9px] font-black rounded-full bg-white/10 border border-white/10">クリア</button>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-1">
