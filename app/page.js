@@ -85,12 +85,12 @@ const THEMES = [
 
 // --- アラーム音リスト ---
 const ALARM_SOUNDS = [
-  { id: "bell",     label: "🔔 ベル",         url: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" },
-  { id: "digital",  label: "⏰ デジタル",      url: "https://assets.mixkit.co/active_storage/sfx/988/988-preview.mp3" },
-  { id: "marimba",  label: "🎶 マリンバ",      url: "https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3" },
-  { id: "chime",    label: "🎵 チャイム",      url: "https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3" },
-  { id: "rooster",  label: "🐓 にわとり",      url: "https://assets.mixkit.co/active_storage/sfx/608/608-preview.mp3" },
-  { id: "gentle",   label: "🌅 やさしい音",    url: "https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3" },
+  { id: "bell",     label: "🔔 ベル",     url: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" },
+  { id: "digital",  label: "⏰ デジタル",  url: "https://assets.mixkit.co/active_storage/sfx/988/988-preview.mp3" },
+  { id: "marimba",  label: "🎶 マリンバ",  url: "https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3" },
+  { id: "chime",    label: "🎵 チャイム",  url: "https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3" },
+  { id: "rooster",  label: "🚢 汽笛",      url: "https://assets.mixkit.co/active_storage/sfx/608/608-preview.mp3" },
+  { id: "gentle",   label: "🎠 オルゴール", url: "https://assets.mixkit.co/active_storage/sfx/2217/2217-preview.mp3" },
 ];
 
 // --- 目標入力フィールド（独立コンポーネント：再レンダリングで消えない） ---
@@ -127,6 +127,109 @@ function GoalInputField({ gkey, placeholder, multiline, currentValue, onSave, on
         className="bg-white text-black px-3 py-1.5 rounded-xl font-black text-[10px] shrink-0">保存</button>
       <button onMouseDown={e => { e.preventDefault(); onCancel(); }}
         className="bg-white/10 text-gray-400 px-3 py-1.5 rounded-xl font-black text-[10px] shrink-0">✕</button>
+    </div>
+  );
+}
+
+const YEAR_SUBS = [
+  { key: "yearMotto",     label: "モットー",  icon: "✨", desc: "今年の総合的な目標" },
+  { key: "yearSpiritual", label: "霊的",      icon: "🙏", desc: "信仰・精神・内面" },
+  { key: "yearIntellect", label: "知的",      icon: "📚", desc: "学習・スキルアップ" },
+  { key: "yearSocial",    label: "社会的",    icon: "🤝", desc: "人間関係・貢献" },
+  { key: "yearPhysical",  label: "身体的",    icon: "💪", desc: "健康・運動・体" },
+];
+
+// --- 目標セクション（独立コンポーネント） ---
+function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, setYearGoalOpen, saveToFirebase, setGoals }) {
+  const yn = now.getFullYear();
+  const mn = now.getMonth();
+  const dn = now.getDate();
+  const yearStart  = `${yn}/01/01`;
+  const yearEnd    = `${yn}/12/31`;
+  const monthStart = `${yn}/${String(mn+1).padStart(2,'0')}/01`;
+  const monthEnd   = `${yn}/${String(mn+1).padStart(2,'0')}/${new Date(yn,mn+1,0).getDate()}`;
+  const fmt = d => `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+  const dow = now.getDay();
+  const weekStart = fmt(new Date(yn, mn, dn - dow));
+  const weekEnd   = fmt(new Date(yn, mn, dn - dow + 6));
+
+  const saveGoal = (key, value) => {
+    const next = { ...goals, [key]: value };
+    setGoals(next);
+    saveToFirebase({ goals: next });
+    setEditingGoal(null);
+  };
+
+  const GoalRow = ({ gkey, placeholder, multiline }) => {
+    const val = goals[gkey] || "";
+    if (editingGoal === gkey) {
+      return <GoalInputField
+        gkey={gkey}
+        placeholder={placeholder}
+        multiline={multiline}
+        currentValue={val}
+        onSave={saveGoal}
+        onCancel={() => setEditingGoal(null)}
+      />;
+    }
+    return (
+      <p onClick={() => setEditingGoal(gkey)}
+        className={`text-sm font-bold leading-snug mt-1 cursor-text rounded-lg px-2 py-1 -mx-2 transition-colors hover:bg-white/5 ${val ? 'text-white' : 'text-gray-700 italic'}`}>
+        {val || `タップして${placeholder}`}
+      </p>
+    );
+  };
+
+  return (
+    <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-6 shadow-xl space-y-3">
+      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">MY GOALS</p>
+
+      {/* 今年の目標 */}
+      <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
+        <div className="h-0.5 bg-gradient-to-r from-yellow-400 to-orange-400"></div>
+        <button onClick={() => setYearGoalOpen(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-3">
+          <div className="text-left">
+            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">🏆 今年の目標</span>
+            <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{yearStart} 〜 {yearEnd}</p>
+          </div>
+          <span className={`text-gray-600 font-black text-xs transition-transform duration-300 ${yearGoalOpen ? 'rotate-180' : ''}`}>▲</span>
+        </button>
+        {yearGoalOpen && (
+          <div className="px-4 pb-4 space-y-4 border-t border-white/5 pt-3">
+            {YEAR_SUBS.map(({ key, label, icon, desc }) => (
+              <div key={key}>
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className="text-base">{icon}</span>
+                  <span className="text-[11px] font-black text-gray-300">{label}</span>
+                  <span className="text-[9px] text-gray-600 font-bold">— {desc}</span>
+                </div>
+                <GoalRow gkey={key} placeholder={`${label}の目標を入力`} multiline={key === "yearMotto"} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 今月の目標 */}
+      <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
+        <div className="h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400"></div>
+        <div className="px-4 py-3">
+          <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">📅 今月の目標</span>
+          <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{monthStart} 〜 {monthEnd}</p>
+          <GoalRow gkey="month" placeholder="今月の目標を入力" />
+        </div>
+      </div>
+
+      {/* 今週の目標 */}
+      <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
+        <div className="h-0.5 bg-gradient-to-r from-emerald-400 to-teal-400"></div>
+        <div className="px-4 py-3">
+          <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">⚡ 今週の目標</span>
+          <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{weekStart} 〜 {weekEnd}</p>
+          <GoalRow gkey="week" placeholder="今週の目標を入力" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -636,109 +739,16 @@ export default function Home() {
             <div className="space-y-8">
 
               {/* ── 目標セクション ── */}
-              {(() => {
-                const yn = now.getFullYear();
-                const mn = now.getMonth();
-                const dn = now.getDate();
-                const yearStart = `${yn}/01/01`;
-                const yearEnd   = `${yn}/12/31`;
-                const monthStart = `${yn}/${String(mn+1).padStart(2,'0')}/01`;
-                const monthEnd   = `${yn}/${String(mn+1).padStart(2,'0')}/${new Date(yn,mn+1,0).getDate()}`;
-                const fmt = (d) => `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
-                const dow = now.getDay();
-                const weekStart = fmt(new Date(yn, mn, dn - dow));
-                const weekEnd   = fmt(new Date(yn, mn, dn - dow + 6));
-
-                const saveGoal = (key, value) => {
-                  const next = { ...goals, [key]: value };
-                  setGoals(next);
-                  saveToFirebase({ goals: next });
-                  setEditingGoal(null);
-                };
-
-                // 各フィールドの表示（編集中はGoalInputField、そうでなければテキスト）
-                const GoalRow = ({ gkey, placeholder, multiline }) => {
-                  const val = goals[gkey] || "";
-                  if (editingGoal === gkey) {
-                    return <GoalInputField
-                      key={gkey}
-                      gkey={gkey}
-                      placeholder={placeholder}
-                      multiline={multiline}
-                      currentValue={val}
-                      onSave={saveGoal}
-                      onCancel={() => setEditingGoal(null)}
-                    />;
-                  }
-                  return (
-                    <p onClick={() => setEditingGoal(gkey)}
-                      className={`text-sm font-bold leading-snug mt-1 cursor-text rounded-lg px-2 py-1 -mx-2 transition-colors hover:bg-white/5 ${val ? 'text-white' : 'text-gray-700 italic'}`}>
-                      {val || `タップして${placeholder}`}
-                    </p>
-                  );
-                };
-
-                const YEAR_SUBS = [
-                  { key: "yearMotto",     label: "モットー",  icon: "✨", desc: "今年の総合的な目標" },
-                  { key: "yearSpiritual", label: "霊的",      icon: "🙏", desc: "信仰・精神・内面" },
-                  { key: "yearIntellect", label: "知的",      icon: "📚", desc: "学習・スキルアップ" },
-                  { key: "yearSocial",    label: "社会的",    icon: "🤝", desc: "人間関係・貢献" },
-                  { key: "yearPhysical",  label: "身体的",    icon: "💪", desc: "健康・運動・体" },
-                ];
-
-                return (
-                  <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-6 shadow-xl space-y-3">
-                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">MY GOALS</p>
-
-                    {/* 今年の目標 */}
-                    <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
-                      <div className="h-0.5 bg-gradient-to-r from-yellow-400 to-orange-400"></div>
-                      <button onClick={() => setYearGoalOpen(v => !v)}
-                        className="w-full flex items-center justify-between px-4 py-3">
-                        <div className="text-left">
-                          <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">🏆 今年の目標</span>
-                          <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{yearStart} 〜 {yearEnd}</p>
-                        </div>
-                        <span className={`text-gray-600 font-black text-xs transition-transform duration-300 ${yearGoalOpen ? 'rotate-180' : ''}`}>▲</span>
-                      </button>
-                      {yearGoalOpen && (
-                        <div className="px-4 pb-4 space-y-4 border-t border-white/5 pt-3">
-                          {YEAR_SUBS.map(({ key, label, icon, desc }) => (
-                            <div key={key}>
-                              <div className="flex items-center gap-1.5 mb-0.5">
-                                <span className="text-base">{icon}</span>
-                                <span className="text-[11px] font-black text-gray-300">{label}</span>
-                                <span className="text-[9px] text-gray-600 font-bold">— {desc}</span>
-                              </div>
-                              <GoalRow gkey={key} placeholder={`${label}の目標を入力`} multiline={key === "yearMotto"} />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 今月の目標 */}
-                    <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
-                      <div className="h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400"></div>
-                      <div className="px-4 py-3">
-                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">📅 今月の目標</span>
-                        <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{monthStart} 〜 {monthEnd}</p>
-                        <GoalRow gkey="month" placeholder="今月の目標を入力" />
-                      </div>
-                    </div>
-
-                    {/* 今週の目標 */}
-                    <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
-                      <div className="h-0.5 bg-gradient-to-r from-emerald-400 to-teal-400"></div>
-                      <div className="px-4 py-3">
-                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">⚡ 今週の目標</span>
-                        <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{weekStart} 〜 {weekEnd}</p>
-                        <GoalRow gkey="week" placeholder="今週の目標を入力" />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
+              <GoalSection
+                now={now}
+                goals={goals}
+                editingGoal={editingGoal}
+                setEditingGoal={setEditingGoal}
+                yearGoalOpen={yearGoalOpen}
+                setYearGoalOpen={setYearGoalOpen}
+                saveToFirebase={saveToFirebase}
+                setGoals={setGoals}
+              />
 
               {/* ══ PC: 左右2カラム ／ SP: 縦積み ══ */}
               <div className="flex flex-col lg:flex-row gap-6 items-start">
