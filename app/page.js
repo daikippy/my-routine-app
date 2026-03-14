@@ -139,6 +139,27 @@ const YEAR_SUBS = [
   { key: "yearPhysical",  label: "身体的",    icon: "💪", desc: "健康・運動・体" },
 ];
 
+// --- 目標行（GoalSectionの外に独立させることで再レンダリングによるstate消滅を防ぐ） ---
+function GoalRow({ gkey, placeholder, multiline, goals, editingGoal, setEditingGoal, onSave }) {
+  const val = goals[gkey] || "";
+  if (editingGoal === gkey) {
+    return <GoalInputField
+      gkey={gkey}
+      placeholder={placeholder}
+      multiline={multiline}
+      currentValue={val}
+      onSave={onSave}
+      onCancel={() => setEditingGoal(null)}
+    />;
+  }
+  return (
+    <p onClick={() => setEditingGoal(gkey)}
+      className={`text-sm font-bold leading-snug mt-1 cursor-text rounded-lg px-2 py-1 -mx-2 transition-colors hover:bg-white/5 ${val ? 'text-white' : 'text-gray-700 italic'}`}>
+      {val || `タップして${placeholder}`}
+    </p>
+  );
+}
+
 // --- 目標セクション（独立コンポーネント） ---
 function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, setYearGoalOpen, saveToFirebase, setGoals }) {
   const yn = now.getFullYear();
@@ -158,26 +179,6 @@ function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, se
     setGoals(next);
     saveToFirebase({ goals: next });
     setEditingGoal(null);
-  };
-
-  const GoalRow = ({ gkey, placeholder, multiline }) => {
-    const val = goals[gkey] || "";
-    if (editingGoal === gkey) {
-      return <GoalInputField
-        gkey={gkey}
-        placeholder={placeholder}
-        multiline={multiline}
-        currentValue={val}
-        onSave={saveGoal}
-        onCancel={() => setEditingGoal(null)}
-      />;
-    }
-    return (
-      <p onClick={() => setEditingGoal(gkey)}
-        className={`text-sm font-bold leading-snug mt-1 cursor-text rounded-lg px-2 py-1 -mx-2 transition-colors hover:bg-white/5 ${val ? 'text-white' : 'text-gray-700 italic'}`}>
-        {val || `タップして${placeholder}`}
-      </p>
-    );
   };
 
   return (
@@ -204,7 +205,7 @@ function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, se
                   <span className="text-[11px] font-black text-gray-300">{label}</span>
                   <span className="text-[9px] text-gray-600 font-bold">— {desc}</span>
                 </div>
-                <GoalRow gkey={key} placeholder={`${label}の目標を入力`} multiline={key === "yearMotto"} />
+                <GoalRow gkey={key} placeholder={`${label}の目標を入力`} multiline={key === "yearMotto"} goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal} onSave={saveGoal} />
               </div>
             ))}
           </div>
@@ -217,7 +218,7 @@ function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, se
         <div className="px-4 py-3">
           <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">📅 今月の目標</span>
           <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{monthStart} 〜 {monthEnd}</p>
-          <GoalRow gkey="month" placeholder="今月の目標を入力" />
+          <GoalRow gkey="month" placeholder="今月の目標を入力" goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal} onSave={saveGoal} />
         </div>
       </div>
 
@@ -227,7 +228,7 @@ function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, se
         <div className="px-4 py-3">
           <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">⚡ 今週の目標</span>
           <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{weekStart} 〜 {weekEnd}</p>
-          <GoalRow gkey="week" placeholder="今週の目標を入力" />
+          <GoalRow gkey="week" placeholder="今週の目標を入力" goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal} onSave={saveGoal} />
         </div>
       </div>
     </div>
