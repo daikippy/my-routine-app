@@ -32,17 +32,6 @@ const CHARACTERS = [
 
 const EMOJI_ICONS = ["😊","😎","🥳","🤩","😇","🦊","🐼","🐸","🐯","🦁","🐙","🐳","🦄","🐲","🌸","⭐","🔥","💎","🎯","🚀","👑","🎸","🏆","🌈"];
 
-function UserIcon({ photoURL, charIndex, emojiIcon, size = "w-16 h-16", textSize = "text-2xl" }) {
-  const char = CHARACTERS[charIndex || 0];
-  if (photoURL) return <img src={photoURL} alt="icon" className={`${size} rounded-full object-cover`} />;
-  if (emojiIcon) return <div className={`${size} rounded-full bg-white/10 flex items-center justify-center ${textSize}`}>{emojiIcon}</div>;
-  return (
-    <div className={`${size} rounded-full ${char.color} flex items-center justify-center`}>
-      <div className="flex gap-1.5"><div className="w-2 h-2 bg-white rounded-full" /><div className="w-2 h-2 bg-white rounded-full" /></div>
-    </div>
-  );
-}
-
 const RANK_LIST = [
   { name: "レジェンド", min: 100, color: "text-yellow-400", bg: "bg-yellow-400/20" },
   { name: "プラチナ",   min: 80,  color: "text-blue-300",   bg: "bg-blue-300/20" },
@@ -593,6 +582,10 @@ export default function Home() {
   }, [isTimerActive]);
 
   useEffect(() => {
+    setDiaryInput(diaryEntries[diaryDate]?.text || "");
+  }, [diaryDate]);
+
+  useEffect(() => {
     if (selectedChatFriend && chatBottomRef.current) chatBottomRef.current.scrollIntoView({ behavior: "smooth" });
   }, [userMessages, selectedChatFriend]);
 
@@ -1083,8 +1076,8 @@ export default function Home() {
               const handleTimelineTap = (e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-                const startMins = clamp(topToMins(y), 0, 23*60);
-                const endMins   = clamp(startMins+60, 0, 24*60);
+                const startMins = clamp(topToMins(y), 0, 25*60);
+                const endMins   = clamp(startMins+60, 0, 26*60);
                 const s = minsToHM(startMins); const en = minsToHM(endMins);
                 setEditingEvent(null);
                 setNewEvent({ ...blankEvent(), startHour:s.h, startMin:s.m, endHour:en.h, endMin:en.m });
@@ -1099,7 +1092,7 @@ export default function Home() {
                 const origEnd   = parseInt(ev.endHour)*60+parseInt(ev.endMin);
                 const onMove = (me) => {
                   const d = Math.round(topToMins((me.touches?me.touches[0].clientY:me.clientY)-startY)/SNAP)*SNAP;
-                  const ns = clamp(origStart+d,0,23*60); const ne = clamp(origEnd+d,ns+SNAP,24*60);
+                  const ns = clamp(origStart+d,0,25*60); const ne = clamp(origEnd+d,ns+SNAP,26*60);
                   const sh=minsToHM(ns); const eh=minsToHM(ne);
                   setScheduleEvents(prev=>prev.map(x=>x.id===ev.id?{...x,startHour:sh.h,startMin:sh.m,endHour:eh.h,endMin:eh.m}:x));
                 };
@@ -1561,11 +1554,10 @@ export default function Home() {
                 delete next[date];
                 setDiaryEntries(next);
                 saveToFirebase({ diaryEntries: next });
-                if (date === diaryDate) setDiaryInput("");
                 showToast("削除しました");
               };
-              const prevDiaryDay = () => { const d=new Date(diaryDate); d.setDate(d.getDate()-1); const s=d.toISOString().split('T')[0]; setDiaryDate(s); setDiaryInput(diaryEntries[s]?.text||""); };
-              const nextDiaryDay = () => { const d=new Date(diaryDate); d.setDate(d.getDate()+1); const s=d.toISOString().split('T')[0]; setDiaryDate(s); setDiaryInput(diaryEntries[s]?.text||""); };
+              const prevDiaryDay = () => { const d=new Date(diaryDate); d.setDate(d.getDate()-1); setDiaryDate(d.toISOString().split('T')[0]); };
+              const nextDiaryDay = () => { const d=new Date(diaryDate); d.setDate(d.getDate()+1); setDiaryDate(d.toISOString().split('T')[0]); };
 
               return (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1601,15 +1593,14 @@ export default function Home() {
                       <div className="bg-white/5 rounded-[2rem] border border-white/10 p-5">
                         <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">📝 日記</p>
                         <textarea
-                          value={diaryInput !== "" ? diaryInput : currentEntry.text}
+                          value={diaryInput}
                           onChange={e => setDiaryInput(e.target.value)}
-                          onFocus={() => { if (diaryInput === "") setDiaryInput(currentEntry.text); }}
                           rows={10}
                           className="w-full bg-black/30 text-sm font-bold px-4 py-3 rounded-2xl border border-white/10 outline-none resize-none placeholder:text-gray-700 leading-relaxed"
                           placeholder={`${new Date(diaryDate+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric'})}の日記を書こう...`}
                         />
                         <div className="flex gap-2 mt-3">
-                          <button onClick={() => { saveDiary(diaryInput !== "" ? diaryInput : currentEntry.text, currentEntry.mood); }}
+                          <button onClick={() => { saveDiary(diaryInput, currentEntry.mood); }}
                             className="flex-1 bg-white text-black py-3 rounded-2xl font-black text-[11px] shadow-lg">保存</button>
                           {diaryEntries[diaryDate] && (
                             <button onClick={() => deleteDiary(diaryDate)}
@@ -1632,7 +1623,7 @@ export default function Home() {
                             const entry = diaryEntries[date];
                             const isSelected = date === diaryDate;
                             return (
-                              <button key={date} onClick={() => { setDiaryDate(date); setDiaryInput(entry.text||""); }}
+                              <button key={date} onClick={() => setDiaryDate(date)}
                                 className={`w-full text-left p-4 rounded-2xl border transition-all ${isSelected ? 'bg-white/15 border-white/30' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="text-[10px] font-black text-gray-300">{new Date(date+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'})}</span>
