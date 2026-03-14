@@ -83,6 +83,16 @@ const THEMES = [
   { name: "Dark Purple", color: "#581c87", bg: "bg-purple-950",  title: "text-white" }
 ];
 
+// --- アラーム音リスト ---
+const ALARM_SOUNDS = [
+  { id: "bell",     label: "🔔 ベル",         url: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" },
+  { id: "digital",  label: "⏰ デジタル",      url: "https://assets.mixkit.co/active_storage/sfx/209/209-preview.mp3" },
+  { id: "marimba",  label: "🎶 マリンバ",      url: "https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3" },
+  { id: "chime",    label: "🎵 チャイム",      url: "https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3" },
+  { id: "rooster",  label: "🐓 にわとり",      url: "https://assets.mixkit.co/active_storage/sfx/2455/2455-preview.mp3" },
+  { id: "gentle",   label: "🌅 やさしい音",    url: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" },
+];
+
 export default function Home() {
   const [now, setNow] = useState(new Date());
   const today = now.toISOString().split('T')[0];
@@ -126,9 +136,11 @@ export default function Home() {
   const [newEvent, setNewEvent] = useState({ title: "", startHour: "09", startMin: "00", endHour: "10", endMin: "00", color: "#3b82f6", memo: "", repeat: "none", repeatDays: [], repeatEnd: "" });
   const [editingEvent, setEditingEvent] = useState(null);
   // 目標
-  const [goals, setGoals] = useState({ year: "", month: "", week: "" });
+  const [goals, setGoals] = useState({ year: "", month: "", week: "", yearMotto: "", yearSpiritual: "", yearIntellect: "", yearSocial: "", yearPhysical: "" });
   const [editingGoal, setEditingGoal] = useState(null); // "year"|"month"|"week"|null
   const [isLogOpen, setIsLogOpen] = useState(true);
+  const [yearGoalOpen, setYearGoalOpen] = useState(true);
+  const [alarmSound, setAlarmSound] = useState("bell");
 
   const endTimeRef = useRef(null);
   const timerRef = useRef(null);
@@ -174,13 +186,15 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof Audio !== "undefined") {
-      audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+      const sound = ALARM_SOUNDS.find(s => s.id === alarmSound) || ALARM_SOUNDS[0];
+      if (audioRef.current) { audioRef.current.pause(); }
+      audioRef.current = new Audio(sound.url);
       audioRef.current.loop = true;
     }
     if (typeof Notification !== "undefined" && Notification.permission === "default") {
       Notification.requestPermission();
     }
-  }, []);
+  }, [alarmSound]);
 
   const taskLibrary = useMemo(() => {
     const all = [...tasks.morning, ...tasks.afternoon, ...tasks.night];
@@ -579,7 +593,6 @@ export default function Home() {
 
               {/* ── 目標セクション ── */}
               {(() => {
-                // 期間計算
                 const yn = now.getFullYear();
                 const mn = now.getMonth();
                 const dn = now.getDate();
@@ -588,66 +601,132 @@ export default function Home() {
                 const monthStart = `${yn}/${String(mn+1).padStart(2,'0')}/01`;
                 const monthLastDay = new Date(yn, mn+1, 0).getDate();
                 const monthEnd   = `${yn}/${String(mn+1).padStart(2,'0')}/${monthLastDay}`;
-                const dow = now.getDay(); // 0=Sun
-                const weekStartDate = new Date(yn, mn, dn - dow);
-                const weekEndDate   = new Date(yn, mn, dn - dow + 6);
+                const dow = now.getDay();
                 const fmt = (d) => `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
-                const weekStart = fmt(weekStartDate);
-                const weekEnd   = fmt(weekEndDate);
+                const weekStart = fmt(new Date(yn, mn, dn - dow));
+                const weekEnd   = fmt(new Date(yn, mn, dn - dow + 6));
 
-                const GOAL_DEFS = [
-                  { key:"year",  label:"今年の目標",  icon:"🏆", accent:"from-yellow-400 to-orange-400", period:`${yearStart} 〜 ${yearEnd}` },
-                  { key:"month", label:"今月の目標",  icon:"📅", accent:"from-blue-400 to-indigo-400",   period:`${monthStart} 〜 ${monthEnd}` },
-                  { key:"week",  label:"今週の目標",  icon:"⚡", accent:"from-emerald-400 to-teal-400",  period:`${weekStart} 〜 ${weekEnd}` },
-                ];
                 const saveGoal = (key, value) => {
                   const next = { ...goals, [key]: value };
                   setGoals(next);
                   saveToFirebase({ goals: next });
                   setEditingGoal(null);
                 };
+
+                // インライン編集フィールド
+                const InlineGoalField = ({ gkey, placeholder, multiline }) => {
+                  const isEditing = editingGoal === gkey;
+                  const val = goals[gkey] || "";
+                  if (isEditing) {
+                    return (
+                      <div className="flex gap-2 mt-1">
+                        {multiline ? (
+                          <textarea
+                            autoFocus
+                            defaultValue={val}
+                            rows={2}
+                            className="flex-1 bg-white/10 text-sm font-bold px-3 py-2 rounded-xl border border-white/10 outline-none placeholder:text-gray-600 resize-none"
+                            placeholder={placeholder}
+                            id={`goal-input-${gkey}`}
+                            onKeyDown={e => { if (e.key==='Escape') setEditingGoal(null); }}
+                          />
+                        ) : (
+                          <input
+                            autoFocus
+                            defaultValue={val}
+                            className="flex-1 bg-white/10 text-sm font-bold px-3 py-2 rounded-xl border border-white/10 outline-none placeholder:text-gray-600"
+                            placeholder={placeholder}
+                            id={`goal-input-${gkey}`}
+                            onKeyDown={e => { if (e.key==='Enter') { const el=document.getElementById(`goal-input-${gkey}`); if(el) saveGoal(gkey,el.value); } if (e.key==='Escape') setEditingGoal(null); }}
+                          />
+                        )}
+                        <div className="flex flex-col gap-1 shrink-0">
+                          <button onClick={() => { const el=document.getElementById(`goal-input-${gkey}`); if(el) saveGoal(gkey,el.value); }}
+                            className="bg-white text-black px-3 py-1.5 rounded-xl font-black text-[10px]">保存</button>
+                          <button onClick={() => setEditingGoal(null)}
+                            className="bg-white/10 text-gray-400 px-3 py-1.5 rounded-xl font-black text-[10px]">✕</button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <p
+                      onClick={() => setEditingGoal(gkey)}
+                      className={`text-sm font-bold leading-snug mt-1 cursor-text rounded-lg px-2 py-1 -mx-2 transition-colors hover:bg-white/5 ${val ? 'text-white' : 'text-gray-700 italic'}`}>
+                      {val || `タップして${placeholder}`}
+                    </p>
+                  );
+                };
+
+                // 今年サブカテゴリ
+                const YEAR_SUBS = [
+                  { key: "yearMotto",      label: "モットー",    icon: "✨", desc: "今年の総合的な目標" },
+                  { key: "yearSpiritual",  label: "霊的",        icon: "🙏", desc: "信仰・精神・内面" },
+                  { key: "yearIntellect",  label: "知的",        icon: "📚", desc: "学習・スキルアップ" },
+                  { key: "yearSocial",     label: "社会的",      icon: "🤝", desc: "人間関係・貢献" },
+                  { key: "yearPhysical",   label: "身体的",      icon: "💪", desc: "健康・運動・体" },
+                ];
+
                 return (
-                  <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-6 shadow-xl">
-                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4">MY GOALS</p>
-                    <div className="grid grid-cols-1 gap-3">
-                      {GOAL_DEFS.map(({key,label,icon,accent,period}) => (
-                        <div key={key} className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
-                          <div className={`h-0.5 bg-gradient-to-r ${accent}`}></div>
-                          <div className="px-4 py-3">
-                            <div className="flex items-start justify-between mb-1">
-                              <div>
-                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
-                                  <span>{icon}</span>{label}
-                                </span>
-                                <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{period}</p>
+                  <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-6 shadow-xl space-y-3">
+                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">MY GOALS</p>
+
+                    {/* ── 今年の目標（展開式） ── */}
+                    <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
+                      <div className="h-0.5 bg-gradient-to-r from-yellow-400 to-orange-400"></div>
+                      <button
+                        onClick={() => setYearGoalOpen(v => !v)}
+                        className="w-full flex items-center justify-between px-4 py-3">
+                        <div className="text-left">
+                          <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5">🏆 今年の目標</span>
+                          <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{yearStart} 〜 {yearEnd}</p>
+                        </div>
+                        <span className={`text-gray-600 font-black text-xs transition-transform duration-300 ${yearGoalOpen ? 'rotate-180' : ''}`}>▲</span>
+                      </button>
+                      {yearGoalOpen && (
+                        <div className="px-4 pb-4 space-y-4 border-t border-white/5 pt-3">
+                          {YEAR_SUBS.map(({ key, label, icon, desc }) => (
+                            <div key={key}>
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="text-base">{icon}</span>
+                                <span className="text-[11px] font-black text-gray-300">{label}</span>
+                                <span className="text-[9px] text-gray-600 font-bold">— {desc}</span>
                               </div>
-                              <button onClick={() => setEditingGoal(editingGoal===key ? null : key)}
-                                className="text-[9px] font-black text-gray-600 hover:text-white transition-colors px-2 py-0.5 rounded-lg bg-white/5 shrink-0 ml-2">
-                                {editingGoal===key ? "✕" : goals[key] ? "編集" : "＋ 設定"}
-                              </button>
+                              <InlineGoalField gkey={key} placeholder={`${label}の目標を入力`} multiline={key === "yearMotto"} />
                             </div>
-                            {editingGoal === key ? (
-                              <div className="flex gap-2 mt-2">
-                                <input
-                                  autoFocus
-                                  defaultValue={goals[key]}
-                                  onKeyDown={e => { if (e.key==='Enter') saveGoal(key, e.target.value); if (e.key==='Escape') setEditingGoal(null); }}
-                                  className="flex-1 bg-white/10 text-sm font-bold px-3 py-2 rounded-xl border border-white/10 outline-none placeholder:text-gray-600"
-                                  placeholder={`${label}を入力...`}
-                                  id={`goal-input-${key}`}
-                                />
-                                <button onClick={() => { const el = document.getElementById(`goal-input-${key}`); if(el) saveGoal(key, el.value); }}
-                                  className="bg-white text-black px-4 rounded-xl font-black text-[10px] shrink-0">保存</button>
-                              </div>
-                            ) : (
-                              <p className={`text-sm font-bold leading-snug mt-1 ${goals[key] ? 'text-white' : 'text-gray-700 italic'}`}>
-                                {goals[key] || "未設定"}
-                              </p>
-                            )}
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ── 今月の目標 ── */}
+                    <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
+                      <div className="h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400"></div>
+                      <div className="px-4 py-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5">📅 今月の目標</span>
+                            <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{monthStart} 〜 {monthEnd}</p>
                           </div>
                         </div>
-                      ))}
+                        <InlineGoalField gkey="month" placeholder="今月の目標を入力" />
+                      </div>
                     </div>
+
+                    {/* ── 今週の目標 ── */}
+                    <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
+                      <div className="h-0.5 bg-gradient-to-r from-emerald-400 to-teal-400"></div>
+                      <div className="px-4 py-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5">⚡ 今週の目標</span>
+                            <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{weekStart} 〜 {weekEnd}</p>
+                          </div>
+                        </div>
+                        <InlineGoalField gkey="week" placeholder="今週の目標を入力" />
+                      </div>
+                    </div>
+
                   </div>
                 );
               })()}
@@ -724,9 +803,9 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* ⑤ タイマーカード：円形プログレス */}
+                  {/* ⑤ タイマーカード：アラーム音選択付き */}
                   <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 shadow-lg">
-                    <div className="flex items-center justify-around">
+                    <div className="flex items-center justify-around mb-4">
                       <div className="text-center">
                         <div className="relative w-20 h-20 mx-auto mb-2">
                           <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
@@ -752,6 +831,25 @@ export default function Home() {
                       <div className="grid grid-cols-3 gap-1">
                         {[1, 5, 10, 15, 20, 30].map(m => (
                           <button key={m} onClick={() => addTimerMinutes(m)} className="text-[8px] font-black border border-white/10 w-9 py-2 rounded-xl hover:bg-white hover:text-black">+{m}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* アラーム音選択 */}
+                    <div className="border-t border-white/5 pt-3">
+                      <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-2">🔔 アラーム音</p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {ALARM_SOUNDS.map(s => (
+                          <button key={s.id} onClick={() => {
+                            setAlarmSound(s.id);
+                            // preview
+                            const prev = new Audio(s.url);
+                            prev.volume = 0.5;
+                            prev.play().catch(()=>{});
+                            setTimeout(() => prev.pause(), 2000);
+                          }}
+                            className={`px-2 py-2 rounded-xl text-[9px] font-black transition-all border text-left ${alarmSound===s.id ? 'bg-white text-black border-transparent' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}>
+                            {s.label}
+                          </button>
                         ))}
                       </div>
                     </div>
