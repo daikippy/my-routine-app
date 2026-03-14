@@ -128,6 +128,7 @@ export default function Home() {
   // 目標
   const [goals, setGoals] = useState({ year: "", month: "", week: "" });
   const [editingGoal, setEditingGoal] = useState(null); // "year"|"month"|"week"|null
+  const [isLogOpen, setIsLogOpen] = useState(true);
 
   const endTimeRef = useRef(null);
   const timerRef = useRef(null);
@@ -578,10 +579,26 @@ export default function Home() {
 
               {/* ── 目標セクション ── */}
               {(() => {
+                // 期間計算
+                const yn = now.getFullYear();
+                const mn = now.getMonth();
+                const dn = now.getDate();
+                const yearStart  = `${yn}/01/01`;
+                const yearEnd    = `${yn}/12/31`;
+                const monthStart = `${yn}/${String(mn+1).padStart(2,'0')}/01`;
+                const monthLastDay = new Date(yn, mn+1, 0).getDate();
+                const monthEnd   = `${yn}/${String(mn+1).padStart(2,'0')}/${monthLastDay}`;
+                const dow = now.getDay(); // 0=Sun
+                const weekStartDate = new Date(yn, mn, dn - dow);
+                const weekEndDate   = new Date(yn, mn, dn - dow + 6);
+                const fmt = (d) => `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+                const weekStart = fmt(weekStartDate);
+                const weekEnd   = fmt(weekEndDate);
+
                 const GOAL_DEFS = [
-                  { key:"year",  label:"今年の目標",  icon:"🏆", accent:"from-yellow-400 to-orange-400" },
-                  { key:"month", label:"今月の目標",  icon:"📅", accent:"from-blue-400 to-indigo-400" },
-                  { key:"week",  label:"今週の目標",  icon:"⚡", accent:"from-emerald-400 to-teal-400" },
+                  { key:"year",  label:"今年の目標",  icon:"🏆", accent:"from-yellow-400 to-orange-400", period:`${yearStart} 〜 ${yearEnd}` },
+                  { key:"month", label:"今月の目標",  icon:"📅", accent:"from-blue-400 to-indigo-400",   period:`${monthStart} 〜 ${monthEnd}` },
+                  { key:"week",  label:"今週の目標",  icon:"⚡", accent:"from-emerald-400 to-teal-400",  period:`${weekStart} 〜 ${weekEnd}` },
                 ];
                 const saveGoal = (key, value) => {
                   const next = { ...goals, [key]: value };
@@ -593,16 +610,19 @@ export default function Home() {
                   <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-6 shadow-xl">
                     <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4">MY GOALS</p>
                     <div className="grid grid-cols-1 gap-3">
-                      {GOAL_DEFS.map(({key,label,icon,accent}) => (
+                      {GOAL_DEFS.map(({key,label,icon,accent,period}) => (
                         <div key={key} className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
                           <div className={`h-0.5 bg-gradient-to-r ${accent}`}></div>
                           <div className="px-4 py-3">
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
-                                <span>{icon}</span>{label}
-                              </span>
+                            <div className="flex items-start justify-between mb-1">
+                              <div>
+                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                                  <span>{icon}</span>{label}
+                                </span>
+                                <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{period}</p>
+                              </div>
                               <button onClick={() => setEditingGoal(editingGoal===key ? null : key)}
-                                className="text-[9px] font-black text-gray-600 hover:text-white transition-colors px-2 py-0.5 rounded-lg bg-white/5">
+                                className="text-[9px] font-black text-gray-600 hover:text-white transition-colors px-2 py-0.5 rounded-lg bg-white/5 shrink-0 ml-2">
                                 {editingGoal===key ? "✕" : goals[key] ? "編集" : "＋ 設定"}
                               </button>
                             </div>
@@ -620,7 +640,7 @@ export default function Home() {
                                   className="bg-white text-black px-4 rounded-xl font-black text-[10px] shrink-0">保存</button>
                               </div>
                             ) : (
-                              <p className={`text-sm font-bold leading-snug ${goals[key] ? 'text-white' : 'text-gray-700 italic'}`}>
+                              <p className={`text-sm font-bold leading-snug mt-1 ${goals[key] ? 'text-white' : 'text-gray-700 italic'}`}>
                                 {goals[key] || "未設定"}
                               </p>
                             )}
@@ -1037,29 +1057,38 @@ export default function Home() {
                           {visibleEvents.map(ev => {
                             const top = getTop(ev); const height = getHeight(ev);
                             const badge = repeatBadge(ev);
+                            // resize handle height: fixed 10px each side, leaving body in middle
+                            const handleH = Math.min(10, Math.floor(height / 4));
                             return (
                               <div key={ev.id} className="absolute left-0 right-0 rounded-xl overflow-visible shadow-lg group" style={{top:`${top}px`,height:`${height}px`,zIndex:10}}>
-                                {/* resize top */}
-                                <div className="absolute top-0 left-0 right-0 h-4 cursor-ns-resize flex items-center justify-center z-30 touch-none"
+
+                                {/* ── resize TOP strip (10px, right-side only to not block move) ── */}
+                                <div className="absolute top-0 right-0 w-6 cursor-ns-resize z-30 touch-none flex items-start justify-center pt-1"
+                                  style={{height:`${handleH}px`}}
                                   onMouseDown={e=>handleResizeStart(e,ev,'top')} onTouchStart={e=>handleResizeStart(e,ev,'top')}>
-                                  <div className="w-10 h-1.5 rounded-full bg-white/30 group-hover:bg-white/70 transition-colors"></div>
+                                  <div className="w-4 h-1 rounded-full bg-white/50 group-hover:bg-white/90 transition-colors"></div>
                                 </div>
-                                {/* body */}
-                                <div className="absolute inset-0 rounded-xl px-3 py-2 cursor-grab active:cursor-grabbing touch-none overflow-hidden"
+
+                                {/* ── body: full area for move + click, padding avoids handle zones ── */}
+                                <div className="absolute inset-0 rounded-xl cursor-grab active:cursor-grabbing touch-none overflow-hidden"
                                   style={{backgroundColor:ev.color+'2e', borderLeft:`4px solid ${ev.color}`}}
                                   onMouseDown={e=>handleMoveStart(e,ev)} onTouchStart={e=>handleMoveStart(e,ev)}
                                   onClick={e=>{e.stopPropagation(); openEdit(ev);}}>
-                                  <div className="flex items-start gap-1.5">
-                                    <p className="text-[13px] font-black truncate flex-1 leading-tight" style={{color:ev.color}}>{ev.title}</p>
-                                    {badge && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0 mt-0.5" style={{backgroundColor:ev.color+'44',color:ev.color}}>🔁{badge}</span>}
+                                  <div className="px-3 pt-2 pb-1">
+                                    <div className="flex items-start gap-1.5">
+                                      <p className="text-[13px] font-black truncate flex-1 leading-tight" style={{color:ev.color}}>{ev.title}</p>
+                                      {badge && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0 mt-0.5" style={{backgroundColor:ev.color+'44',color:ev.color}}>🔁{badge}</span>}
+                                    </div>
+                                    {height > 32 && <p className="text-[11px] font-bold opacity-60 text-white tabular-nums mt-0.5">{ev.startHour}:{ev.startMin}–{ev.endHour}:{ev.endMin}</p>}
+                                    {height > 52 && ev.memo && <p className="text-[10px] text-gray-400 mt-1 truncate">{ev.memo}</p>}
                                   </div>
-                                  {height > 32 && <p className="text-[11px] font-bold opacity-60 text-white tabular-nums mt-0.5">{ev.startHour}:{ev.startMin}–{ev.endHour}:{ev.endMin}</p>}
-                                  {height > 52 && ev.memo && <p className="text-[10px] text-gray-400 mt-1 truncate">{ev.memo}</p>}
                                 </div>
-                                {/* resize bottom */}
-                                <div className="absolute bottom-0 left-0 right-0 h-4 cursor-ns-resize flex items-end justify-center pb-1 z-30 touch-none"
+
+                                {/* ── resize BOTTOM strip (10px, right-side only) ── */}
+                                <div className="absolute bottom-0 right-0 w-6 cursor-ns-resize z-30 touch-none flex items-end justify-center pb-1"
+                                  style={{height:`${handleH}px`}}
                                   onMouseDown={e=>handleResizeStart(e,ev,'bottom')} onTouchStart={e=>handleResizeStart(e,ev,'bottom')}>
-                                  <div className="w-10 h-1.5 rounded-full bg-white/30 group-hover:bg-white/70 transition-colors"></div>
+                                  <div className="w-4 h-1 rounded-full bg-white/50 group-hover:bg-white/90 transition-colors"></div>
                                 </div>
                               </div>
                             );
@@ -1202,35 +1231,43 @@ export default function Home() {
           ) : (
             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-              {/* ⑥ Achievement Log：アイコンをphotoURL/emojiIcon/カラーで表示 */}
+              {/* ⑥ Achievement Log：折りたたみ対応 */}
               <section>
-                <div className="flex items-center gap-3 mb-4 px-2">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Achievement Log</p>
-                </div>
-                <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-6 shadow-2xl">
-                  <div className="space-y-4 max-h-[400px] overflow-y-auto scrollbar-hide">
-                    {timeline.map((log) => (
-                      <div key={log.id} className="flex gap-4 items-start bg-white/[0.03] p-4 rounded-2xl border border-white/5">
-                        <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden">
-                          {log.photoURL
-                            ? <img src={log.photoURL} alt="icon" className="w-full h-full object-cover rounded-full" />
-                            : log.emojiIcon
-                            ? <div className={`w-full h-full rounded-full ${CHARACTERS[log.charIndex || 0].color} flex items-center justify-center text-lg`}>{log.emojiIcon}</div>
-                            : <div className={`w-full h-full rounded-full ${CHARACTERS[log.charIndex || 0].color} flex items-center justify-center text-[10px]`}>✨</div>
-                          }
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-[10px] font-black text-gray-400">{log.displayName} <span className="text-gray-600 font-bold ml-1">@{log.shortId}</span></span>
-                            <span className="text-[8px] text-gray-700 font-black">{log.timestamp?.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
+                <button
+                  onClick={() => setIsLogOpen(v => !v)}
+                  className="flex items-center gap-3 mb-4 px-2 w-full group">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0"></div>
+                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] flex-1 text-left">Achievement Log</p>
+                  <span className={`text-gray-600 font-black text-xs transition-transform duration-300 ${isLogOpen ? 'rotate-180' : ''}`}>▲</span>
+                </button>
+                {isLogOpen && (
+                  <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-6 shadow-2xl">
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto scrollbar-hide">
+                      {timeline.length === 0 && (
+                        <p className="text-center text-[10px] font-black text-gray-600 py-8">まだログがありません</p>
+                      )}
+                      {timeline.map((log) => (
+                        <div key={log.id} className="flex gap-4 items-start bg-white/[0.03] p-4 rounded-2xl border border-white/5">
+                          <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden">
+                            {log.photoURL
+                              ? <img src={log.photoURL} alt="icon" className="w-full h-full object-cover rounded-full" />
+                              : log.emojiIcon
+                              ? <div className={`w-full h-full rounded-full ${CHARACTERS[log.charIndex || 0].color} flex items-center justify-center text-lg`}>{log.emojiIcon}</div>
+                              : <div className={`w-full h-full rounded-full ${CHARACTERS[log.charIndex || 0].color} flex items-center justify-center text-[10px]`}>✨</div>
+                            }
                           </div>
-                          <p className="text-xs font-bold text-gray-200">{log.message}</p>
+                          <div className="flex-1">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-[10px] font-black text-gray-400">{log.displayName} <span className="text-gray-600 font-bold ml-1">@{log.shortId}</span></span>
+                              <span className="text-[8px] text-gray-700 font-black">{log.timestamp?.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                            <p className="text-xs font-bold text-gray-200">{log.message}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </section>
 
               {/* Friends */}
