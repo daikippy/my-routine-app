@@ -1645,7 +1645,7 @@ export default function Home() {
       {/* チュートリアル */}
       {showTutorial && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
-          <div className="bg-white text-black p-8 rounded-[3rem] max-w-sm w-full shadow-2xl animate-bounce-rich">
+          <div className="bg-white text-black p-8 rounded-[3rem] max-w-sm w-full shadow-2xl animate-bounce-rich relative">
             <button onClick={closeTutorial} className="absolute top-6 right-8 text-2xl font-black text-gray-300 hover:text-black">✕</button>
             <div className="text-center">
               <span className="text-5xl mb-6 block">🚀</span>
