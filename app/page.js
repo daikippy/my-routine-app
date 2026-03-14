@@ -85,12 +85,12 @@ const THEMES = [
 
 // --- アラーム音リスト ---
 const ALARM_SOUNDS = [
-  { id: "bell",     label: "🔔 ベル",     url: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" },
-  { id: "digital",  label: "⏰ デジタル",  url: "https://assets.mixkit.co/active_storage/sfx/988/988-preview.mp3" },
-  { id: "marimba",  label: "🎶 マリンバ",  url: "https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3" },
-  { id: "chime",    label: "🎵 チャイム",  url: "https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3" },
-  { id: "rooster",  label: "🚢 汽笛",      url: "https://assets.mixkit.co/active_storage/sfx/608/608-preview.mp3" },
-  { id: "gentle",   label: "🎠 オルゴール", url: "https://assets.mixkit.co/active_storage/sfx/2217/2217-preview.mp3" },
+  { id: "bell",     label: "🔔 ベル",       url: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" },
+  { id: "digital",  label: "⏰ デジタル",    url: "https://assets.mixkit.co/active_storage/sfx/988/988-preview.mp3" },
+  { id: "marimba",  label: "🎶 マリンバ",    url: "https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3" },
+  { id: "chime",    label: "🎵 チャイム",    url: "https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3" },
+  { id: "rooster",  label: "🚢 汽笛",        url: "https://assets.mixkit.co/active_storage/sfx/608/608-preview.mp3" },
+  { id: "gentle",   label: "🎠 オルゴール",  url: "https://soundbible.com/grab.php?id=1619&type=mp3" },
 ];
 
 // --- 目標入力フィールド（独立コンポーネント：再レンダリングで消えない） ---
