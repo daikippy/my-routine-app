@@ -60,27 +60,61 @@ const DAILY_AWARDS = [
 ];
 
 const THEMES = [
-  { name: "Passion",     color: "#ef4444", bg: "bg-red-500",     title: "text-white" },
-  { name: "Soft Red",    color: "#fca5a5", bg: "bg-red-300",     title: "text-red-950" },
-  { name: "Deep Red",    color: "#7f1d1d", bg: "bg-red-950",     title: "text-white" },
-  { name: "Sun",         color: "#f97316", bg: "bg-orange-500",  title: "text-white" },
-  { name: "Apricot",     color: "#fdba74", bg: "bg-orange-300",  title: "text-orange-950" },
-  { name: "Deep Orange", color: "#9a3412", bg: "bg-orange-900",  title: "text-white" },
-  { name: "Lemon",       color: "#facc15", bg: "bg-yellow-400",  title: "text-yellow-950" },
-  { name: "Cream",       color: "#fef9c3", bg: "bg-yellow-100",  title: "text-yellow-950" },
-  { name: "Gold",        color: "#ca8a04", bg: "bg-yellow-600",  title: "text-white" },
-  { name: "Emerald",     color: "#10b981", bg: "bg-emerald-500", title: "text-white" },
-  { name: "Mint",        color: "#a7f3d0", bg: "bg-emerald-200", title: "text-emerald-950" },
-  { name: "Forest",      color: "#064e3b", bg: "bg-emerald-950", title: "text-white" },
-  { name: "Sky Blue",    color: "#3b82f6", bg: "bg-blue-500",    title: "text-white" },
-  { name: "Pale Blue",   color: "#dbeafe", bg: "bg-blue-100",    title: "text-blue-950" },
-  { name: "Ocean",       color: "#1e3a8a", bg: "bg-blue-900",    title: "text-white" },
-  { name: "Indigo",      color: "#6366f1", bg: "bg-indigo-500",  title: "text-white" },
-  { name: "Lavender",    color: "#c7d2fe", bg: "bg-indigo-200",  title: "text-indigo-950" },
-  { name: "Midnight",    color: "#312e81", bg: "bg-indigo-950",  title: "text-white" },
-  { name: "Grape",       color: "#a855f7", bg: "bg-purple-500",  title: "text-white" },
-  { name: "Lilac",       color: "#f3e8ff", bg: "bg-purple-100",  title: "text-purple-950" },
-  { name: "Dark Purple", color: "#581c87", bg: "bg-purple-950",  title: "text-white" }
+  // ── Red ──
+  { name: "Passion",      color: "#ef4444", bg: "bg-red-500",      title: "text-white" },
+  { name: "Soft Red",     color: "#fca5a5", bg: "bg-red-300",      title: "text-red-950" },
+  { name: "Rose",         color: "#fb7185", bg: "bg-rose-400",     title: "text-white" },
+  { name: "Deep Red",     color: "#7f1d1d", bg: "bg-red-950",      title: "text-white" },
+  // ── Pink ──
+  { name: "Pink",         color: "#ec4899", bg: "bg-pink-500",     title: "text-white" },
+  { name: "Blush",        color: "#fbcfe8", bg: "bg-pink-200",     title: "text-pink-950" },
+  { name: "Hot Pink",     color: "#db2777", bg: "bg-pink-600",     title: "text-white" },
+  { name: "Deep Pink",    color: "#831843", bg: "bg-pink-950",     title: "text-white" },
+  // ── Orange ──
+  { name: "Sun",          color: "#f97316", bg: "bg-orange-500",   title: "text-white" },
+  { name: "Apricot",      color: "#fdba74", bg: "bg-orange-300",   title: "text-orange-950" },
+  { name: "Deep Orange",  color: "#9a3412", bg: "bg-orange-900",   title: "text-white" },
+  { name: "Amber",        color: "#f59e0b", bg: "bg-amber-500",    title: "text-white" },
+  // ── Yellow ──
+  { name: "Lemon",        color: "#facc15", bg: "bg-yellow-400",   title: "text-yellow-950" },
+  { name: "Cream",        color: "#fef9c3", bg: "bg-yellow-100",   title: "text-yellow-950" },
+  { name: "Gold",         color: "#ca8a04", bg: "bg-yellow-600",   title: "text-white" },
+  { name: "Honey",        color: "#d97706", bg: "bg-amber-600",    title: "text-white" },
+  // ── Green ──
+  { name: "Emerald",      color: "#10b981", bg: "bg-emerald-500",  title: "text-white" },
+  { name: "Mint",         color: "#a7f3d0", bg: "bg-emerald-200",  title: "text-emerald-950" },
+  { name: "Forest",       color: "#064e3b", bg: "bg-emerald-950",  title: "text-white" },
+  { name: "Lime",         color: "#84cc16", bg: "bg-lime-500",     title: "text-white" },
+  { name: "Sage",         color: "#bbf7d0", bg: "bg-green-200",    title: "text-green-950" },
+  { name: "Deep Green",   color: "#14532d", bg: "bg-green-950",    title: "text-white" },
+  { name: "Teal",         color: "#14b8a6", bg: "bg-teal-500",     title: "text-white" },
+  { name: "Cyan",         color: "#06b6d4", bg: "bg-cyan-500",     title: "text-white" },
+  // ── Blue ──
+  { name: "Sky Blue",     color: "#3b82f6", bg: "bg-blue-500",     title: "text-white" },
+  { name: "Pale Blue",    color: "#dbeafe", bg: "bg-blue-100",     title: "text-blue-950" },
+  { name: "Ocean",        color: "#1e3a8a", bg: "bg-blue-900",     title: "text-white" },
+  { name: "Baby Blue",    color: "#7dd3fc", bg: "bg-sky-300",      title: "text-sky-950" },
+  { name: "Deep Sky",     color: "#0ea5e9", bg: "bg-sky-500",      title: "text-white" },
+  { name: "Navy",         color: "#1e40af", bg: "bg-blue-800",     title: "text-white" },
+  // ── Indigo / Purple ──
+  { name: "Indigo",       color: "#6366f1", bg: "bg-indigo-500",   title: "text-white" },
+  { name: "Lavender",     color: "#c7d2fe", bg: "bg-indigo-200",   title: "text-indigo-950" },
+  { name: "Midnight",     color: "#312e81", bg: "bg-indigo-950",   title: "text-white" },
+  { name: "Grape",        color: "#a855f7", bg: "bg-purple-500",   title: "text-white" },
+  { name: "Lilac",        color: "#f3e8ff", bg: "bg-purple-100",   title: "text-purple-950" },
+  { name: "Dark Purple",  color: "#581c87", bg: "bg-purple-950",   title: "text-white" },
+  { name: "Violet",       color: "#8b5cf6", bg: "bg-violet-500",   title: "text-white" },
+  { name: "Mauve",        color: "#ddd6fe", bg: "bg-violet-200",   title: "text-violet-950" },
+  { name: "Fuchsia",      color: "#d946ef", bg: "bg-fuchsia-500",  title: "text-white" },
+  // ── Neutral ──
+  { name: "Ash",          color: "#6b7280", bg: "bg-gray-500",     title: "text-white" },
+  { name: "Silver",       color: "#e5e7eb", bg: "bg-gray-200",     title: "text-gray-950" },
+  { name: "Charcoal",     color: "#374151", bg: "bg-gray-700",     title: "text-white" },
+  { name: "Obsidian",     color: "#111827", bg: "bg-gray-950",     title: "text-white" },
+  { name: "Zinc",         color: "#71717a", bg: "bg-zinc-500",     title: "text-white" },
+  { name: "Stone",        color: "#78716c", bg: "bg-stone-500",    title: "text-white" },
+  { name: "Slate",        color: "#64748b", bg: "bg-slate-500",    title: "text-white" },
+  { name: "Deep Slate",   color: "#0f172a", bg: "bg-slate-950",    title: "text-white" },
 ];
 
 // --- アラーム音リスト ---
@@ -284,6 +318,9 @@ export default function Home() {
   const [isLogOpen, setIsLogOpen] = useState(true);
   const [yearGoalOpen, setYearGoalOpen] = useState(true);
   const [alarmSound, setAlarmSound] = useState("bell");
+  const [diaryEntries, setDiaryEntries] = useState({});
+  const [diaryDate, setDiaryDate] = useState(new Date().toISOString().split('T')[0]);
+  const [diaryInput, setDiaryInput] = useState("");
 
   const endTimeRef = useRef(null);
   const timerRef = useRef(null);
@@ -452,7 +489,8 @@ export default function Home() {
       photoURL: currentPhotoURL, emojiIcon: currentEmojiIcon,
       themeIndex: currentThemeIdx, charIndex: currentCharIdx, lastActive: Date.now(),
       scheduleEvents: updatedData.scheduleEvents !== undefined ? updatedData.scheduleEvents : scheduleEvents,
-      goals: updatedData.goals !== undefined ? updatedData.goals : goals
+      goals: updatedData.goals !== undefined ? updatedData.goals : goals,
+      diaryEntries: updatedData.diaryEntries !== undefined ? updatedData.diaryEntries : diaryEntries
     }, { merge: true });
   };
 
@@ -484,6 +522,7 @@ export default function Home() {
             else setChecks({});
             setScheduleEvents(d.scheduleEvents || []);
             if (d.goals) setGoals(d.goals);
+            if (d.diaryEntries) setDiaryEntries(d.diaryEntries);
             if (!d.hasSeenTutorial) setShowTutorial(true);
           } else {
             setShowTutorial(true);
@@ -734,6 +773,7 @@ export default function Home() {
             <button onClick={() => setActiveTab("main")} className={`px-8 py-2 rounded-xl text-[10px] font-black transition-all ${activeTab === "main" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>ホーム</button>
             <button onClick={() => setActiveTab("schedule")} className={`px-8 py-2 rounded-xl text-[10px] font-black transition-all ${activeTab === "schedule" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>スケジュール</button>
             <button onClick={() => setActiveTab("social")} className={`px-8 py-2 rounded-xl text-[10px] font-black transition-all ${activeTab === "social" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>交流</button>
+            <button onClick={() => setActiveTab("diary")} className={`px-8 py-2 rounded-xl text-[10px] font-black transition-all ${activeTab === "diary" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>日記</button>
           </div>
 
           {activeTab === "main" ? (
@@ -1078,17 +1118,19 @@ export default function Home() {
                 const startY = e.touches ? e.touches[0].clientY : e.clientY;
                 const origStart = parseInt(ev.startHour)*60+parseInt(ev.startMin);
                 const origEnd   = parseInt(ev.endHour)*60+parseInt(ev.endMin);
+                let moved = false;
                 const onMove = (me) => {
+                  moved = true;
                   const d = Math.round(topToMins((me.touches?me.touches[0].clientY:me.clientY)-startY)/SNAP)*SNAP;
                   const ns = edge==='top' ? clamp(origStart+d,0,origEnd-SNAP) : origStart;
-                  const ne = edge==='bottom' ? clamp(origEnd+d,origStart+SNAP,24*60) : origEnd;
+                  const ne = edge==='bottom' ? clamp(origEnd+d,origStart+SNAP,26*60) : origEnd;
                   const sh=minsToHM(ns); const eh=minsToHM(ne);
                   setScheduleEvents(prev=>prev.map(x=>x.id===ev.id?{...x,startHour:sh.h,startMin:sh.m,endHour:eh.h,endMin:eh.m}:x));
                 };
                 const onEnd = () => {
                   document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onEnd);
                   document.removeEventListener('touchmove',onMove); document.removeEventListener('touchend',onEnd);
-                  setScheduleEvents(prev=>{saveToFirebase({scheduleEvents:prev});return prev;});
+                  if (moved) setScheduleEvents(prev=>{saveToFirebase({scheduleEvents:prev});return prev;});
                 };
                 document.addEventListener('mousemove',onMove); document.addEventListener('mouseup',onEnd);
                 document.addEventListener('touchmove',onMove,{passive:false}); document.addEventListener('touchend',onEnd);
@@ -1139,15 +1181,15 @@ export default function Home() {
 
                     {/* タイムライン */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest text-center mb-3">タイムラインをタップして追加 · ドラッグで移動 · 右端↕でリサイズ</p>
+                      <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest text-center mb-3">タイムラインをタップして追加 · ドラッグで移動 · 中央↕でリサイズ</p>
                       <div className="bg-white/5 rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
                         <div className="overflow-y-auto" style={{maxHeight:'78vh'}}>
-                          <div className="relative select-none" style={{height:`${24*HOUR_HEIGHT}px`}} onClick={handleTimelineTap}>
+                          <div className="relative select-none" style={{height:`${26*HOUR_HEIGHT}px`}} onClick={handleTimelineTap}>
 
-                            {Array.from({length:24},(_,h)=>(
+                            {Array.from({length:27},(_,h)=>(
                               <div key={h} className="absolute w-full border-t border-white/5 flex pointer-events-none" style={{top:`${h*HOUR_HEIGHT}px`,height:`${HOUR_HEIGHT}px`}}>
                                 <div className="w-16 shrink-0 flex items-start pt-1.5 justify-end pr-3">
-                                  <span className="text-[11px] font-black text-gray-500 tabular-nums">{h.toString().padStart(2,'0')}:00</span>
+                                  <span className="text-[11px] font-black text-gray-500 tabular-nums">{h < 24 ? h.toString().padStart(2,'0') : `+${h-24}`}:00</span>
                                 </div>
                                 <div className="flex-1 border-l border-white/5">
                                   <div className="border-t border-white/[0.03] mt-[50%]"></div>
@@ -1169,10 +1211,11 @@ export default function Home() {
                                 const handleH = Math.min(10, Math.floor(height / 4));
                                 return (
                                   <div key={ev.id} className="absolute left-0 right-0 rounded-xl overflow-visible shadow-lg group" style={{top:`${top}px`,height:`${height}px`,zIndex:10}}>
-                                    <div className="absolute top-0 right-0 w-6 cursor-ns-resize z-30 touch-none flex items-start justify-center pt-1"
+                                    {/* 上リサイズハンドル（中央） */}
+                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-10 cursor-ns-resize z-30 touch-none flex items-start justify-center pt-1"
                                       style={{height:`${handleH}px`}}
                                       onMouseDown={e=>handleResizeStart(e,ev,'top')} onTouchStart={e=>handleResizeStart(e,ev,'top')}>
-                                      <div className="w-4 h-1 rounded-full bg-white/50 group-hover:bg-white/90 transition-colors"></div>
+                                      <div className="w-6 h-1 rounded-full bg-white/60 group-hover:bg-white transition-colors"></div>
                                     </div>
                                     <div className="absolute inset-0 rounded-xl cursor-grab active:cursor-grabbing touch-none overflow-hidden"
                                       style={{backgroundColor:ev.color+'2e', borderLeft:`4px solid ${ev.color}`}}
@@ -1187,10 +1230,11 @@ export default function Home() {
                                         {height > 52 && ev.memo && <p className="text-[10px] text-gray-400 mt-1 truncate">{ev.memo}</p>}
                                       </div>
                                     </div>
-                                    <div className="absolute bottom-0 right-0 w-6 cursor-ns-resize z-30 touch-none flex items-end justify-center pb-1"
+                                    {/* 下リサイズハンドル（中央） */}
+                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 cursor-ns-resize z-30 touch-none flex items-end justify-center pb-1"
                                       style={{height:`${handleH}px`}}
                                       onMouseDown={e=>handleResizeStart(e,ev,'bottom')} onTouchStart={e=>handleResizeStart(e,ev,'bottom')}>
-                                      <div className="w-4 h-1 rounded-full bg-white/50 group-hover:bg-white/90 transition-colors"></div>
+                                      <div className="w-6 h-1 rounded-full bg-white/60 group-hover:bg-white transition-colors"></div>
                                     </div>
                                   </div>
                                 );
@@ -1495,6 +1539,117 @@ export default function Home() {
 
               </div>{/* end PC 2カラム */}
             </div>
+          ) : activeTab === "diary" ? (
+            (() => {
+              const diaryDates = Object.keys(diaryEntries).sort((a,b) => b.localeCompare(a));
+              const currentEntry = diaryEntries[diaryDate] || { text: "", mood: "" };
+              const MOODS = [
+                { emoji: "😄", label: "最高" },
+                { emoji: "😊", label: "良い" },
+                { emoji: "😐", label: "普通" },
+                { emoji: "😔", label: "悪い" },
+                { emoji: "😞", label: "最悪" },
+              ];
+              const saveDiary = (text, mood) => {
+                const next = { ...diaryEntries, [diaryDate]: { text, mood, updatedAt: Date.now() } };
+                setDiaryEntries(next);
+                saveToFirebase({ diaryEntries: next });
+                showToast("日記を保存しました");
+              };
+              const deleteDiary = (date) => {
+                const next = { ...diaryEntries };
+                delete next[date];
+                setDiaryEntries(next);
+                saveToFirebase({ diaryEntries: next });
+                if (date === diaryDate) setDiaryInput("");
+                showToast("削除しました");
+              };
+              const prevDiaryDay = () => { const d=new Date(diaryDate); d.setDate(d.getDate()-1); const s=d.toISOString().split('T')[0]; setDiaryDate(s); setDiaryInput(diaryEntries[s]?.text||""); };
+              const nextDiaryDay = () => { const d=new Date(diaryDate); d.setDate(d.getDate()+1); const s=d.toISOString().split('T')[0]; setDiaryDate(s); setDiaryInput(diaryEntries[s]?.text||""); };
+
+              return (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex flex-col lg:flex-row gap-6 items-start">
+
+                    {/* 左: 入力エリア */}
+                    <div className="flex-1 min-w-0">
+                      {/* 日付ナビ */}
+                      <div className="flex items-center justify-between mb-5 px-1">
+                        <button onClick={prevDiaryDay} className="w-10 h-10 bg-white/5 rounded-xl border border-white/10 font-black flex items-center justify-center text-lg">‹</button>
+                        <div className="text-center">
+                          <p className="text-lg font-black">{new Date(diaryDate+'T00:00:00').toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'})}</p>
+                          {diaryDate === today && <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">TODAY</p>}
+                        </div>
+                        <button onClick={nextDiaryDay} className="w-10 h-10 bg-white/5 rounded-xl border border-white/10 font-black flex items-center justify-center text-lg">›</button>
+                      </div>
+
+                      {/* 気分セレクタ */}
+                      <div className="bg-white/5 rounded-[2rem] border border-white/10 p-5 mb-4">
+                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">今日の気分</p>
+                        <div className="flex gap-2 justify-around">
+                          {MOODS.map(m => (
+                            <button key={m.emoji} onClick={() => saveDiary(diaryInput, m.emoji)}
+                              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all border ${currentEntry.mood === m.emoji ? 'bg-white/20 border-white/40 scale-110' : 'bg-white/5 border-white/5 opacity-50 hover:opacity-100'}`}>
+                              <span className="text-2xl">{m.emoji}</span>
+                              <span className="text-[8px] font-black text-gray-400">{m.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* テキストエリア */}
+                      <div className="bg-white/5 rounded-[2rem] border border-white/10 p-5">
+                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">📝 日記</p>
+                        <textarea
+                          value={diaryInput !== "" ? diaryInput : currentEntry.text}
+                          onChange={e => setDiaryInput(e.target.value)}
+                          onFocus={() => { if (diaryInput === "") setDiaryInput(currentEntry.text); }}
+                          rows={10}
+                          className="w-full bg-black/30 text-sm font-bold px-4 py-3 rounded-2xl border border-white/10 outline-none resize-none placeholder:text-gray-700 leading-relaxed"
+                          placeholder={`${new Date(diaryDate+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric'})}の日記を書こう...`}
+                        />
+                        <div className="flex gap-2 mt-3">
+                          <button onClick={() => { saveDiary(diaryInput !== "" ? diaryInput : currentEntry.text, currentEntry.mood); }}
+                            className="flex-1 bg-white text-black py-3 rounded-2xl font-black text-[11px] shadow-lg">保存</button>
+                          {diaryEntries[diaryDate] && (
+                            <button onClick={() => deleteDiary(diaryDate)}
+                              className="bg-red-500/15 text-red-400 px-5 py-3 rounded-2xl font-black text-[11px] border border-red-500/20">削除</button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 右: 過去の日記リスト */}
+                    <div className="w-full lg:w-72 xl:w-80 shrink-0">
+                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4 px-1">過去の日記</p>
+                      {diaryDates.length === 0 ? (
+                        <div className="bg-white/5 rounded-[2rem] border border-white/10 p-8 text-center">
+                          <p className="text-[10px] font-black text-gray-600">まだ日記がありません</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-[70vh] overflow-y-auto scrollbar-hide pr-1">
+                          {diaryDates.map(date => {
+                            const entry = diaryEntries[date];
+                            const isSelected = date === diaryDate;
+                            return (
+                              <button key={date} onClick={() => { setDiaryDate(date); setDiaryInput(entry.text||""); }}
+                                className={`w-full text-left p-4 rounded-2xl border transition-all ${isSelected ? 'bg-white/15 border-white/30' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-[10px] font-black text-gray-300">{new Date(date+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'})}</span>
+                                  {entry.mood && <span className="text-lg">{entry.mood}</span>}
+                                </div>
+                                <p className="text-[10px] text-gray-500 font-bold line-clamp-2 leading-relaxed">{entry.text || "（内容なし）"}</p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                </div>
+              );
+            })()
           )}
         </div>
       </main>
@@ -1610,7 +1765,7 @@ export default function Home() {
               <section>
                 <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase mb-2">Theme</p>
                 <p className="text-[9px] font-black text-gray-400 mb-3 h-4">{hoveredTheme !== null ? THEMES[hoveredTheme].name : themeIndex !== null ? THEMES[themeIndex].name : ""}</p>
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-8 gap-2">
                   {THEMES.map((t, i) => (
                     <button key={i}
                       onClick={() => { setThemeIndex(i); saveToFirebase({ themeIndex: i }); }}
