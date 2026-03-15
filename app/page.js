@@ -788,19 +788,19 @@ export default function Home() {
         </section>
       </aside>
 
-      <main className="flex-1 overflow-y-auto min-h-screen relative pt-20">
+      <main className="flex-1 w-full overflow-y-auto min-h-screen relative pt-20">
         <header className="fixed top-0 left-0 right-0 z-[50] w-full px-4 py-4 flex justify-between items-center bg-black/20 backdrop-blur-xl border-b border-white/5">
           <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 font-black text-xs px-4">MENU</button>
           <h1 className={`text-xl font-black italic ${currentTheme.title}`}>ROUTINE MASTER</h1>
           <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10">⚙️</button>
         </header>
 
-        <div className="max-w-screen-xl mx-auto px-4 pb-32">
-          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 my-8 mx-auto w-fit">
-            <button onClick={() => setActiveTab("main")} className={`px-8 py-2 rounded-xl text-[10px] font-black transition-all ${activeTab === "main" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>ホーム</button>
-            <button onClick={() => setActiveTab("schedule")} className={`px-8 py-2 rounded-xl text-[10px] font-black transition-all ${activeTab === "schedule" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>スケジュール</button>
-            <button onClick={() => setActiveTab("social")} className={`px-8 py-2 rounded-xl text-[10px] font-black transition-all ${activeTab === "social" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>交流</button>
-            <button onClick={() => setActiveTab("diary")} className={`px-8 py-2 rounded-xl text-[10px] font-black transition-all ${activeTab === "diary" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>日記</button>
+        <div className="w-full max-w-screen-xl mx-auto px-4 pb-32">
+          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 my-8 w-full">
+            <button onClick={() => setActiveTab("main")} className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${activeTab === "main" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>ホーム</button>
+            <button onClick={() => setActiveTab("schedule")} className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${activeTab === "schedule" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>スケジュール</button>
+            <button onClick={() => setActiveTab("social")} className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${activeTab === "social" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>交流</button>
+            <button onClick={() => setActiveTab("diary")} className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${activeTab === "diary" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>日記</button>
           </div>
 
           {activeTab === "main" ? (
