@@ -514,6 +514,40 @@ export default function Home() {
             if (d.diaryEntries) setDiaryEntries(d.diaryEntries);
             if (!d.hasSeenTutorial) setShowTutorial(true);
           } else {
+            // ── 新規ユーザー：サンプルデータをセット ──
+            const sampleTasks = {
+              morning: ["起床・水を飲む", "ストレッチ10分", "朝食を食べる", "今日の予定を確認"],
+              afternoon: ["昼休みに5分散歩", "タスクの進捗確認", "水分補給"],
+              night: ["日記を書く", "翌日の準備", "読書15分", "就寝前ストレッチ"]
+            };
+            const sampleGoals = {
+              yearMotto: "健康で充実した一年にする",
+              yearSpiritual: "週1回、自分と向き合う時間を作る",
+              yearIntellect: "月1冊本を読む・新しいスキルを身につける",
+              yearSocial: "大切な人との時間を増やす",
+              yearPhysical: "毎日30分体を動かす習慣をつける",
+              month: "ルーティンを毎日続けて達成率80%以上を目指す",
+              week: "朝のルーティンを完璧にこなす",
+              year: ""
+            };
+            const todayStr = new Date().toISOString().split('T')[0];
+            const sampleDiary = {
+              [todayStr]: {
+                text: "今日からROUTINE MASTERを始めました！\n毎日のルーティンを記録して、少しずつ成長していきたいと思います。\nまずは朝のルーティンから習慣にしていきます💪",
+                mood: "😊",
+                updatedAt: Date.now()
+              }
+            };
+            const sampleScheduleEvents = [
+              { id: "sample1", date: todayStr, title: "朝のルーティン", startHour: "07", startMin: "00", endHour: "07", endMin: "30", color: "#3b82f6", memo: "起床・ストレッチ・朝食", repeat: "daily", repeatDays: [], repeatEnd: "" },
+              { id: "sample2", date: todayStr, title: "集中作業タイム", startHour: "09", startMin: "00", endHour: "11", endMin: "00", color: "#10b981", memo: "重要タスクに集中", repeat: "weekdays", repeatDays: [], repeatEnd: "" },
+              { id: "sample3", date: todayStr, title: "昼休み・散歩", startHour: "12", startMin: "00", endHour: "13", endMin: "00", color: "#f97316", memo: "食事＋軽い散歩でリフレッシュ", repeat: "weekdays", repeatDays: [], repeatEnd: "" },
+              { id: "sample4", date: todayStr, title: "夜のルーティン", startHour: "22", startMin: "00", endHour: "23", endMin: "00", color: "#a855f7", memo: "日記・読書・翌日準備", repeat: "daily", repeatDays: [], repeatEnd: "" },
+            ];
+            setTasks(sampleTasks);
+            setGoals(sampleGoals);
+            setDiaryEntries(sampleDiary);
+            setScheduleEvents(sampleScheduleEvents);
             setShowTutorial(true);
           }
           setLoading(false);
