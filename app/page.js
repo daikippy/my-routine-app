@@ -1090,7 +1090,9 @@ export default function Home() {
                 const startY = e.touches ? e.touches[0].clientY : e.clientY;
                 const origStart = parseInt(ev.startHour)*60+parseInt(ev.startMin);
                 const origEnd   = parseInt(ev.endHour)*60+parseInt(ev.endMin);
+                let moved = false;
                 const onMove = (me) => {
+                  moved = true;
                   const d = Math.round(topToMins((me.touches?me.touches[0].clientY:me.clientY)-startY)/SNAP)*SNAP;
                   const ns = clamp(origStart+d,0,25*60); const ne = clamp(origEnd+d,ns+SNAP,26*60);
                   const sh=minsToHM(ns); const eh=minsToHM(ne);
@@ -1099,7 +1101,7 @@ export default function Home() {
                 const onEnd = () => {
                   document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onEnd);
                   document.removeEventListener('touchmove',onMove); document.removeEventListener('touchend',onEnd);
-                  setScheduleEvents(prev=>{saveToFirebase({scheduleEvents:prev});return prev;});
+                  if (moved) setScheduleEvents(prev=>{saveToFirebase({scheduleEvents:prev});return prev;});
                 };
                 document.addEventListener('mousemove',onMove); document.addEventListener('mouseup',onEnd);
                 document.addEventListener('touchmove',onMove,{passive:false}); document.addEventListener('touchend',onEnd);
@@ -1318,7 +1320,7 @@ export default function Home() {
                                   <div className="flex items-center gap-2 flex-1">
                                     <select value={newEvent[hk]} onChange={e=>setNewEvent({...newEvent,[hk]:e.target.value})}
                                       className="flex-1 bg-white/10 text-base font-black py-2 px-2 rounded-xl border border-white/10 outline-none text-center">
-                                      {Array.from({length:24},(_,i)=>i.toString().padStart(2,'0')).map(h=><option key={h} value={h}>{h}</option>)}
+                                      {Array.from({length:27},(_,i)=>i.toString().padStart(2,'0')).map(h=><option key={h} value={h}>{h}</option>)}
                                     </select>
                                     <span className="font-black text-gray-400 text-lg">:</span>
                                     <select value={newEvent[mk]} onChange={e=>setNewEvent({...newEvent,[mk]:e.target.value})}
@@ -1415,7 +1417,7 @@ export default function Home() {
                 </div>
               );
             })()
-          ) : (
+          ) : activeTab === "social" ? (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
 
               {/* ══ PC: 左Log / 右Friends ══ */}
