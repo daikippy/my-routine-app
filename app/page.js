@@ -158,7 +158,7 @@ function GoalRow({ gkey, placeholder, multiline, goals, editingGoal, setEditingG
   }
   return (
     <p onClick={() => setEditingGoal(gkey)}
-      className={`text-sm font-medium leading-snug mt-1 cursor-text rounded-lg px-2 py-1.5 -mx-2 transition-all hover:bg-white/8 ${val ? 'text-white/90' : 'text-gray-600 italic'}`}>
+      className={`text-sm font-medium leading-snug mt-1 cursor-text rounded-lg px-2 py-1.5 -mx-2 transition-all ${isLight ? 'hover:bg-black/5' : 'hover:bg-white/8'} ${val ? tx : (isLight ? 'text-gray-400 italic' : 'text-gray-600 italic')}`}>
       {val || `タップして${placeholder}`}
     </p>
   );
@@ -185,12 +185,12 @@ function SelfInvestSection({ goals, editingGoal, setEditingGoal, saveToFirebase,
     <div className="rounded-[2rem] border border-white/10 overflow-hidden shadow-xl" style={{background:'rgba(255,255,255,0.04)'}}>
       {/* ヘッダー */}
       <div className="px-5 pt-5 pb-3">
-        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">🌱 SELF INVESTMENT</p>
+        <p className={`text-[9px] font-black uppercase tracking-widest mb-3 ${txMuted}`}>🌱 SELF INVESTMENT</p>
         {/* 期間タブ */}
         <div className="flex gap-1 bg-black/30 p-1 rounded-xl">
           {Object.entries(periodConfig).map(([k, v]) => (
             <button key={k} onClick={() => setActivePeriod(k)}
-              className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all ${activePeriod === k ? 'bg-white text-black shadow-md' : 'text-gray-500 hover:text-gray-300'}`}>
+              className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all ${activePeriod === k ? (isLight ? "bg-black/80 text-white shadow-md" : "bg-white text-black shadow-md") : (isLight ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-gray-300")}`}>
               {v.label}
             </button>
           ))}
@@ -217,7 +217,7 @@ function SelfInvestSection({ goals, editingGoal, setEditingGoal, saveToFirebase,
                     currentValue={val} onSave={saveGoal} onCancel={() => setEditingGoal(null)} />
                 ) : (
                   <p onClick={() => setEditingGoal(goalKey)}
-                    className={`text-[12px] leading-snug cursor-text rounded px-1 py-0.5 -mx-1 transition-all hover:bg-white/5 ${val ? 'text-white/80 font-medium' : 'text-gray-600 italic'}`}>
+                    className={`text-[12px] leading-snug cursor-text rounded px-1 py-0.5 -mx-1 transition-all ${isLight ? "hover:bg-black/5" : "hover:bg-white/5"} ${val ? (isLight ? "text-gray-800 font-medium" : "text-white/80 font-medium") : (isLight ? "text-gray-400 italic" : "text-gray-600 italic")}`}>
                     {val || "タップして入力..."}
                   </p>
                 )}
@@ -255,17 +255,17 @@ function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, se
   return (
     <div className="rounded-[2.5rem] border border-white/10 p-5 shadow-xl space-y-4" style={{background:'rgba(255,255,255,0.05)'}}>
       <div className="flex items-center justify-between">
-        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">MY GOALS</p>
+        <p className={`text-[9px] font-black uppercase tracking-widest ${txMuted}`}>MY GOALS</p>
       </div>
 
       {/* メインタブ */}
       <div className="flex gap-1 bg-black/30 p-1 rounded-2xl">
         <button onClick={() => setGoalTab("routine")}
-          className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${goalTab === "routine" ? "bg-white text-black shadow-md" : "text-gray-500 hover:text-gray-300"}`}>
+          className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${goalTab === "routine" ? (isLight ? "bg-black/80 text-white shadow-md" : "bg-white text-black shadow-md") : (isLight ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-gray-300")}`}>
           🏆 目標
         </button>
         <button onClick={() => setGoalTab("invest")}
-          className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${goalTab === "invest" ? "bg-white text-black shadow-md" : "text-gray-500 hover:text-gray-300"}`}>
+          className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${goalTab === "invest" ? (isLight ? "bg-black/80 text-white shadow-md" : "bg-white text-black shadow-md") : (isLight ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-gray-300")}`}>
           🌱 自己投資
         </button>
       </div>
@@ -273,14 +273,14 @@ function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, se
       {goalTab === "routine" ? (
         <div className="space-y-3">
           {/* 今年の目標 */}
-          <div className="rounded-2xl border border-white/8 overflow-hidden" style={{background:'rgba(0,0,0,0.2)'}}>
+          <div className="rounded-2xl border border-white/8 overflow-hidden" style={{background: isLight ? "rgba(0,0,0,0.04)" : "rgba(0,0,0,0.2)"}}>
             <div className="h-0.5 bg-gradient-to-r from-yellow-400 to-orange-400"></div>
             <button onClick={() => setYearGoalOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-3">
               <div className="text-left">
-                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">🏆 今年の目標</span>
-                <p className="text-[8px] font-semibold text-gray-600 mt-0.5 tabular-nums">{yearStart} 〜 {yearEnd}</p>
+                <span className={`text-[9px] font-black uppercase tracking-widest ${txMuted}`}>🏆 今年の目標</span>
+                <p className={`text-[8px] font-semibold mt-0.5 tabular-nums ${txMuted}`}>{yearStart} 〜 {yearEnd}</p>
               </div>
-              <span className={`text-gray-600 font-black text-xs transition-transform duration-300 ${yearGoalOpen ? 'rotate-180' : ''}`}>▲</span>
+              <span className={`font-black text-xs transition-transform duration-300 ${isLight ? "text-gray-500" : "text-gray-600"} ${yearGoalOpen ? "rotate-180" : ""}`}>▲</span>
             </button>
             {yearGoalOpen && (
               <div className="px-4 pb-4 space-y-4 border-t border-white/5 pt-3">
@@ -288,8 +288,8 @@ function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, se
                   <div key={key}>
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span className="text-base">{icon}</span>
-                      <span className="text-[11px] font-black text-gray-300">{label}</span>
-                      <span className="text-[9px] text-gray-600 font-medium">— {desc}</span>
+                      <span className={`text-[11px] font-black ${isLight ? "text-gray-700" : "text-gray-300"}`}>{label}</span>
+                      <span className={`text-[9px] font-medium ${isLight ? "text-gray-500" : "text-gray-600"}`}>— {desc}</span>
                     </div>
                     <GoalRow gkey={key} placeholder={`${label}の目標を入力`} multiline={key === "yearMotto"}
                       goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal} onSave={saveGoal} />
@@ -300,21 +300,21 @@ function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, se
           </div>
 
           {/* 今月の目標 */}
-          <div className="rounded-2xl border border-white/8 overflow-hidden" style={{background:'rgba(0,0,0,0.2)'}}>
+          <div className="rounded-2xl border border-white/8 overflow-hidden" style={{background: isLight ? "rgba(0,0,0,0.04)" : "rgba(0,0,0,0.2)"}}>
             <div className="h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400"></div>
             <div className="px-4 py-3">
-              <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">📅 今月の目標</span>
-              <p className="text-[8px] font-semibold text-gray-600 mt-0.5 tabular-nums">{monthStart} 〜 {monthEnd}</p>
+              <span className={`text-[9px] font-black uppercase tracking-widest ${txMuted}`}>📅 今月の目標</span>
+              <p className={`text-[8px] font-semibold mt-0.5 tabular-nums ${txMuted}`}>{monthStart} 〜 {monthEnd}</p>
               <GoalRow gkey="month" placeholder="今月の目標を入力" goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal} onSave={saveGoal} />
             </div>
           </div>
 
           {/* 今週の目標 */}
-          <div className="rounded-2xl border border-white/8 overflow-hidden" style={{background:'rgba(0,0,0,0.2)'}}>
+          <div className="rounded-2xl border border-white/8 overflow-hidden" style={{background: isLight ? "rgba(0,0,0,0.04)" : "rgba(0,0,0,0.2)"}}>
             <div className="h-0.5 bg-gradient-to-r from-emerald-400 to-teal-400"></div>
             <div className="px-4 py-3">
-              <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">⚡ 今週の目標</span>
-              <p className="text-[8px] font-semibold text-gray-600 mt-0.5 tabular-nums">{weekStart} 〜 {weekEnd}</p>
+              <span className={`text-[9px] font-black uppercase tracking-widest ${txMuted}`}>⚡ 今週の目標</span>
+              <p className={`text-[8px] font-semibold mt-0.5 tabular-nums ${txMuted}`}>{weekStart} 〜 {weekEnd}</p>
               <GoalRow gkey="week" placeholder="今週の目標を入力" goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal} onSave={saveGoal} />
             </div>
           </div>
@@ -414,6 +414,22 @@ export default function Home() {
   const myDisplayId = user ? user.uid.substring(0, 8) : "";
   const currentChar = CHARACTERS[charIndex];
   const currentTheme = THEMES[themeIndex];
+  // ライトテーマ判定
+  const isLight = currentTheme.title !== "text-white";
+  const tx          = isLight ? "text-gray-900" : "text-white";
+  const txMuted     = isLight ? "text-gray-600" : "text-gray-400";
+  const glassBase   = isLight ? "rgba(0,0,0,0.07)"  : "rgba(255,255,255,0.06)";
+  const glassBorder = isLight ? "rgba(0,0,0,0.1)"   : "rgba(255,255,255,0.1)";
+  const glassDarkBg = isLight ? "rgba(0,0,0,0.12)"  : "rgba(0,0,0,0.3)";
+  const glassDarkBd = isLight ? "rgba(0,0,0,0.12)"  : "rgba(255,255,255,0.08)";
+  const cardBg      = isLight ? "rgba(0,0,0,0.05)"  : "rgba(255,255,255,0.05)";
+  const cardBorder  = isLight ? "rgba(0,0,0,0.1)"   : "rgba(255,255,255,0.1)";
+  const inputBg     = isLight ? "rgba(0,0,0,0.06)"  : "rgba(0,0,0,0.3)";
+  const inputBdr    = isLight ? "rgba(0,0,0,0.15)"  : "rgba(255,255,255,0.1)";
+  const divider     = isLight ? "rgba(0,0,0,0.08)"  : "rgba(255,255,255,0.08)";
+  const labelCls    = isLight ? "text-gray-700"      : "text-gray-400";
+  const hoverCls    = isLight ? "hover:bg-black/10"  : "hover:bg-white/15";
+  const msgBubbleOther = isLight ? "bg-black/10 text-gray-900" : "bg-zinc-800 text-gray-200";
 
   useEffect(() => {
     if (typeof Audio !== "undefined") {
@@ -780,7 +796,21 @@ export default function Home() {
   ];
 
   return (
-    <div className={`min-h-screen text-white transition-all duration-700 ${currentTheme.bg} flex overflow-hidden`}>
+    <div
+      className={`min-h-screen transition-all duration-700 ${currentTheme.bg} ${tx} flex overflow-hidden`}
+      style={{
+        "--glass-bg":          glassBase,
+        "--glass-border":      glassBorder,
+        "--glass-dark-bg":     glassDarkBg,
+        "--glass-dark-bd":     glassDarkBd,
+        "--card-bg":           cardBg,
+        "--card-border":       cardBorder,
+        "--card-bg-hover":     isLight ? "rgba(0,0,0,0.09)"  : "rgba(255,255,255,0.08)",
+        "--card-border-hover": isLight ? "rgba(0,0,0,0.18)"  : "rgba(255,255,255,0.18)",
+        "--input-bg":          inputBg,
+        "--input-border":      inputBdr,
+        "--divider":           divider,
+      }}>
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         * { font-family: 'Inter', sans-serif; }
@@ -794,10 +824,10 @@ export default function Home() {
         .animate-gold{animation:pulse-gold 1.5s infinite;}
         .animate-toast{animation:toast-in .3s ease;}
         .scrollbar-hide::-webkit-scrollbar{display:none;}
-        .glass{background:rgba(255,255,255,0.06);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);}
-        .glass-dark{background:rgba(0,0,0,0.3);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);}
-        .task-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);transition:all 0.2s;}
-        .task-card:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.18);}
+        .glass{background:var(--glass-bg);backdrop-filter:blur(20px);border:1px solid var(--glass-border);}
+        .glass-dark{background:var(--glass-dark-bg);backdrop-filter:blur(20px);border:1px solid var(--glass-dark-bd);}
+        .task-card{background:var(--card-bg);border:1px solid var(--card-border);transition:all 0.2s;}
+        .task-card:hover{background:var(--card-bg-hover);border-color:var(--card-border-hover);}
         input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);}
         select option{background:#1a1a2e;color:white;}
       `}</style>
@@ -812,17 +842,17 @@ export default function Home() {
       {isSidebarOpen && <div className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)}></div>}
 
       {/* サイドバー */}
-      <aside className={`fixed left-0 top-0 h-full w-80 z-[100] transition-all duration-500 ease-out glass-dark border-r border-white/8 p-6 flex flex-col ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed left-0 top-0 h-full w-80 z-[100] transition-all duration-500 ease-out glass-dark p-6 flex flex-col ${isLight ? "border-r border-black/8" : "border-r border-white/8"} ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex justify-between items-center mb-8">
-          <p className="text-[10px] font-black tracking-[0.3em] text-gray-500 uppercase">MENU</p>
-          <button onClick={() => setIsSidebarOpen(false)} className="w-8 h-8 rounded-full bg-white/8 flex items-center justify-center text-gray-400 hover:bg-white/15 hover:text-white transition-all text-sm">✕</button>
+          <p className={`text-[10px] font-black tracking-[0.3em] uppercase ${txMuted}`}>MENU</p>
+          <button onClick={() => setIsSidebarOpen(false)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all text-sm ${isLight ? "bg-black/8 text-gray-600 hover:bg-black/15 hover:text-gray-900" : "bg-white/8 text-gray-400 hover:bg-white/15 hover:text-white"}`}>✕</button>
         </div>
 
         {/* カレンダー */}
         <section className="glass rounded-[2rem] p-4 mb-4 text-center">
           <div className="flex items-center justify-between mb-3">
             <button onClick={() => changeMonth(-1)} className="w-7 h-7 rounded-full bg-white/8 flex items-center justify-center hover:bg-white/15 transition-all text-sm">←</button>
-            <p className="text-[10px] font-black opacity-60">{currentCalendarDate.getFullYear()}年 {currentCalendarDate.getMonth() + 1}月</p>
+            <p className={`text-[10px] font-black opacity-70 ${tx}`}>{currentCalendarDate.getFullYear()}年 {currentCalendarDate.getMonth() + 1}月</p>
             <button onClick={() => changeMonth(1)} className="w-7 h-7 rounded-full bg-white/8 flex items-center justify-center hover:bg-white/15 transition-all text-sm">→</button>
           </div>
           <div className="grid grid-cols-7 gap-1 mb-2 text-[8px] font-black text-gray-600">
@@ -837,19 +867,19 @@ export default function Home() {
             ))}
           </div>
           <div className="mt-3 flex justify-center gap-3 items-center">
-            <div className="flex items-center gap-1"><div className="w-2 h-2 bg-white/5 rounded border border-white/10"></div><span className="text-[7px] text-gray-500">0%</span></div>
-            <div className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-500/40 rounded"></div><span className="text-[7px] text-gray-500">~79%</span></div>
-            <div className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-500 rounded"></div><span className="text-[7px] text-gray-500">80%+</span></div>
+            <div className="flex items-center gap-1"><div className={`w-2 h-2 rounded ${isLight ? "bg-black/8 border border-black/15" : "bg-white/5 border border-white/10"}`}></div><span className={`text-[7px] ${txMuted}`}>0%</span></div>
+            <div className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-500/40 rounded"></div><span className={`text-[7px] ${txMuted}`}>~79%</span></div>
+            <div className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-500 rounded"></div><span className={`text-[7px] ${txMuted}`}>80%+</span></div>
           </div>
         </section>
 
         {/* ライブラリ */}
         <section className="mb-6 px-1 overflow-y-auto scrollbar-hide flex-1">
-          <p className="text-[9px] font-black text-gray-500 tracking-[0.3em] mb-3 uppercase">Library</p>
+          <p className={`text-[9px] font-black tracking-[0.3em] mb-3 uppercase ${txMuted}`}>Library</p>
           <div className="space-y-2 mb-6">
             {taskLibrary.map((t, i) => (
               <div key={i} className="glass rounded-xl p-2.5 flex items-center justify-between gap-2">
-                <span className="text-[10px] font-semibold truncate flex-1 text-gray-200">{t}</span>
+                <span className={`text-[10px] font-semibold truncate flex-1 ${tx}`}>{t}</span>
                 <div className="flex gap-1">
                   {['朝','昼','晩'].map((label, idx) => (
                     <button key={label} onClick={() => {
@@ -862,11 +892,11 @@ export default function Home() {
               </div>
             ))}
           </div>
-          <p className="text-[9px] font-black text-gray-500 tracking-[0.3em] uppercase mb-3">History</p>
+          <p className={`text-[9px] font-black tracking-[0.3em] uppercase mb-3 ${txMuted}`}>History</p>
           {history.slice(-5).reverse().map((h, i) => (
             <div key={i} className="flex justify-between items-center glass p-2.5 rounded-xl mb-2">
-              <span className="text-[10px] text-gray-400 font-medium">{h.date}</span>
-              <span className="text-[11px] font-black">{h.percent}%</span>
+              <span className={`text-[10px] font-medium ${txMuted}`}>{h.date}</span>
+              <span className={`text-[11px] font-black ${tx}`}>{h.percent}%</span>
             </div>
           ))}
         </section>
@@ -876,10 +906,10 @@ export default function Home() {
       <main className="flex-1 w-full overflow-y-auto min-h-screen relative pt-20">
 
         {/* ヘッダー */}
-        <header className="fixed top-0 left-0 right-0 z-[50] w-full px-4 py-3.5 flex justify-between items-center glass-dark border-b border-white/8">
-          <button onClick={() => setIsSidebarOpen(true)} className="glass px-4 py-2 rounded-xl font-black text-[10px] hover:bg-white/15 transition-all tracking-widest">MENU</button>
+        <header className={`fixed top-0 left-0 right-0 z-[50] w-full px-4 py-3.5 flex justify-between items-center glass-dark ${isLight ? "border-b border-black/8" : "border-b border-white/8"}`}>
+          <button onClick={() => setIsSidebarOpen(true)} className={`glass px-4 py-2 rounded-xl font-black text-[10px] transition-all tracking-widest ${tx} ${isLight ? "hover:bg-black/10" : "hover:bg-white/15"}`}>MENU</button>
           <h1 className={`text-lg font-black italic tracking-tight ${currentTheme.title} drop-shadow-sm`}>ROUTINE MASTER</h1>
-          <button onClick={() => setIsMenuOpen(true)} className="glass w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/15 transition-all">⚙️</button>
+          <button onClick={() => setIsMenuOpen(true)} className={`glass w-9 h-9 rounded-xl flex items-center justify-center transition-all ${isLight ? "hover:bg-black/10" : "hover:bg-white/15"}`}>⚙️</button>
         </header>
 
         <div className="w-full max-w-screen-xl mx-auto px-4 pb-32">
@@ -889,7 +919,7 @@ export default function Home() {
             {NAV_TABS.map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 py-2.5 rounded-xl text-[10px] font-black transition-all whitespace-nowrap flex items-center justify-center gap-1.5
-                  ${activeTab === tab.id ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-gray-300"}`}>
+                  ${activeTab === tab.id ? (isLight ? "bg-black/85 text-white shadow-lg" : "bg-white text-black shadow-lg") : (isLight ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-gray-300")}`}>
                 <span className={activeTab === tab.id ? "" : "opacity-50"}>{tab.icon}</span>
                 {tab.label}
               </button>
@@ -927,8 +957,8 @@ export default function Home() {
 
                     {/* 日時 */}
                     <div className="absolute top-7 left-8 text-left z-10">
-                      <p className="text-[9px] font-medium text-white/30 tracking-wider">{now.toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit', weekday: 'short' })}</p>
-                      <p className="text-2xl font-black italic tabular-nums">{now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className={`text-[9px] font-medium tracking-wider ${isLight ? "text-black/40" : "text-white/30"}`}>{now.toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit', weekday: 'short' })}</p>
+                      <p className={`text-2xl font-black italic tabular-nums ${tx}`}>{now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
 
                     {/* メッセージバブル */}
@@ -958,8 +988,8 @@ export default function Home() {
                       )}
                     </div>
 
-                    <p className="mt-4 text-[11px] font-semibold text-gray-300">継続中 <span className="font-black text-orange-400">{streakCount}日</span> 🔥</p>
-                    <p className="text-[8px] text-gray-600 font-medium mt-1 tracking-wide">80%以上達成した日が連続するとカウント</p>
+                    <p className={`mt-4 text-[11px] font-semibold ${txMuted}`}>継続中 <span className="font-black text-orange-400">{streakCount}日</span> 🔥</p>
+                    <p className={`text-[8px] font-medium mt-1 tracking-wide ${isLight ? "text-gray-500" : "text-gray-600"}`}>80%以上達成した日が連続するとカウント</p>
                   </div>
 
                   {/* タイマーカード */}
@@ -979,7 +1009,7 @@ export default function Home() {
                             />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <p className="text-sm font-mono font-black tabular-nums">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
+                            <p className={`text-sm font-mono font-black tabular-nums ${tx}`}>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</p>
                           </div>
                         </div>
                         <div className="flex gap-2 justify-center">
@@ -1001,7 +1031,7 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="border-t border-white/8 pt-4">
-                      <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-2">🔔 アラーム音</p>
+                      <p className={`text-[8px] font-black uppercase tracking-widest mb-2 ${txMuted}`}>🔔 アラーム音</p>
                       <div className="grid grid-cols-2 gap-1.5">
                         {ALARM_SOUNDS.map(s => (
                           <button key={s.id} onClick={() => {
@@ -1011,7 +1041,7 @@ export default function Home() {
                             prev.play().catch(()=>{});
                             setTimeout(() => prev.pause(), 2000);
                           }}
-                            className={`px-2 py-2 rounded-xl text-[9px] font-bold transition-all border text-left ${alarmSound===s.id ? 'bg-white text-black border-transparent shadow-md' : 'bg-white/5 text-gray-400 border-white/8 hover:bg-white/10'}`}>
+                            className={`px-2 py-2 rounded-xl text-[9px] font-bold transition-all border text-left ${alarmSound===s.id ? 'bg-white text-black border-transparent shadow-md' : isLight ? 'bg-black/5 text-gray-600 border-black/8 hover:bg-black/10' : 'bg-white/5 text-gray-400 border-white/8 hover:bg-white/10'}`}>
                             {s.label}
                           </button>
                         ))}
@@ -1027,21 +1057,21 @@ export default function Home() {
                   <div className="glass rounded-[2.5rem] p-6 shadow-lg">
                     <div className="flex justify-between items-start mb-5">
                       <div>
-                        <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-2">週間ランク (直近7日平均)</p>
+                        <p className={`text-[8px] font-black uppercase tracking-widest mb-2 ${txMuted}`}>週間ランク (直近7日平均)</p>
                         <span className={`text-[8px] font-black px-3 py-1 rounded-full ${currentRank.bg} ${currentRank.color}`}>RANK: {currentRank.name}</span>
-                        <p className="text-[10px] font-semibold text-gray-500 mt-2">Week Avg: <span className="font-black text-white">{lastWeekAvg}%</span></p>
-                        <p className="text-[8px] font-black text-gray-600 mt-3 mb-1 uppercase tracking-widest">今日の達成率</p>
-                        <h2 className="text-3xl font-black mt-1">Today: <span className="tabular-nums">{percent}%</span></h2>
+                        <p className={`text-[10px] font-semibold mt-2 ${txMuted}`}>Week Avg: <span className={`font-black ${tx}`}>{lastWeekAvg}%</span></p>
+                        <p className={`text-[8px] font-black mt-3 mb-1 uppercase tracking-widest ${txMuted}`}>今日の達成率</p>
+                        <h2 className={`text-3xl font-black mt-1 ${tx}`}>Today: <span className="tabular-nums">{percent}%</span></h2>
                         <div className="mt-2.5 w-44 h-1.5 bg-white/10 rounded-full overflow-hidden">
                           <div className="h-full bg-emerald-400 rounded-full transition-all duration-700" style={{ width: `${percent}%` }}></div>
                         </div>
                       </div>
                       <div className="text-[7px] font-bold space-y-0.5 text-gray-500 border-l border-white/8 pl-4">
-                        <p className="mb-1 text-white/40 font-black tracking-widest">RANK</p>
-                        {RANK_LIST.map(r => <div key={r.name} className={lastWeekAvg >= r.min ? "text-white/80" : "opacity-25"}>{r.name}: {r.min}%+</div>)}
+                        <p className={`mb-1 font-black tracking-widest ${isLight ? "text-black/50" : "text-white/40"}`}>RANK</p>
+                        {RANK_LIST.map(r => <div key={r.name} className={lastWeekAvg >= r.min ? (isLight ? "text-gray-800" : "text-white/80") : "opacity-25"}>{r.name}: {r.min}%+</div>)}
                       </div>
                     </div>
-                    <div className="h-28 w-full rounded-2xl p-2" style={{background:'rgba(0,0,0,0.2)'}}>
+                    <div className="h-28 w-full rounded-2xl p-2" style={{background: isLight ? "rgba(0,0,0,0.04)" : "rgba(0,0,0,0.2)"}}>
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData}>
                           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -1069,7 +1099,7 @@ export default function Home() {
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
                               <div className={`w-1.5 h-1.5 rounded-full ${tc.dot}`}></div>
-                              <h2 className="text-[9px] font-black text-gray-500 uppercase tracking-[0.35em]">{tc.label}</h2>
+                              <h2 className={`text-[9px] font-black uppercase tracking-[0.35em] ${txMuted}`}>{tc.label}</h2>
                             </div>
                             {tp.total > 0 && (
                               <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full ${tp.done === tp.total ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500'}`}>
@@ -1102,7 +1132,7 @@ export default function Home() {
                                     onKeyDown={(e) => e.key === 'Enter' && updateTaskValue(time, index, editingTask.value)} />
                                 ) : (
                                   <span onClick={() => setEditingTask({ time, index, value: task })}
-                                    className={`flex-1 text-sm font-medium cursor-text leading-snug ${checks[`${time}_${index}`] ? 'opacity-25 line-through' : 'text-gray-200'}`}>
+                                    className={`flex-1 text-sm font-medium cursor-text leading-snug ${checks[`${time}_${index}`] ? "opacity-25 line-through" : tx}`}>
                                     {task.startsWith('!') ? <span className="text-orange-400 font-bold">🌟 {task.substring(1)}</span> : task}
                                   </span>
                                 )}
@@ -1121,7 +1151,7 @@ export default function Home() {
                                 className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all shrink-0 text-sm ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-400" : "bg-white/5 border-white/10 opacity-40 hover:opacity-70"}`}>🌟</button>
                               <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })}
                                 onKeyDown={(e) => e.key === 'Enter' && addTask(time)}
-                                className="flex-1 bg-black/30 text-[11px] font-medium p-3 rounded-xl border border-white/8 outline-none placeholder:text-gray-600 focus:border-white/20 transition-colors" placeholder="習慣を入力..." />
+                                className={`flex-1 text-[11px] font-medium p-3 rounded-xl outline-none transition-colors ${tx} ${isLight ? "bg-black/6 border border-black/12 placeholder:text-gray-400 focus:border-black/25" : "bg-black/30 border border-white/8 placeholder:text-gray-600 focus:border-white/20"}`} placeholder="習慣を入力..." />
                             </div>
                             <button onClick={() => addTask(time)} className="w-full bg-white text-black py-2.5 rounded-xl font-black text-[10px] shadow-lg hover:bg-gray-100 transition-all active:scale-95">追加</button>
                           </div>
@@ -1298,7 +1328,7 @@ export default function Home() {
                   <div className="flex items-center justify-between mb-5 px-1">
                     <button onClick={prevDay} className="w-10 h-10 glass rounded-xl font-black flex items-center justify-center text-lg hover:bg-white/15 transition-all">‹</button>
                     <div className="text-center">
-                      <p className="text-lg font-black">{new Date(scheduleDate+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'})}</p>
+                      <p className={`text-lg font-black ${tx}`}>{new Date(scheduleDate+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'})}</p>
                       {isToday && <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">TODAY</p>}
                     </div>
                     <button onClick={nextDay} className="w-10 h-10 glass rounded-xl font-black flex items-center justify-center text-lg hover:bg-white/15 transition-all">›</button>
@@ -1307,14 +1337,14 @@ export default function Home() {
                   <div className="flex flex-col lg:flex-row gap-6 items-start">
                     {/* タイムライン */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-[9px] font-medium text-gray-600 text-center mb-3 tracking-wide">タップで追加 · ドラッグで移動 · 中央↕でリサイズ</p>
+                      <p className={`text-[9px] font-medium text-center mb-3 tracking-wide ${txMuted}`}>タップで追加 · ドラッグで移動 · 中央↕でリサイズ</p>
                       <div className="glass rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <div className="overflow-y-auto" style={{maxHeight:'78vh'}}>
                           <div className="relative select-none" style={{height:`${26*HOUR_HEIGHT}px`}} onClick={handleTimelineTap}>
                             {Array.from({length:27},(_,h)=>(
                               <div key={h} className="absolute w-full flex pointer-events-none" style={{top:`${h*HOUR_HEIGHT}px`,height:`${HOUR_HEIGHT}px`,borderTop:'1px solid rgba(255,255,255,0.04)'}}>
                                 <div className="w-16 shrink-0 flex items-start pt-1.5 justify-end pr-3">
-                                  <span className="text-[11px] font-bold text-gray-600 tabular-nums">{h < 24 ? h.toString().padStart(2,'0') : `+${h-24}`}:00</span>
+                                  <span className={`text-[11px] font-bold tabular-nums ${isLight ? "text-gray-500" : "text-gray-600"}`}>{h < 24 ? h.toString().padStart(2,'0') : `+${h-24}`}:00</span>
                                 </div>
                                 <div className="flex-1" style={{borderLeft:'1px solid rgba(255,255,255,0.04)'}}>
                                   <div style={{marginTop:'50%',borderTop:'1px solid rgba(255,255,255,0.02)'}}></div>
@@ -1365,7 +1395,7 @@ export default function Home() {
                         </div>
                       </div>
                       {visibleEvents.length > 0 && (
-                        <p className="text-center text-[10px] font-medium text-gray-600 mt-3">{visibleEvents.length} 件の予定</p>
+                        <p className={`text-center text-[10px] font-medium mt-3 ${txMuted}`}>{visibleEvents.length} 件の予定</p>
                       )}
                     </div>
 
@@ -1377,7 +1407,7 @@ export default function Home() {
                       </button>
                       {allRoutineTasks.length > 0 && (
                         <div className="glass rounded-2xl p-4">
-                          <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">ルーティンを追加</p>
+                          <p className={`text-[9px] font-black uppercase tracking-widest mb-3 ${txMuted}`}>ルーティンを追加</p>
                           <div className="flex flex-col gap-2">
                             {allRoutineTasks.map(({t,color},i) => (
                               <button key={i} onClick={() => addRoutineToSchedule(t,color)}
@@ -1391,7 +1421,7 @@ export default function Home() {
                       )}
                       {visibleEvents.length > 0 && (
                         <div className="glass rounded-2xl p-4">
-                          <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">本日の予定</p>
+                          <p className={`text-[9px] font-black uppercase tracking-widest mb-3 ${txMuted}`}>本日の予定</p>
                           <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-hide">
                             {visibleEvents.map(ev => (
                               <button key={ev.id} onClick={() => openEdit(ev)}
@@ -1413,7 +1443,7 @@ export default function Home() {
                   {/* イベントフォームモーダル */}
                   {showEventForm && (
                     <div className="fixed inset-0 z-[400] flex items-end justify-center bg-black/70 backdrop-blur-md p-4" onClick={()=>{setShowEventForm(false);setEditingEvent(null);}}>
-                      <div className="bg-zinc-900/95 backdrop-blur-2xl w-full max-w-md rounded-[2.5rem] border border-white/10 shadow-2xl mb-4 max-h-[92vh] overflow-y-auto scrollbar-hide" onClick={e=>e.stopPropagation()}>
+                      <div className={`backdrop-blur-2xl w-full max-w-md rounded-[2.5rem] border shadow-2xl mb-4 max-h-[92vh] overflow-y-auto scrollbar-hide ${isLight ? "bg-white/95 border-black/10 text-gray-900" : "bg-zinc-900/95 border-white/10 text-white"}`} onClick={e=>e.stopPropagation()}>
                         <div className="h-1.5 rounded-t-[2.5rem]" style={{backgroundColor: newEvent.color}}></div>
                         <div className="p-6">
                           <div className="flex justify-between items-center mb-5">
@@ -1422,7 +1452,7 @@ export default function Home() {
                           </div>
                           <div className="space-y-4">
                             <input value={newEvent.title} onChange={e=>setNewEvent({...newEvent,title:e.target.value})}
-                              className="w-full bg-black/40 text-base font-semibold px-4 py-3.5 rounded-2xl border border-white/10 outline-none placeholder:text-gray-600 focus:border-white/25 transition-colors"
+                              className={`w-full text-base font-semibold px-4 py-3.5 rounded-2xl border outline-none transition-colors ${tx} ${isLight ? "bg-black/5 border-black/12 placeholder:text-gray-400 focus:border-black/25" : "bg-black/40 border-white/10 placeholder:text-gray-600 focus:border-white/25"}`}
                               placeholder="予定のタイトル" autoFocus />
                             <div className="bg-black/30 rounded-2xl border border-white/8 overflow-hidden">
                               {[['開始','startHour','startMin'],['終了','endHour','endMin']].map(([label,hk,mk], li)=>(
@@ -1457,7 +1487,7 @@ export default function Home() {
                               <div className="grid grid-cols-2 gap-2">
                                 {REPEAT_OPTS.map(opt=>(
                                   <button key={opt.value} onClick={()=>setNewEvent({...newEvent,repeat:opt.value})}
-                                    className={`py-2.5 px-3 rounded-xl text-[12px] font-bold transition-all border ${newEvent.repeat===opt.value?'bg-white text-black border-transparent shadow-lg':'bg-white/5 text-gray-400 border-white/8 hover:bg-white/10'}`}>
+                                    className={`py-2.5 px-3 rounded-xl text-[12px] font-bold transition-all border ${newEvent.repeat===opt.value?'bg-white text-black border-transparent shadow-lg':isLight ? 'bg-black/5 text-gray-600 border-black/8 hover:bg-black/10' : 'bg-white/5 text-gray-400 border-white/8 hover:bg-white/10'}`}>
                                     {opt.label}
                                   </button>
                                 ))}
@@ -1489,7 +1519,7 @@ export default function Home() {
                               )}
                             </div>
                             <textarea value={newEvent.memo} onChange={e=>setNewEvent({...newEvent,memo:e.target.value})}
-                              className="w-full bg-black/40 text-sm font-medium px-4 py-3 rounded-2xl border border-white/10 outline-none resize-none h-16 placeholder:text-gray-600 focus:border-white/20 transition-colors"
+                              className={`w-full text-sm font-medium px-4 py-3 rounded-2xl border outline-none resize-none h-16 transition-colors ${tx} ${isLight ? "bg-black/5 border-black/10 placeholder:text-gray-400 focus:border-black/20" : "bg-black/40 border-white/10 placeholder:text-gray-600 focus:border-white/20"}`}
                               placeholder="メモ（任意）" />
                             <button onClick={addOrUpdateEvent}
                               className="w-full py-4 rounded-2xl font-black text-base shadow-xl text-white transition-all active:scale-95 hover:opacity-90"
@@ -1525,14 +1555,14 @@ export default function Home() {
                 <div className="w-full lg:w-96 shrink-0">
                   <button onClick={() => setIsLogOpen(v => !v)} className="flex items-center gap-3 mb-4 px-2 w-full group">
                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0"></div>
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.25em] flex-1 text-left">Achievement Log</p>
+                    <p className={`text-[10px] font-black uppercase tracking-[0.25em] flex-1 text-left ${txMuted}`}>Achievement Log</p>
                     <span className={`text-gray-600 font-black text-xs transition-transform duration-300 ${isLogOpen ? 'rotate-180' : ''}`}>▲</span>
                   </button>
                   {isLogOpen && (
                     <div className="glass rounded-[2.5rem] p-6 shadow-2xl">
                       <div className="space-y-4 max-h-[600px] overflow-y-auto scrollbar-hide">
                         {timeline.length === 0 && (
-                          <p className="text-center text-[10px] font-medium text-gray-600 py-8">まだログがありません</p>
+                          <p className={`text-center text-[10px] font-medium py-8 ${txMuted}`}>まだログがありません</p>
                         )}
                         {timeline.map((log) => (
                           <div key={log.id} className="flex gap-4 items-start bg-white/[0.03] p-4 rounded-2xl border border-white/5">
@@ -1546,10 +1576,10 @@ export default function Home() {
                             </div>
                             <div className="flex-1">
                               <div className="flex justify-between items-center mb-1">
-                                <span className="text-[10px] font-bold text-gray-400">{log.displayName} <span className="text-gray-600 font-medium ml-1">@{log.shortId}</span></span>
-                                <span className="text-[8px] text-gray-700 font-medium">{log.timestamp?.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className={`text-[10px] font-bold ${txMuted}`}>{log.displayName} <span className="text-gray-600 font-medium ml-1">@{log.shortId}</span></span>
+                                <span className={`text-[8px] font-medium ${isLight ? "text-gray-500" : "text-gray-700"}`}>{log.timestamp?.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
                               </div>
-                              <p className="text-xs font-semibold text-gray-200">{log.message}</p>
+                              <p className={`text-xs font-semibold ${tx}`}>{log.message}</p>
                             </div>
                           </div>
                         ))}
@@ -1561,11 +1591,11 @@ export default function Home() {
                 {/* Friends */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-4 px-2">
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.25em]">Friends</p>
+                    <p className={`text-[10px] font-black uppercase tracking-[0.25em] ${txMuted}`}>Friends</p>
                   </div>
                   <div className="glass p-5 rounded-[2.5rem] flex gap-2 mb-5">
                     <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value)}
-                      className="flex-1 bg-black/30 text-[11px] font-medium p-4 rounded-xl border border-white/8 outline-none focus:border-white/20 transition-colors" placeholder="友達の8桁IDを入力..." />
+                      className={`flex-1 text-[11px] font-medium p-4 rounded-xl border outline-none transition-colors ${tx} ${isLight ? "bg-black/6 border-black/12 focus:border-black/25" : "bg-black/30 border-white/8 focus:border-white/20"}`} placeholder="友達の8桁IDを入力..." />
                     <button onClick={async () => {
                       const id = friendIdInput.trim();
                       if (!id || id === myDisplayId) return;
@@ -1601,7 +1631,7 @@ export default function Home() {
                               {unread > 0 && <div className="absolute -bottom-1 -right-1 bg-red-600 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-black animate-pulse">{unread}</div>}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="text-sm font-black truncate">{f.displayName}</h3>
+                              <h3 className={`text-sm font-black truncate ${tx}`}>{f.displayName}</h3>
                               <div className="mt-1 flex flex-wrap gap-1.5 items-center">
                                 <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${friendRank.bg} ${friendRank.color}`}>RANK: {friendRank.name}</span>
                                 <span className={`text-[7px] font-black px-2 py-0.5 rounded-full ${friendAward.bg} ${friendAward.color}`}>称号: {friendAward.name}</span>
@@ -1665,30 +1695,30 @@ export default function Home() {
                       <div className="flex items-center justify-between mb-5 px-1">
                         <button onClick={prevDiaryDay} className="w-10 h-10 glass rounded-xl font-black flex items-center justify-center text-lg hover:bg-white/15 transition-all">‹</button>
                         <div className="text-center">
-                          <p className="text-lg font-black">{new Date(diaryDate+'T00:00:00').toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'})}</p>
+                          <p className={`text-lg font-black ${tx}`}>{new Date(diaryDate+'T00:00:00').toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'})}</p>
                           {diaryDate === today && <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">TODAY</p>}
                         </div>
                         <button onClick={nextDiaryDay} className="w-10 h-10 glass rounded-xl font-black flex items-center justify-center text-lg hover:bg-white/15 transition-all">›</button>
                       </div>
                       <div className="glass rounded-[2rem] p-5 mb-4">
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">今日の気分</p>
+                        <p className={`text-[9px] font-black uppercase tracking-widest mb-3 ${txMuted}`}>今日の気分</p>
                         <div className="flex gap-2 justify-around">
                           {MOODS.map(m => (
                             <button key={m.emoji} onClick={() => saveDiary(diaryInput, m.emoji)}
                               className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all border ${currentEntry.mood === m.emoji ? 'bg-white/20 border-white/30 scale-110' : 'bg-white/5 border-white/5 opacity-50 hover:opacity-80'}`}>
                               <span className="text-2xl">{m.emoji}</span>
-                              <span className="text-[8px] font-bold text-gray-400">{m.label}</span>
+                              <span className={`text-[8px] font-bold ${txMuted}`}>{m.label}</span>
                             </button>
                           ))}
                         </div>
                       </div>
                       <div className="glass rounded-[2rem] p-5">
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">📝 日記</p>
+                        <p className={`text-[9px] font-black uppercase tracking-widest mb-3 ${txMuted}`}>📝 日記</p>
                         <textarea
                           value={diaryInput}
                           onChange={e => setDiaryInput(e.target.value)}
                           rows={10}
-                          className="w-full bg-black/25 text-sm font-medium px-4 py-3 rounded-2xl border border-white/8 outline-none resize-none placeholder:text-gray-700 leading-relaxed focus:border-white/20 transition-colors"
+                          className={`w-full text-sm font-medium px-4 py-3 rounded-2xl border outline-none resize-none leading-relaxed transition-colors ${tx} ${isLight ? "bg-black/5 border-black/10 placeholder:text-gray-400 focus:border-black/20" : "bg-black/25 border-white/8 placeholder:text-gray-700 focus:border-white/20"}`}
                           placeholder={`${new Date(diaryDate+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric'})}の日記を書こう...`}
                         />
                         <div className="flex gap-2 mt-3">
@@ -1704,10 +1734,10 @@ export default function Home() {
 
                     {/* 右：日記一覧 */}
                     <div className="w-full lg:w-72 xl:w-80 shrink-0">
-                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4 px-1">過去の日記</p>
+                      <p className={`text-[9px] font-black uppercase tracking-widest mb-4 px-1 ${txMuted}`}>過去の日記</p>
                       {diaryDates.length === 0 ? (
                         <div className="glass rounded-[2rem] p-8 text-center">
-                          <p className="text-[10px] font-medium text-gray-600">まだ日記がありません</p>
+                          <p className={`text-[10px] font-medium ${txMuted}`}>まだ日記がありません</p>
                         </div>
                       ) : (
                         <div className="space-y-2 max-h-[70vh] overflow-y-auto scrollbar-hide pr-1">
@@ -1718,10 +1748,10 @@ export default function Home() {
                               <button key={date} onClick={() => setDiaryDate(date)}
                                 className={`w-full text-left p-4 rounded-2xl border transition-all ${isSelected ? 'bg-white/15 border-white/25' : 'bg-white/5 border-white/8 hover:bg-white/8'}`}>
                                 <div className="flex items-center justify-between mb-1">
-                                  <span className="text-[10px] font-bold text-gray-300">{new Date(date+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'})}</span>
+                                  <span className={`text-[10px] font-bold ${tx}`}>{new Date(date+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'})}</span>
                                   {entry.mood && <span className="text-lg">{entry.mood}</span>}
                                 </div>
-                                <p className="text-[10px] text-gray-500 font-medium line-clamp-2 leading-relaxed">{entry.text || "（内容なし）"}</p>
+                                <p className={`text-[10px] font-medium line-clamp-2 leading-relaxed ${txMuted}`}>{entry.text || "（内容なし）"}</p>
                               </button>
                             );
                           })}
@@ -1753,7 +1783,7 @@ export default function Home() {
             {userMessages.filter(m => m.chatId === [myDisplayId, selectedChatFriend.shortId].sort().join("_")).map((m, i) => (
               <div key={i} className={`flex ${m.fromId === myDisplayId ? 'justify-end' : 'justify-start'}`}>
                 <div className="group relative max-w-[75%]">
-                  <div className={`p-4 rounded-[1.8rem] text-sm font-semibold shadow-md ${m.fromId === myDisplayId ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-zinc-800 text-gray-200 rounded-tl-none'}`}>
+                  <div className={`p-4 rounded-[1.8rem] text-sm font-semibold shadow-md ${m.fromId === myDisplayId ? "bg-blue-600 text-white rounded-tr-none" : isLight ? "bg-black/15 text-gray-900 rounded-tl-none" : "bg-zinc-800 text-gray-200 rounded-tl-none"}`}>
                     {m.text}
                     <p className="text-[7px] mt-1 opacity-40">{m.time}</p>
                   </div>
@@ -1776,7 +1806,7 @@ export default function Home() {
               <input value={chatInput} onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                 placeholder="メッセージを入力..."
-                className="flex-1 bg-white/8 text-sm font-medium p-3 rounded-2xl border border-white/10 outline-none placeholder:text-gray-600 focus:border-white/20 transition-colors" />
+                className={`flex-1 text-sm font-medium p-3 rounded-2xl border outline-none transition-colors ${tx} ${isLight ? "bg-black/6 border-black/10 placeholder:text-gray-400 focus:border-black/20" : "bg-white/8 border-white/10 placeholder:text-gray-600 focus:border-white/20"}`} />
               <button onClick={() => sendMessage()} className="bg-white text-black px-5 rounded-2xl font-black text-[10px] shrink-0 hover:bg-gray-100 transition-all">送信</button>
             </div>
           </footer>
@@ -1786,15 +1816,15 @@ export default function Home() {
       {/* Settings モーダル */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setIsMenuOpen(false)}>
-          <div className="bg-zinc-900/95 backdrop-blur-2xl w-full max-w-md rounded-[3rem] border border-white/10 p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+          <div className={`backdrop-blur-2xl w-full max-w-md rounded-[3rem] border p-8 shadow-2xl relative ${isLight ? "bg-white/95 border-black/10 text-gray-900" : "bg-zinc-900/95 border-white/10 text-white"}`} onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setIsMenuOpen(false)} className="absolute top-6 right-6 w-8 h-8 rounded-full bg-white/8 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/15 transition-all">✕</button>
-            <h2 className="text-xl font-black italic mb-8 uppercase tracking-widest">Settings</h2>
+            <h2 className={`text-xl font-black italic mb-8 uppercase tracking-widest ${tx}`}>Settings</h2>
             <div className="space-y-8 max-h-[70vh] overflow-y-auto pr-2 scrollbar-hide">
               <section>
-                <p className="text-[9px] font-black text-gray-500 tracking-widest uppercase mb-3">Name</p>
+                <p className={`text-[9px] font-black tracking-widest uppercase mb-3 ${txMuted}`}>Name</p>
                 <div className="flex gap-2">
                   <input value={displayName} onChange={(e) => setDisplayName(e.target.value)}
-                    className="flex-1 bg-black/40 text-[11px] font-medium p-4 rounded-xl border border-white/8 outline-none focus:border-white/20 transition-colors" />
+                    className={`flex-1 text-[11px] font-medium p-4 rounded-xl border outline-none transition-colors ${tx} ${isLight ? "bg-black/6 border-black/12 focus:border-black/25" : "bg-black/40 border-white/8 focus:border-white/20"}`} />
                   <button onClick={async () => {
                     if (!user || !displayName.trim()) return;
                     await updateProfile(auth.currentUser, { displayName: displayName.trim() });
@@ -1804,15 +1834,15 @@ export default function Home() {
                 </div>
               </section>
               <section>
-                <p className="text-[9px] font-black text-gray-500 tracking-widest uppercase mb-3">Your ID</p>
+                <p className={`text-[9px] font-black tracking-widest uppercase mb-3 ${txMuted}`}>Your ID</p>
                 <div className="bg-black/40 p-4 rounded-2xl flex items-center justify-between border border-white/8">
-                  <span className="font-mono font-black tracking-wider text-blue-400">{myDisplayId}</span>
+                  <span className="font-mono font-black tracking-wider text-blue-500">{myDisplayId}</span>
                   <button onClick={() => { navigator.clipboard.writeText(myDisplayId); showToast("IDをコピーしました"); }}
                     className="text-[10px] font-black bg-white/8 px-3 py-1 rounded-lg hover:bg-white/15 transition-all">COPY</button>
                 </div>
               </section>
               <section>
-                <p className="text-[9px] font-black text-gray-500 tracking-widest uppercase mb-3">Icon</p>
+                <p className={`text-[9px] font-black tracking-widest uppercase mb-3 ${txMuted}`}>Icon</p>
                 <div className="flex items-center gap-4 mb-5">
                   <div className={`w-16 h-16 rounded-full ${CHARACTERS[charIndex].color} flex items-center justify-center overflow-hidden shadow-lg shrink-0`}>
                     {photoURL ? <img src={photoURL} alt="icon" className="w-full h-full object-cover" />
@@ -1820,24 +1850,24 @@ export default function Home() {
                       : <div className="flex gap-1.5"><div className="w-2 h-2 bg-white rounded-full" /><div className="w-2 h-2 bg-white rounded-full" /></div>}
                   </div>
                   <div className="flex-1">
-                    <p className="text-[9px] font-black text-gray-500 mb-2 uppercase tracking-widest">現在のアイコン</p>
+                    <p className={`text-[9px] font-black mb-2 uppercase tracking-widest ${txMuted}`}>現在のアイコン</p>
                     {(photoURL || emojiIcon) && (
                       <button onClick={() => { setPhotoURL(""); setEmojiIcon(""); saveToFirebase({ photoURL: "", emojiIcon: "" }); showToast("リセットしました"); }}
                         className="text-[8px] font-black bg-red-500/15 text-red-400 px-3 py-1 rounded-lg hover:bg-red-500/25 transition-all">リセット</button>
                     )}
                   </div>
                 </div>
-                <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2">📷 写真を使う</p>
+                <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${txMuted}`}>📷 写真を使う</p>
                 <input ref={iconFileRef} type="file" accept="image/*" className="hidden" onChange={handleIconPhotoUpload} />
-                <button onClick={() => iconFileRef.current?.click()} className="w-full glass border border-white/10 py-3 rounded-xl font-black text-[10px] mb-5 hover:bg-white hover:text-black transition-all">カメラロールから選択</button>
-                <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2">😊 絵文字アイコン</p>
+                <button onClick={() => iconFileRef.current?.click()} className={`w-full glass py-3 rounded-xl font-black text-[10px] mb-5 transition-all ${tx} ${isLight ? "border border-black/12 hover:bg-black/10" : "border border-white/10 hover:bg-white hover:text-black"}`}>カメラロールから選択</button>
+                <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${txMuted}`}>😊 絵文字アイコン</p>
                 <div className="grid grid-cols-8 gap-1.5 mb-5">
                   {EMOJI_ICONS.map((emoji) => (
                     <button key={emoji} onClick={() => { setEmojiIcon(emoji); setPhotoURL(""); saveToFirebase({ emojiIcon: emoji, photoURL: "" }); showToast("アイコンを変更しました"); }}
                       className={`aspect-square rounded-xl text-lg flex items-center justify-center transition-all ${emojiIcon === emoji && !photoURL ? 'bg-white scale-110 shadow-lg' : 'bg-white/5 hover:bg-white/15'}`}>{emoji}</button>
                   ))}
                 </div>
-                <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2">🎨 カラーキャラクター</p>
+                <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${txMuted}`}>🎨 カラーキャラクター</p>
                 <div className="grid grid-cols-6 gap-2">
                   {CHARACTERS.map((c, i) => (
                     <button key={c.id} onClick={() => { setCharIndex(i); setPhotoURL(""); setEmojiIcon(""); saveToFirebase({ charIndex: i, photoURL: "", emojiIcon: "" }); }}
@@ -1846,8 +1876,8 @@ export default function Home() {
                 </div>
               </section>
               <section>
-                <p className="text-[9px] font-black text-gray-500 tracking-widest uppercase mb-2">Theme</p>
-                <p className="text-[9px] font-medium text-gray-400 mb-3 h-4">{hoveredTheme !== null ? THEMES[hoveredTheme].name : themeIndex !== null ? THEMES[themeIndex].name : ""}</p>
+                <p className={`text-[9px] font-black tracking-widest uppercase mb-2 ${txMuted}`}>Theme</p>
+                <p className={`text-[9px] font-medium mb-3 h-4 ${txMuted}`}>{hoveredTheme !== null ? THEMES[hoveredTheme].name : themeIndex !== null ? THEMES[themeIndex].name : ""}</p>
                 <div className="grid grid-cols-8 gap-2">
                   {THEMES.map((t, i) => (
                     <button key={i}
