@@ -49,27 +49,22 @@ const DAILY_AWARDS = [
 ];
 
 const THEMES = [
-  // ── Red ──
   { name: "Passion",      color: "#ef4444", bg: "bg-red-500",      title: "text-white" },
   { name: "Soft Red",     color: "#fca5a5", bg: "bg-red-300",      title: "text-red-950" },
   { name: "Rose",         color: "#fb7185", bg: "bg-rose-400",     title: "text-white" },
   { name: "Deep Red",     color: "#7f1d1d", bg: "bg-red-950",      title: "text-white" },
-  // ── Pink ──
   { name: "Pink",         color: "#ec4899", bg: "bg-pink-500",     title: "text-white" },
   { name: "Blush",        color: "#fbcfe8", bg: "bg-pink-200",     title: "text-pink-950" },
   { name: "Hot Pink",     color: "#db2777", bg: "bg-pink-600",     title: "text-white" },
   { name: "Deep Pink",    color: "#831843", bg: "bg-pink-950",     title: "text-white" },
-  // ── Orange ──
   { name: "Sun",          color: "#f97316", bg: "bg-orange-500",   title: "text-white" },
   { name: "Apricot",      color: "#fdba74", bg: "bg-orange-300",   title: "text-orange-950" },
   { name: "Deep Orange",  color: "#9a3412", bg: "bg-orange-900",   title: "text-white" },
   { name: "Amber",        color: "#f59e0b", bg: "bg-amber-500",    title: "text-white" },
-  // ── Yellow ──
   { name: "Lemon",        color: "#facc15", bg: "bg-yellow-400",   title: "text-yellow-950" },
   { name: "Cream",        color: "#fef9c3", bg: "bg-yellow-100",   title: "text-yellow-950" },
   { name: "Gold",         color: "#ca8a04", bg: "bg-yellow-600",   title: "text-white" },
   { name: "Honey",        color: "#d97706", bg: "bg-amber-600",    title: "text-white" },
-  // ── Green ──
   { name: "Emerald",      color: "#10b981", bg: "bg-emerald-500",  title: "text-white" },
   { name: "Mint",         color: "#a7f3d0", bg: "bg-emerald-200",  title: "text-emerald-950" },
   { name: "Forest",       color: "#064e3b", bg: "bg-emerald-950",  title: "text-white" },
@@ -78,14 +73,12 @@ const THEMES = [
   { name: "Deep Green",   color: "#14532d", bg: "bg-green-950",    title: "text-white" },
   { name: "Teal",         color: "#14b8a6", bg: "bg-teal-500",     title: "text-white" },
   { name: "Cyan",         color: "#06b6d4", bg: "bg-cyan-500",     title: "text-white" },
-  // ── Blue ──
   { name: "Sky Blue",     color: "#3b82f6", bg: "bg-blue-500",     title: "text-white" },
   { name: "Pale Blue",    color: "#dbeafe", bg: "bg-blue-100",     title: "text-blue-950" },
   { name: "Ocean",        color: "#1e3a8a", bg: "bg-blue-900",     title: "text-white" },
   { name: "Baby Blue",    color: "#7dd3fc", bg: "bg-sky-300",      title: "text-sky-950" },
   { name: "Deep Sky",     color: "#0ea5e9", bg: "bg-sky-500",      title: "text-white" },
   { name: "Navy",         color: "#1e40af", bg: "bg-blue-800",     title: "text-white" },
-  // ── Indigo / Purple ──
   { name: "Indigo",       color: "#6366f1", bg: "bg-indigo-500",   title: "text-white" },
   { name: "Lavender",     color: "#c7d2fe", bg: "bg-indigo-200",   title: "text-indigo-950" },
   { name: "Midnight",     color: "#312e81", bg: "bg-indigo-950",   title: "text-white" },
@@ -95,7 +88,6 @@ const THEMES = [
   { name: "Violet",       color: "#8b5cf6", bg: "bg-violet-500",   title: "text-white" },
   { name: "Mauve",        color: "#ddd6fe", bg: "bg-violet-200",   title: "text-violet-950" },
   { name: "Fuchsia",      color: "#d946ef", bg: "bg-fuchsia-500",  title: "text-white" },
-  // ── Neutral ──
   { name: "Ash",          color: "#6b7280", bg: "bg-gray-500",     title: "text-white" },
   { name: "Silver",       color: "#e5e7eb", bg: "bg-gray-200",     title: "text-gray-950" },
   { name: "Charcoal",     color: "#374151", bg: "bg-gray-700",     title: "text-white" },
@@ -106,7 +98,6 @@ const THEMES = [
   { name: "Deep Slate",   color: "#0f172a", bg: "bg-slate-950",    title: "text-white" },
 ];
 
-// --- アラーム音リスト ---
 const ALARM_SOUNDS = [
   { id: "bell",     label: "🔔 ベル",       url: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" },
   { id: "digital",  label: "⏰ デジタル",    url: "https://assets.mixkit.co/active_storage/sfx/988/988-preview.mp3" },
@@ -116,43 +107,16 @@ const ALARM_SOUNDS = [
   { id: "gentle",   label: "🎠 オルゴール",  url: "https://soundbible.com/grab.php?id=1619&type=mp3" },
 ];
 
-// --- 目標入力フィールド（独立コンポーネント：再レンダリングで消えない） ---
-function GoalInputField({ gkey, placeholder, multiline, currentValue, onSave, onCancel }) {
-  const [localVal, setLocalVal] = React.useState(currentValue || "");
-  const handleSave = () => onSave(gkey, localVal);
-  const commonCls = "flex-1 bg-white/10 text-sm font-bold px-3 py-2 rounded-xl border border-white/10 outline-none placeholder:text-gray-600";
-  return (
-    <div className="flex gap-2 mt-1 items-start">
-      {multiline ? (
-        <textarea
-          autoFocus
-          value={localVal}
-          onChange={e => setLocalVal(e.target.value)}
-          rows={2}
-          className={commonCls + " resize-none w-full"}
-          placeholder={placeholder}
-          onKeyDown={e => { if (e.key === 'Escape') onCancel(); }}
-        />
-      ) : (
-        <input
-          autoFocus
-          value={localVal}
-          onChange={e => setLocalVal(e.target.value)}
-          className={commonCls}
-          placeholder={placeholder}
-          onKeyDown={e => {
-            if (e.key === 'Enter') handleSave();
-            if (e.key === 'Escape') onCancel();
-          }}
-        />
-      )}
-      <button onMouseDown={e => { e.preventDefault(); handleSave(); }}
-        className="bg-white text-black px-3 py-1.5 rounded-xl font-black text-[10px] shrink-0">保存</button>
-      <button onMouseDown={e => { e.preventDefault(); onCancel(); }}
-        className="bg-white/10 text-gray-400 px-3 py-1.5 rounded-xl font-black text-[10px] shrink-0">✕</button>
-    </div>
-  );
-}
+// --- 自己投資目標カテゴリ ---
+const SELF_INVEST_CATEGORIES = [
+  { key: "health",      label: "健康",       icon: "💪", color: "#10b981" },
+  { key: "relations",   label: "人間関係",   icon: "🤝", color: "#3b82f6" },
+  { key: "knowledge",   label: "情報と知識", icon: "📚", color: "#f59e0b" },
+  { key: "skills",      label: "スキルアップ",icon: "🎯", color: "#8b5cf6" },
+  { key: "experience",  label: "新しい体験", icon: "✨", color: "#ec4899" },
+  { key: "beauty",      label: "美容",       icon: "🌸", color: "#fb7185" },
+  { key: "time",        label: "時間",       icon: "⏱️", color: "#06b6d4" },
+];
 
 const YEAR_SUBS = [
   { key: "yearMotto",     label: "モットー",  icon: "✨", desc: "今年の総合的な目標" },
@@ -162,29 +126,113 @@ const YEAR_SUBS = [
   { key: "yearPhysical",  label: "身体的",    icon: "💪", desc: "健康・運動・体" },
 ];
 
-// --- 目標行（GoalSectionの外に独立させることで再レンダリングによるstate消滅を防ぐ） ---
+// --- 目標入力フィールド ---
+function GoalInputField({ gkey, placeholder, multiline, currentValue, onSave, onCancel }) {
+  const [localVal, setLocalVal] = React.useState(currentValue || "");
+  const handleSave = () => onSave(gkey, localVal);
+  const commonCls = "flex-1 bg-white/10 text-sm font-semibold px-3 py-2 rounded-xl border border-white/15 outline-none placeholder:text-gray-500 focus:border-white/30 transition-colors";
+  return (
+    <div className="flex gap-2 mt-1 items-start">
+      {multiline ? (
+        <textarea autoFocus value={localVal} onChange={e => setLocalVal(e.target.value)} rows={2}
+          className={commonCls + " resize-none w-full"} placeholder={placeholder}
+          onKeyDown={e => { if (e.key === 'Escape') onCancel(); }} />
+      ) : (
+        <input autoFocus value={localVal} onChange={e => setLocalVal(e.target.value)}
+          className={commonCls} placeholder={placeholder}
+          onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') onCancel(); }} />
+      )}
+      <button onMouseDown={e => { e.preventDefault(); handleSave(); }}
+        className="bg-white text-black px-3 py-1.5 rounded-xl font-bold text-[10px] shrink-0 hover:bg-gray-100 transition-colors">保存</button>
+      <button onMouseDown={e => { e.preventDefault(); onCancel(); }}
+        className="bg-white/10 text-gray-400 px-3 py-1.5 rounded-xl font-bold text-[10px] shrink-0 hover:bg-white/20 transition-colors">✕</button>
+    </div>
+  );
+}
+
 function GoalRow({ gkey, placeholder, multiline, goals, editingGoal, setEditingGoal, onSave }) {
   const val = goals[gkey] || "";
   if (editingGoal === gkey) {
-    return <GoalInputField
-      gkey={gkey}
-      placeholder={placeholder}
-      multiline={multiline}
-      currentValue={val}
-      onSave={onSave}
-      onCancel={() => setEditingGoal(null)}
-    />;
+    return <GoalInputField gkey={gkey} placeholder={placeholder} multiline={multiline}
+      currentValue={val} onSave={onSave} onCancel={() => setEditingGoal(null)} />;
   }
   return (
     <p onClick={() => setEditingGoal(gkey)}
-      className={`text-sm font-bold leading-snug mt-1 cursor-text rounded-lg px-2 py-1 -mx-2 transition-colors hover:bg-white/5 ${val ? 'text-white' : 'text-gray-700 italic'}`}>
+      className={`text-sm font-medium leading-snug mt-1 cursor-text rounded-lg px-2 py-1.5 -mx-2 transition-all hover:bg-white/8 ${val ? 'text-white/90' : 'text-gray-600 italic'}`}>
       {val || `タップして${placeholder}`}
     </p>
   );
 }
 
-// --- 目標セクション（独立コンポーネント） ---
+// --- 自己投資目標セクション ---
+function SelfInvestSection({ goals, editingGoal, setEditingGoal, saveToFirebase, setGoals }) {
+  const [activePeriod, setActivePeriod] = React.useState("year");
+
+  const saveGoal = (key, value) => {
+    const next = { ...goals, [key]: value };
+    setGoals(next);
+    saveToFirebase({ goals: next });
+    setEditingGoal(null);
+  };
+
+  const periodConfig = {
+    year:  { label: "今年",  suffix: "Year",  grad: "from-violet-500 to-indigo-500" },
+    month: { label: "今月",  suffix: "Month", grad: "from-blue-500 to-cyan-500" },
+    week:  { label: "今週",  suffix: "Week",  grad: "from-emerald-500 to-teal-500" },
+  };
+
+  return (
+    <div className="rounded-[2rem] border border-white/10 overflow-hidden shadow-xl" style={{background:'rgba(255,255,255,0.04)'}}>
+      {/* ヘッダー */}
+      <div className="px-5 pt-5 pb-3">
+        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">🌱 SELF INVESTMENT</p>
+        {/* 期間タブ */}
+        <div className="flex gap-1 bg-black/30 p-1 rounded-xl">
+          {Object.entries(periodConfig).map(([k, v]) => (
+            <button key={k} onClick={() => setActivePeriod(k)}
+              className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all ${activePeriod === k ? 'bg-white text-black shadow-md' : 'text-gray-500 hover:text-gray-300'}`}>
+              {v.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* カテゴリ一覧 */}
+      <div className="px-4 pb-5 space-y-2.5">
+        {SELF_INVEST_CATEGORIES.map(({ key, label, icon, color }) => {
+          const goalKey = `si_${key}_${activePeriod}`;
+          const val = goals[goalKey] || "";
+          const isEditing = editingGoal === goalKey;
+          return (
+            <div key={goalKey} className="rounded-xl border border-white/8 overflow-hidden transition-all hover:border-white/15"
+              style={{background:`${color}10`}}>
+              <div className="px-3 py-2.5">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-sm">{icon}</span>
+                  <span className="text-[11px] font-black" style={{color}}>{label}</span>
+                  {val && <span className="ml-auto text-[8px] text-green-400 font-black">✓</span>}
+                </div>
+                {isEditing ? (
+                  <GoalInputField gkey={goalKey} placeholder={`${label}の目標`} multiline={false}
+                    currentValue={val} onSave={saveGoal} onCancel={() => setEditingGoal(null)} />
+                ) : (
+                  <p onClick={() => setEditingGoal(goalKey)}
+                    className={`text-[12px] leading-snug cursor-text rounded px-1 py-0.5 -mx-1 transition-all hover:bg-white/5 ${val ? 'text-white/80 font-medium' : 'text-gray-600 italic'}`}>
+                    {val || "タップして入力..."}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// --- 目標セクション ---
 function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, setYearGoalOpen, saveToFirebase, setGoals }) {
+  const [goalTab, setGoalTab] = React.useState("routine"); // "routine" | "invest"
   const yn = now.getFullYear();
   const mn = now.getMonth();
   const dn = now.getDate();
@@ -205,55 +253,76 @@ function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, se
   };
 
   return (
-    <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-6 shadow-xl space-y-3">
-      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">MY GOALS</p>
+    <div className="rounded-[2.5rem] border border-white/10 p-5 shadow-xl space-y-4" style={{background:'rgba(255,255,255,0.05)'}}>
+      <div className="flex items-center justify-between">
+        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">MY GOALS</p>
+      </div>
 
-      {/* 今年の目標 */}
-      <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
-        <div className="h-0.5 bg-gradient-to-r from-yellow-400 to-orange-400"></div>
-        <button onClick={() => setYearGoalOpen(v => !v)}
-          className="w-full flex items-center justify-between px-4 py-3">
-          <div className="text-left">
-            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">🏆 今年の目標</span>
-            <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{yearStart} 〜 {yearEnd}</p>
-          </div>
-          <span className={`text-gray-600 font-black text-xs transition-transform duration-300 ${yearGoalOpen ? 'rotate-180' : ''}`}>▲</span>
+      {/* メインタブ */}
+      <div className="flex gap-1 bg-black/30 p-1 rounded-2xl">
+        <button onClick={() => setGoalTab("routine")}
+          className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${goalTab === "routine" ? "bg-white text-black shadow-md" : "text-gray-500 hover:text-gray-300"}`}>
+          🏆 目標
         </button>
-        {yearGoalOpen && (
-          <div className="px-4 pb-4 space-y-4 border-t border-white/5 pt-3">
-            {YEAR_SUBS.map(({ key, label, icon, desc }) => (
-              <div key={key}>
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-base">{icon}</span>
-                  <span className="text-[11px] font-black text-gray-300">{label}</span>
-                  <span className="text-[9px] text-gray-600 font-bold">— {desc}</span>
-                </div>
-                <GoalRow gkey={key} placeholder={`${label}の目標を入力`} multiline={key === "yearMotto"} goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal} onSave={saveGoal} />
+        <button onClick={() => setGoalTab("invest")}
+          className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${goalTab === "invest" ? "bg-white text-black shadow-md" : "text-gray-500 hover:text-gray-300"}`}>
+          🌱 自己投資
+        </button>
+      </div>
+
+      {goalTab === "routine" ? (
+        <div className="space-y-3">
+          {/* 今年の目標 */}
+          <div className="rounded-2xl border border-white/8 overflow-hidden" style={{background:'rgba(0,0,0,0.2)'}}>
+            <div className="h-0.5 bg-gradient-to-r from-yellow-400 to-orange-400"></div>
+            <button onClick={() => setYearGoalOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-3">
+              <div className="text-left">
+                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">🏆 今年の目標</span>
+                <p className="text-[8px] font-semibold text-gray-600 mt-0.5 tabular-nums">{yearStart} 〜 {yearEnd}</p>
               </div>
-            ))}
+              <span className={`text-gray-600 font-black text-xs transition-transform duration-300 ${yearGoalOpen ? 'rotate-180' : ''}`}>▲</span>
+            </button>
+            {yearGoalOpen && (
+              <div className="px-4 pb-4 space-y-4 border-t border-white/5 pt-3">
+                {YEAR_SUBS.map(({ key, label, icon, desc }) => (
+                  <div key={key}>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="text-base">{icon}</span>
+                      <span className="text-[11px] font-black text-gray-300">{label}</span>
+                      <span className="text-[9px] text-gray-600 font-medium">— {desc}</span>
+                    </div>
+                    <GoalRow gkey={key} placeholder={`${label}の目標を入力`} multiline={key === "yearMotto"}
+                      goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal} onSave={saveGoal} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* 今月の目標 */}
-      <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
-        <div className="h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400"></div>
-        <div className="px-4 py-3">
-          <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">📅 今月の目標</span>
-          <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{monthStart} 〜 {monthEnd}</p>
-          <GoalRow gkey="month" placeholder="今月の目標を入力" goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal} onSave={saveGoal} />
-        </div>
-      </div>
+          {/* 今月の目標 */}
+          <div className="rounded-2xl border border-white/8 overflow-hidden" style={{background:'rgba(0,0,0,0.2)'}}>
+            <div className="h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400"></div>
+            <div className="px-4 py-3">
+              <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">📅 今月の目標</span>
+              <p className="text-[8px] font-semibold text-gray-600 mt-0.5 tabular-nums">{monthStart} 〜 {monthEnd}</p>
+              <GoalRow gkey="month" placeholder="今月の目標を入力" goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal} onSave={saveGoal} />
+            </div>
+          </div>
 
-      {/* 今週の目標 */}
-      <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
-        <div className="h-0.5 bg-gradient-to-r from-emerald-400 to-teal-400"></div>
-        <div className="px-4 py-3">
-          <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">⚡ 今週の目標</span>
-          <p className="text-[8px] font-bold text-gray-600 mt-0.5 tabular-nums">{weekStart} 〜 {weekEnd}</p>
-          <GoalRow gkey="week" placeholder="今週の目標を入力" goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal} onSave={saveGoal} />
+          {/* 今週の目標 */}
+          <div className="rounded-2xl border border-white/8 overflow-hidden" style={{background:'rgba(0,0,0,0.2)'}}>
+            <div className="h-0.5 bg-gradient-to-r from-emerald-400 to-teal-400"></div>
+            <div className="px-4 py-3">
+              <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">⚡ 今週の目標</span>
+              <p className="text-[8px] font-semibold text-gray-600 mt-0.5 tabular-nums">{weekStart} 〜 {weekEnd}</p>
+              <GoalRow gkey="week" placeholder="今週の目標を入力" goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal} onSave={saveGoal} />
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <SelfInvestSection goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal}
+          saveToFirebase={saveToFirebase} setGoals={setGoals} />
+      )}
     </div>
   );
 }
@@ -289,21 +358,16 @@ export default function Home() {
   const [photoURL, setPhotoURL] = useState("");
   const [emojiIcon, setEmojiIcon] = useState("");
   const [showTutorial, setShowTutorial] = useState(false);
-  // ⑩ トースト
   const [toast, setToast] = useState(null);
-  // ② チャット入力
   const [chatInput, setChatInput] = useState("");
-  // ⑦ テーマ名ホバー
   const [hoveredTheme, setHoveredTheme] = useState(null);
-  // スケジュール
   const [scheduleEvents, setScheduleEvents] = useState([]);
   const [scheduleDate, setScheduleDate] = useState(new Date().toISOString().split('T')[0]);
   const [showEventForm, setShowEventForm] = useState(false);
   const [newEvent, setNewEvent] = useState({ title: "", startHour: "09", startMin: "00", endHour: "10", endMin: "00", color: "#3b82f6", memo: "", repeat: "none", repeatDays: [], repeatEnd: "" });
   const [editingEvent, setEditingEvent] = useState(null);
-  // 目標
   const [goals, setGoals] = useState({ year: "", month: "", week: "", yearMotto: "", yearSpiritual: "", yearIntellect: "", yearSocial: "", yearPhysical: "" });
-  const [editingGoal, setEditingGoal] = useState(null); // "year"|"month"|"week"|null
+  const [editingGoal, setEditingGoal] = useState(null);
   const [isLogOpen, setIsLogOpen] = useState(true);
   const [yearGoalOpen, setYearGoalOpen] = useState(true);
   const [alarmSound, setAlarmSound] = useState("bell");
@@ -317,7 +381,6 @@ export default function Home() {
   const chatBottomRef = useRef(null);
   const iconFileRef = useRef(null);
 
-  // ⑩ トースト表示ヘルパー
   const showToast = (msg, type = "ok") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 2500);
@@ -332,7 +395,6 @@ export default function Home() {
   const completedTasks = Object.values(checks).filter(Boolean).length;
   const percent = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
 
-  // ⑧ 時間帯別進捗
   const timeProgress = useMemo(() => {
     return (["morning", "afternoon", "night"]).map(t => {
       const total = tasks[t].length;
@@ -370,7 +432,6 @@ export default function Home() {
     return Array.from(new Set(all)).filter(t => t !== "");
   }, [tasks]);
 
-  // ③ タスク0件のときの専用メッセージ
   const characterMessage = useMemo(() => {
     if (totalTasks === 0) return "まずは朝・昼・夜にルーティンを追加してみよう！";
     if (percent === 0) return "さあ、これから一緒に頑張っていきましょう。";
@@ -381,7 +442,6 @@ export default function Home() {
     return "パーフェクト！最高の結果を出せましたね。";
   }, [percent, totalTasks]);
 
-  // ① 継続記録：日付連続チェック
   const streakCount = useMemo(() => {
     let count = 0;
     const sortedHistory = [...history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -514,7 +574,6 @@ export default function Home() {
             if (d.diaryEntries) setDiaryEntries(d.diaryEntries);
             if (!d.hasSeenTutorial) setShowTutorial(true);
           } else {
-            // ── 新規ユーザー：サンプルデータをセット ──
             const sampleTasks = {
               morning: ["起床・水を飲む", "ストレッチ10分", "朝食を食べる", "今日の予定を確認"],
               afternoon: ["昼休みに5分散歩", "タスクの進捗確認", "水分補給"],
@@ -532,11 +591,7 @@ export default function Home() {
             };
             const todayStr = new Date().toISOString().split('T')[0];
             const sampleDiary = {
-              [todayStr]: {
-                text: "今日からROUTINE MASTERを始めました！\n毎日のルーティンを記録して、少しずつ成長していきたいと思います。\nまずは朝のルーティンから習慣にしていきます💪",
-                mood: "😊",
-                updatedAt: Date.now()
-              }
+              [todayStr]: { text: "今日からROUTINE MASTERを始めました！", mood: "😊", updatedAt: Date.now() }
             };
             const sampleScheduleEvents = [
               { id: "sample1", date: todayStr, title: "朝のルーティン", startHour: "07", startMin: "00", endHour: "07", endMin: "30", color: "#3b82f6", memo: "起床・ストレッチ・朝食", repeat: "daily", repeatDays: [], repeatEnd: "" },
@@ -552,7 +607,6 @@ export default function Home() {
           }
           setLoading(false);
         });
-        // オンライン：ログイン直後に即時更新
         updateDoc(doc(db, "users", u.uid), { lastActive: Date.now() }).catch(() => {});
         const activeInterval = setInterval(() => {
           updateDoc(doc(db, "users", u.uid), { lastActive: Date.now() });
@@ -586,7 +640,6 @@ export default function Home() {
     const addSeconds = minutes * 60;
     setTimeLeft(prev => {
       const next = prev + addSeconds;
-      // タイマーが動いていない（設定中）ときは initial も更新
       if (!isTimerActive) setInitialTimerSeconds(next);
       return next;
     });
@@ -658,7 +711,6 @@ export default function Home() {
   };
   const onDragEnd = () => { saveToFirebase({ tasks }); setDraggedItem(null); };
 
-  // ② チャット送信：prompt廃止
   const sendMessage = async (customText = null) => {
     if (!selectedChatFriend) return;
     const msgText = customText || chatInput.trim();
@@ -704,143 +756,191 @@ export default function Home() {
   );
 
   if (!user) return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 bg-gray-950">
-      <h1 className="text-7xl font-black italic tracking-tighter text-center">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center px-6 bg-gray-950 relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl"></div>
+      </div>
+      <h1 className="text-7xl font-black italic tracking-tighter text-center relative z-10">
         <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-500 via-yellow-400 to-blue-500">ROUTINE MASTER</span>
       </h1>
-      <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="mt-12 bg-white text-black px-12 py-5 rounded-full font-black">Googleでログイン</button>
+      <p className="mt-4 text-gray-500 text-sm font-medium relative z-10">習慣を、力に変えよう。</p>
+      <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())}
+        className="mt-12 bg-white text-black px-12 py-5 rounded-full font-black hover:bg-gray-100 transition-all active:scale-95 shadow-2xl relative z-10">
+        Googleでログイン
+      </button>
     </div>
   );
 
+  const NAV_TABS = [
+    { id: "main", label: "ホーム", icon: "⚡" },
+    { id: "schedule", label: "スケジュール", icon: "📅" },
+    { id: "social", label: "交流", icon: "👥" },
+    { id: "diary", label: "日記", icon: "📝" },
+  ];
+
   return (
-    <div className={`min-h-screen text-white transition-all duration-700 ${currentTheme.bg} flex overflow-hidden font-sans`}>
+    <div className={`min-h-screen text-white transition-all duration-700 ${currentTheme.bg} flex overflow-hidden`}>
       <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        * { font-family: 'Inter', sans-serif; }
         @keyframes bounce-rich{0%,100%{transform:translateY(0) scale(1,1);}50%{transform:translateY(-15px) scale(0.95,1.05);}}
         @keyframes blink{0%,90%,100%{transform:scaleY(1);}95%{transform:scaleY(0.1);}}
         @keyframes pulse-gold{0%{box-shadow:0 0 0 0 rgba(234,179,8,.4);}70%{box-shadow:0 0 0 20px rgba(234,179,8,0);}100%{box-shadow:0 0 0 0 rgba(234,179,8,0);}}
         @keyframes toast-in{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
         .animate-bounce-rich{animation:bounce-rich 2s infinite ease-in-out;}
         .animate-blink{animation:blink 4s infinite;}
         .animate-gold{animation:pulse-gold 1.5s infinite;}
         .animate-toast{animation:toast-in .3s ease;}
         .scrollbar-hide::-webkit-scrollbar{display:none;}
+        .glass{background:rgba(255,255,255,0.06);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);}
+        .glass-dark{background:rgba(0,0,0,0.3);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);}
+        .task-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);transition:all 0.2s;}
+        .task-card:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.18);}
+        input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);}
+        select option{background:#1a1a2e;color:white;}
       `}</style>
 
-      {/* ⑩ トースト通知 */}
+      {/* トースト */}
       {toast && (
-        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[900] px-6 py-3 rounded-2xl font-black text-[11px] shadow-2xl animate-toast pointer-events-none ${toast.type === "err" ? "bg-red-500 text-white" : "bg-white text-black"}`}>
+        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[900] px-6 py-3 rounded-2xl font-bold text-[12px] shadow-2xl animate-toast pointer-events-none backdrop-blur-xl border ${toast.type === "err" ? "bg-red-500/90 text-white border-red-400/30" : "bg-white/95 text-black border-white/20"}`}>
           {toast.msg}
         </div>
       )}
 
-      {isSidebarOpen && <div className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)}></div>}
+      {isSidebarOpen && <div className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)}></div>}
 
       {/* サイドバー */}
-      <aside className={`fixed left-0 top-0 h-full w-80 z-[100] transition-transform duration-500 bg-black/40 backdrop-blur-2xl border-r border-white/10 p-6 flex flex-col ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="flex justify-between items-center mb-10">
-          <p className="text-[10px] font-black tracking-widest text-gray-500">MENU</p>
-          <button onClick={() => setIsSidebarOpen(false)}>✕</button>
+      <aside className={`fixed left-0 top-0 h-full w-80 z-[100] transition-all duration-500 ease-out glass-dark border-r border-white/8 p-6 flex flex-col ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="flex justify-between items-center mb-8">
+          <p className="text-[10px] font-black tracking-[0.3em] text-gray-500 uppercase">MENU</p>
+          <button onClick={() => setIsSidebarOpen(false)} className="w-8 h-8 rounded-full bg-white/8 flex items-center justify-center text-gray-400 hover:bg-white/15 hover:text-white transition-all text-sm">✕</button>
         </div>
-        <section className="bg-white/5 p-4 rounded-[2rem] border border-white/10 mb-4 text-center">
-          <div className="flex items-center justify-between mb-4">
-            <button onClick={() => changeMonth(-1)}>←</button>
-            <p className="text-[10px] font-black opacity-50">{currentCalendarDate.getFullYear()}年 {currentCalendarDate.getMonth() + 1}月</p>
-            <button onClick={() => changeMonth(1)}>→</button>
+
+        {/* カレンダー */}
+        <section className="glass rounded-[2rem] p-4 mb-4 text-center">
+          <div className="flex items-center justify-between mb-3">
+            <button onClick={() => changeMonth(-1)} className="w-7 h-7 rounded-full bg-white/8 flex items-center justify-center hover:bg-white/15 transition-all text-sm">←</button>
+            <p className="text-[10px] font-black opacity-60">{currentCalendarDate.getFullYear()}年 {currentCalendarDate.getMonth() + 1}月</p>
+            <button onClick={() => changeMonth(1)} className="w-7 h-7 rounded-full bg-white/8 flex items-center justify-center hover:bg-white/15 transition-all text-sm">→</button>
           </div>
-          <div className="grid grid-cols-7 gap-1 mb-2 text-[8px] font-black text-gray-600">{['日','月','火','水','木','金','土'].map(d => <span key={d}>{d}</span>)}</div>
+          <div className="grid grid-cols-7 gap-1 mb-2 text-[8px] font-black text-gray-600">
+            {['日','月','火','水','木','金','土'].map(d => <span key={d}>{d}</span>)}
+          </div>
           <div className="grid grid-cols-7 gap-1">
             {calendarDays.map((d, i) => (
               <div key={i} className="aspect-square flex items-center justify-center relative">
-                {d && <div className={`w-full h-full rounded-lg ${d.date === today ? 'border-2 border-white/40' : ''} ${d.percent === null ? 'bg-white/5' : d.percent >= 80 ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : `bg-blue-500/${Math.max(10, d.percent)}`}`}></div>}
+                {d && <div className={`w-full h-full rounded-lg ${d.date === today ? 'border border-white/40' : ''} ${d.percent === null ? 'bg-white/5' : d.percent >= 80 ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : `bg-blue-500/${Math.max(10, d.percent)}`}`}></div>}
                 {d && <span className="absolute inset-0 flex items-center justify-center text-[8px] font-black">{d.day}</span>}
               </div>
             ))}
           </div>
-          <div className="mt-4 flex justify-center gap-2 items-center">
-            <div className="flex items-center gap-1"><div className="w-2 h-2 bg-white/5 rounded"></div><span className="text-[7px] text-gray-500">0%</span></div>
+          <div className="mt-3 flex justify-center gap-3 items-center">
+            <div className="flex items-center gap-1"><div className="w-2 h-2 bg-white/5 rounded border border-white/10"></div><span className="text-[7px] text-gray-500">0%</span></div>
             <div className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-500/40 rounded"></div><span className="text-[7px] text-gray-500">~79%</span></div>
             <div className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-500 rounded"></div><span className="text-[7px] text-gray-500">80%+</span></div>
           </div>
         </section>
-        <section className="mb-6 px-2 overflow-y-auto scrollbar-hide">
-          <p className="text-[10px] font-black text-gray-500 tracking-widest mb-4 uppercase">Library</p>
-          <div className="space-y-2 mb-8">
+
+        {/* ライブラリ */}
+        <section className="mb-6 px-1 overflow-y-auto scrollbar-hide flex-1">
+          <p className="text-[9px] font-black text-gray-500 tracking-[0.3em] mb-3 uppercase">Library</p>
+          <div className="space-y-2 mb-6">
             {taskLibrary.map((t, i) => (
-              <div key={i} className="bg-white/5 p-2 rounded-xl flex items-center justify-between gap-2">
-                <span className="text-[10px] font-bold truncate flex-1">{t}</span>
-                <div className="flex gap-1">{['朝','昼','晩'].map((label, idx) => (
-                  <button key={label} onClick={() => {
-                    const timeKey = idx === 0 ? 'morning' : idx === 1 ? 'afternoon' : 'night';
-                    const nextTasks = { ...tasks, [timeKey]: [...tasks[timeKey], t] };
-                    setTasks(nextTasks); saveToFirebase({ tasks: nextTasks });
-                  }} className="w-6 h-6 rounded bg-white/10 text-[8px] font-black hover:bg-white hover:text-black">{label}</button>
-                ))}</div>
+              <div key={i} className="glass rounded-xl p-2.5 flex items-center justify-between gap-2">
+                <span className="text-[10px] font-semibold truncate flex-1 text-gray-200">{t}</span>
+                <div className="flex gap-1">
+                  {['朝','昼','晩'].map((label, idx) => (
+                    <button key={label} onClick={() => {
+                      const timeKey = idx === 0 ? 'morning' : idx === 1 ? 'afternoon' : 'night';
+                      const nextTasks = { ...tasks, [timeKey]: [...tasks[timeKey], t] };
+                      setTasks(nextTasks); saveToFirebase({ tasks: nextTasks });
+                    }} className="w-6 h-6 rounded-lg bg-white/8 text-[8px] font-black hover:bg-white hover:text-black transition-all">{label}</button>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
-          <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase mb-4">History</p>
+          <p className="text-[9px] font-black text-gray-500 tracking-[0.3em] uppercase mb-3">History</p>
           {history.slice(-5).reverse().map((h, i) => (
-            <div key={i} className="flex justify-between items-center bg-white/5 p-3 rounded-xl mb-2">
-              <span className="text-[10px] text-gray-400 font-bold">{h.date}</span>
-              <span className="text-[10px] font-black">{h.percent}%</span>
+            <div key={i} className="flex justify-between items-center glass p-2.5 rounded-xl mb-2">
+              <span className="text-[10px] text-gray-400 font-medium">{h.date}</span>
+              <span className="text-[11px] font-black">{h.percent}%</span>
             </div>
           ))}
         </section>
       </aside>
 
+      {/* メインコンテンツ */}
       <main className="flex-1 w-full overflow-y-auto min-h-screen relative pt-20">
-        <header className="fixed top-0 left-0 right-0 z-[50] w-full px-4 py-4 flex justify-between items-center bg-black/20 backdrop-blur-xl border-b border-white/5">
-          <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10 font-black text-xs px-4">MENU</button>
-          <h1 className={`text-xl font-black italic ${currentTheme.title}`}>ROUTINE MASTER</h1>
-          <button onClick={() => setIsMenuOpen(true)} className="p-2 bg-white/5 rounded-xl border border-white/10">⚙️</button>
+
+        {/* ヘッダー */}
+        <header className="fixed top-0 left-0 right-0 z-[50] w-full px-4 py-3.5 flex justify-between items-center glass-dark border-b border-white/8">
+          <button onClick={() => setIsSidebarOpen(true)} className="glass px-4 py-2 rounded-xl font-black text-[10px] hover:bg-white/15 transition-all tracking-widest">MENU</button>
+          <h1 className={`text-lg font-black italic tracking-tight ${currentTheme.title} drop-shadow-sm`}>ROUTINE MASTER</h1>
+          <button onClick={() => setIsMenuOpen(true)} className="glass w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/15 transition-all">⚙️</button>
         </header>
 
         <div className="w-full max-w-screen-xl mx-auto px-4 pb-32">
-          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 my-8 w-full">
-            <button onClick={() => setActiveTab("main")} className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${activeTab === "main" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>ホーム</button>
-            <button onClick={() => setActiveTab("schedule")} className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${activeTab === "schedule" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>スケジュール</button>
-            <button onClick={() => setActiveTab("social")} className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${activeTab === "social" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>交流</button>
-            <button onClick={() => setActiveTab("diary")} className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${activeTab === "diary" ? "bg-white text-black shadow-lg" : "text-gray-500"}`}>日記</button>
+
+          {/* ナビゲーションタブ */}
+          <div className="flex glass p-1 rounded-2xl my-6 w-full gap-1">
+            {NAV_TABS.map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 py-2.5 rounded-xl text-[10px] font-black transition-all whitespace-nowrap flex items-center justify-center gap-1.5
+                  ${activeTab === tab.id ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-gray-300"}`}>
+                <span className={activeTab === tab.id ? "" : "opacity-50"}>{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           {activeTab === "main" ? (
-            <div className="space-y-8">
+            <div className="space-y-6">
 
-              {/* ── 目標セクション ── */}
+              {/* 目標セクション */}
               <GoalSection
-                now={now}
-                goals={goals}
-                editingGoal={editingGoal}
-                setEditingGoal={setEditingGoal}
-                yearGoalOpen={yearGoalOpen}
-                setYearGoalOpen={setYearGoalOpen}
-                saveToFirebase={saveToFirebase}
-                setGoals={setGoals}
+                now={now} goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal}
+                yearGoalOpen={yearGoalOpen} setYearGoalOpen={setYearGoalOpen}
+                saveToFirebase={saveToFirebase} setGoals={setGoals}
               />
 
-              {/* ══ PC: 左右2カラム ／ SP: 縦積み ══ */}
+              {/* PC 2カラム */}
               <div className="flex flex-col lg:flex-row gap-6 items-start">
 
-                {/* ── 左カラム: 目標 + キャラ + タイマー ── */}
-                <div className="w-full lg:w-80 xl:w-96 shrink-0 flex flex-col gap-6">
+                {/* 左カラム */}
+                <div className="w-full lg:w-80 xl:w-96 shrink-0 flex flex-col gap-5">
 
                   {/* キャラクターカード */}
-                  <div className="bg-white/5 p-8 rounded-[3.5rem] border border-white/10 flex flex-col items-center justify-center relative shadow-2xl min-h-[320px]">
-                    <div className={`absolute top-6 right-8 px-4 py-1.5 rounded-full ${currentAward.bg} shadow-lg z-20`}>
-                      <p className={`text-[8px] font-black opacity-60 ${currentAward.color}`}>今日の称号</p>
-                      <p className={`text-[10px] font-black ${currentAward.color}`}>称号: {currentAward.name}</p>
+                  <div className="glass rounded-[3rem] p-8 flex flex-col items-center justify-center relative shadow-2xl min-h-[320px] overflow-hidden">
+                    {/* 背景のグロー */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
                     </div>
-                    <div className="absolute top-8 left-10 text-left z-10">
-                      <p className="text-[10px] font-black text-white/40 tracking-widest">{now.toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit', weekday: 'short' })}</p>
+
+                    {/* 称号バッジ */}
+                    <div className={`absolute top-5 right-6 px-3 py-1.5 rounded-full ${currentAward.bg} shadow-lg z-20`}>
+                      <p className={`text-[7px] font-black opacity-70 ${currentAward.color} tracking-widest`}>TODAY</p>
+                      <p className={`text-[10px] font-black ${currentAward.color}`}>{currentAward.name}</p>
+                    </div>
+
+                    {/* 日時 */}
+                    <div className="absolute top-7 left-8 text-left z-10">
+                      <p className="text-[9px] font-medium text-white/30 tracking-wider">{now.toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit', weekday: 'short' })}</p>
                       <p className="text-2xl font-black italic tabular-nums">{now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
-                    <div className="mb-8 relative mt-12">
-                      <div className="bg-white text-black px-6 py-4 rounded-[1.8rem] shadow-xl relative text-center">
-                        <p className="text-[11px] font-black leading-relaxed">{characterMessage}</p>
+
+                    {/* メッセージバブル */}
+                    <div className="mb-8 relative mt-14 z-10">
+                      <div className="bg-white text-black px-5 py-3.5 rounded-[1.6rem] shadow-xl relative text-center max-w-[220px]">
+                        <p className="text-[11px] font-semibold leading-relaxed">{characterMessage}</p>
                         <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45"></div>
                       </div>
                     </div>
-                    <div className={`w-36 h-36 rounded-full ${currentChar.color} shadow-2xl flex flex-col items-center justify-center animate-bounce-rich relative transition-all duration-700 ${percent === 100 ? 'animate-gold' : ''} overflow-hidden`}>
+
+                    {/* キャラクター */}
+                    <div className={`w-32 h-32 rounded-full ${currentChar.color} shadow-2xl flex flex-col items-center justify-center animate-bounce-rich relative transition-all duration-700 ${percent === 100 ? 'animate-gold' : ''} overflow-hidden`}>
                       {photoURL ? (
                         <img src={photoURL} alt="icon" className="w-full h-full object-cover" />
                       ) : emojiIcon ? (
@@ -857,19 +957,20 @@ export default function Home() {
                         </>
                       )}
                     </div>
-                    <p className="mt-4 text-[10px] font-bold text-gray-400 italic">継続中: {streakCount}日 🔥</p>
-                    <p className="text-[8px] text-gray-600 font-black mt-1 uppercase tracking-widest">80%以上達成した日が連続するとカウント</p>
+
+                    <p className="mt-4 text-[11px] font-semibold text-gray-300">継続中 <span className="font-black text-orange-400">{streakCount}日</span> 🔥</p>
+                    <p className="text-[8px] text-gray-600 font-medium mt-1 tracking-wide">80%以上達成した日が連続するとカウント</p>
                   </div>
 
                   {/* タイマーカード */}
-                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 shadow-lg">
+                  <div className="glass rounded-[2.5rem] p-6 shadow-lg">
                     <div className="flex items-center justify-around mb-4">
                       <div className="text-center">
-                        <div className="relative w-20 h-20 mx-auto mb-2">
+                        <div className="relative w-20 h-20 mx-auto mb-3">
                           <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
-                            <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
+                            <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
                             <circle cx="40" cy="40" r="34" fill="none"
-                              stroke={isTimerActive ? "#3b82f6" : "rgba(255,255,255,0.3)"}
+                              stroke={isTimerActive ? "#3b82f6" : "rgba(255,255,255,0.25)"}
                               strokeWidth="6"
                               strokeDasharray={`${2 * Math.PI * 34}`}
                               strokeDashoffset={`${2 * Math.PI * 34 * (1 - (initialTimerSeconds > 0 ? timeLeft / initialTimerSeconds : 0))}`}
@@ -885,17 +986,21 @@ export default function Home() {
                           <button onClick={() => {
                             if (!isTimerActive && timeLeft > 0) setInitialTimerSeconds(timeLeft);
                             setIsTimerActive(!isTimerActive);
-                          }} className={`px-4 py-2 text-[9px] font-black rounded-full ${isTimerActive ? "bg-red-500" : "bg-white text-black"}`}>{isTimerActive ? "停止" : "開始"}</button>
-                          <button onClick={() => { setIsTimerActive(false); setTimeLeft(0); setInitialTimerSeconds(0); }} className="px-4 py-2 text-[9px] font-black rounded-full bg-white/10 border border-white/10">クリア</button>
+                          }} className={`px-4 py-2 text-[9px] font-black rounded-full transition-all ${isTimerActive ? "bg-red-500 hover:bg-red-400" : "bg-white text-black hover:bg-gray-100"}`}>
+                            {isTimerActive ? "停止" : "開始"}
+                          </button>
+                          <button onClick={() => { setIsTimerActive(false); setTimeLeft(0); setInitialTimerSeconds(0); }}
+                            className="px-4 py-2 text-[9px] font-black rounded-full bg-white/8 border border-white/10 hover:bg-white/15 transition-all">クリア</button>
                         </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-1">
+                      <div className="grid grid-cols-3 gap-1.5">
                         {[1, 5, 10, 15, 20, 30].map(m => (
-                          <button key={m} onClick={() => addTimerMinutes(m)} className="text-[8px] font-black border border-white/10 w-9 py-2 rounded-xl hover:bg-white hover:text-black">+{m}</button>
+                          <button key={m} onClick={() => addTimerMinutes(m)}
+                            className="text-[9px] font-black border border-white/10 w-9 py-2 rounded-xl hover:bg-white hover:text-black transition-all">+{m}</button>
                         ))}
                       </div>
                     </div>
-                    <div className="border-t border-white/5 pt-3">
+                    <div className="border-t border-white/8 pt-4">
                       <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-2">🔔 アラーム音</p>
                       <div className="grid grid-cols-2 gap-1.5">
                         {ALARM_SOUNDS.map(s => (
@@ -906,7 +1011,7 @@ export default function Home() {
                             prev.play().catch(()=>{});
                             setTimeout(() => prev.pause(), 2000);
                           }}
-                            className={`px-2 py-2 rounded-xl text-[9px] font-black transition-all border text-left ${alarmSound===s.id ? 'bg-white text-black border-transparent' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}>
+                            className={`px-2 py-2 rounded-xl text-[9px] font-bold transition-all border text-left ${alarmSound===s.id ? 'bg-white text-black border-transparent shadow-md' : 'bg-white/5 text-gray-400 border-white/8 hover:bg-white/10'}`}>
                             {s.label}
                           </button>
                         ))}
@@ -915,106 +1020,117 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* ── 右カラム: ランク + タスク3列 ── */}
-                <div className="flex-1 min-w-0 flex flex-col gap-6">
+                {/* 右カラム */}
+                <div className="flex-1 min-w-0 flex flex-col gap-5">
 
                   {/* ランク・グラフカード */}
-                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 shadow-lg">
-                    <div className="flex justify-between items-start mb-4">
+                  <div className="glass rounded-[2.5rem] p-6 shadow-lg">
+                    <div className="flex justify-between items-start mb-5">
                       <div>
-                        <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-1">週間ランク (直近7日平均)</p>
+                        <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-2">週間ランク (直近7日平均)</p>
                         <span className={`text-[8px] font-black px-3 py-1 rounded-full ${currentRank.bg} ${currentRank.color}`}>RANK: {currentRank.name}</span>
-                        <p className="text-[10px] font-black text-gray-500 mt-2 uppercase tracking-widest">Week Avg: {lastWeekAvg}%</p>
+                        <p className="text-[10px] font-semibold text-gray-500 mt-2">Week Avg: <span className="font-black text-white">{lastWeekAvg}%</span></p>
                         <p className="text-[8px] font-black text-gray-600 mt-3 mb-1 uppercase tracking-widest">今日の達成率</p>
-                        <h2 className="text-3xl font-black mt-1">Today: {percent}%</h2>
-                        <div className="mt-2 w-40 h-2 bg-white/10 rounded-full overflow-hidden">
+                        <h2 className="text-3xl font-black mt-1">Today: <span className="tabular-nums">{percent}%</span></h2>
+                        <div className="mt-2.5 w-44 h-1.5 bg-white/10 rounded-full overflow-hidden">
                           <div className="h-full bg-emerald-400 rounded-full transition-all duration-700" style={{ width: `${percent}%` }}></div>
                         </div>
                       </div>
-                      <div className="text-[7px] font-black space-y-0.5 text-gray-500 border-l border-white/10 pl-3">
-                        <p className="mb-1 text-white opacity-50">RANK (Week Avg)</p>
-                        {RANK_LIST.map(r => <div key={r.name} className={lastWeekAvg >= r.min ? "text-white opacity-100" : "opacity-30"}>{r.name}: {r.min}%+</div>)}
+                      <div className="text-[7px] font-bold space-y-0.5 text-gray-500 border-l border-white/8 pl-4">
+                        <p className="mb-1 text-white/40 font-black tracking-widest">RANK</p>
+                        {RANK_LIST.map(r => <div key={r.name} className={lastWeekAvg >= r.min ? "text-white/80" : "opacity-25"}>{r.name}: {r.min}%+</div>)}
                       </div>
                     </div>
-                    <div className="h-28 w-full bg-black/20 rounded-2xl p-2">
+                    <div className="h-28 w-full rounded-2xl p-2" style={{background:'rgba(0,0,0,0.2)'}}>
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                          <XAxis dataKey="displayDate" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 8, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                          <XAxis dataKey="displayDate" tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 8, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
                           <YAxis hide domain={[0, 100]} />
-                          <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={4} dot={false} />
+                          <Line type="monotone" dataKey="percent" stroke="#3b82f6" strokeWidth={3} dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
 
                   {/* タスク3列 */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    {(["morning", "afternoon", "night"]).map((time, ti) => {
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    {(["morning", "afternoon", "night"] as const).map((time, ti) => {
                       const tp = timeProgress[ti];
+                      const timeConfig = {
+                        morning:   { label: "MORNING",   accent: "#f59e0b", dot: "bg-amber-400" },
+                        afternoon: { label: "AFTERNOON", accent: "#10b981", dot: "bg-emerald-400" },
+                        night:     { label: "NIGHT",     accent: "#8b5cf6", dot: "bg-violet-400" },
+                      };
+                      const tc = timeConfig[time];
                       return (
-                        <div key={time} className="bg-white/5 p-7 rounded-[3rem] border border-white/10 shadow-xl flex flex-col h-auto min-h-[400px]">
+                        <div key={time} className="glass rounded-[2.5rem] p-6 shadow-xl flex flex-col h-auto min-h-[400px] task-card">
+                          {/* ヘッダー */}
                           <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] opacity-40">
-                              {time === 'morning' ? 'MORNING' : time === 'afternoon' ? 'AFTERNOON' : 'NIGHT'}
-                            </h2>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-1.5 h-1.5 rounded-full ${tc.dot}`}></div>
+                              <h2 className="text-[9px] font-black text-gray-500 uppercase tracking-[0.35em]">{tc.label}</h2>
+                            </div>
                             {tp.total > 0 && (
-                              <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${tp.done === tp.total ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500'}`}>
+                              <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full ${tp.done === tp.total ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500'}`}>
                                 {tp.done}/{tp.total}
                               </span>
                             )}
                           </div>
+                          {/* 進捗バー */}
                           {tp.total > 0 && (
-                            <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mb-4">
-                              <div className="h-full bg-emerald-400 rounded-full transition-all duration-500" style={{ width: `${Math.round(tp.done / tp.total * 100)}%` }}></div>
+                            <div className="w-full h-0.5 bg-white/8 rounded-full overflow-hidden mb-5">
+                              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.round(tp.done / tp.total * 100)}%`, backgroundColor: tc.accent }}></div>
                             </div>
                           )}
-                          <div className="space-y-4 flex-1">
+                          {/* タスク一覧 */}
+                          <div className="space-y-3 flex-1">
                             {tasks[time].map((task, index) => (
                               <div key={index} draggable onDragStart={(e) => onDragStart(e, time, index)} onDragOver={(e) => onDragOver(e, time, index)} onDragEnd={onDragEnd}
-                                className={`flex items-center ${draggedItem?.index === index && draggedItem?.time === time ? 'opacity-30' : ''}`}>
-                                <div className="cursor-grab active:cursor-grabbing mr-2 opacity-20 hover:opacity-100 font-mono text-[10px] shrink-0">::</div>
+                                className={`flex items-center group ${draggedItem?.index === index && draggedItem?.time === time ? 'opacity-30' : ''}`}>
+                                <div className="cursor-grab active:cursor-grabbing mr-2 opacity-0 group-hover:opacity-30 font-mono text-[10px] shrink-0 transition-opacity">::</div>
                                 <button onClick={() => toggleCheck(time, index, task)}
-                                  className={`w-6 h-6 mr-3 rounded-lg border-2 border-white/10 flex items-center justify-center transition-all shrink-0 ${checks[`${time}_${index}`] ? "bg-emerald-500 border-none shadow-lg scale-110" : "bg-black/20"}`}>
-                                  {checks[`${time}_${index}`] && <span className="text-[10px] font-black">✓</span>}
+                                  className={`w-5 h-5 mr-3 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${checks[`${time}_${index}`] ? "border-none shadow-lg scale-110" : "border-white/20 bg-black/20"}`}
+                                  style={checks[`${time}_${index}`] ? {backgroundColor: tc.accent} : {}}>
+                                  {checks[`${time}_${index}`] && <span className="text-[9px] font-black text-black">✓</span>}
                                 </button>
                                 {editingTask?.time === time && editingTask?.index === index ? (
-                                  <input autoFocus className="flex-1 bg-white/10 text-sm font-bold p-1 rounded outline-none"
+                                  <input autoFocus className="flex-1 bg-white/10 text-sm font-semibold p-1.5 rounded-lg outline-none border border-white/20"
                                     value={editingTask.value}
                                     onChange={(e) => setEditingTask({ ...editingTask, value: e.target.value })}
                                     onBlur={() => updateTaskValue(time, index, editingTask.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && updateTaskValue(time, index, editingTask.value)} />
                                 ) : (
                                   <span onClick={() => setEditingTask({ time, index, value: task })}
-                                    className={`flex-1 text-sm font-bold cursor-text ${checks[`${time}_${index}`] ? 'opacity-20 line-through' : 'text-gray-200'}`}>
-                                    {task.startsWith('!') ? <span className="text-orange-400 font-black">🌟 {task.substring(1)}</span> : task}
+                                    className={`flex-1 text-sm font-medium cursor-text leading-snug ${checks[`${time}_${index}`] ? 'opacity-25 line-through' : 'text-gray-200'}`}>
+                                    {task.startsWith('!') ? <span className="text-orange-400 font-bold">🌟 {task.substring(1)}</span> : task}
                                   </span>
                                 )}
                                 <button onClick={() => {
                                   const nl = [...tasks[time]]; nl.splice(index, 1);
                                   setTasks({ ...tasks, [time]: nl });
                                   saveToFirebase({ tasks: { ...tasks, [time]: nl } });
-                                }} className="ml-2 text-red-500/30 hover:text-red-500 active:text-red-400 p-1 text-[12px] transition-colors shrink-0">✕</button>
+                                }} className="ml-2 text-red-500/20 hover:text-red-500 active:text-red-400 p-1 text-[12px] transition-colors shrink-0 opacity-0 group-hover:opacity-100">✕</button>
                               </div>
                             ))}
                           </div>
-                          <div className="mt-6 flex flex-col gap-2">
+                          {/* 追加フォーム */}
+                          <div className="mt-5 flex flex-col gap-2">
                             <div className="flex gap-2">
                               <button onClick={() => { const val = newTasks[time] || ""; setNewTasks({ ...newTasks, [time]: val.startsWith("!") ? val.substring(1) : "!" + val }); }}
-                                className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all shrink-0 ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-300" : "bg-white/5 border-white/10 opacity-40"}`}>🌟</button>
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all shrink-0 text-sm ${newTasks[time]?.startsWith("!") ? "bg-orange-500 border-orange-400" : "bg-white/5 border-white/10 opacity-40 hover:opacity-70"}`}>🌟</button>
                               <input value={newTasks[time]} onChange={(e) => setNewTasks({ ...newTasks, [time]: e.target.value })}
                                 onKeyDown={(e) => e.key === 'Enter' && addTask(time)}
-                                className="flex-1 bg-black/40 text-[11px] p-3 rounded-xl border border-white/5 outline-none" placeholder="習慣を入力..." />
+                                className="flex-1 bg-black/30 text-[11px] font-medium p-3 rounded-xl border border-white/8 outline-none placeholder:text-gray-600 focus:border-white/20 transition-colors" placeholder="習慣を入力..." />
                             </div>
-                            <button onClick={() => addTask(time)} className="w-full bg-white text-black py-3 rounded-xl font-black text-[10px] shadow-lg">追加</button>
+                            <button onClick={() => addTask(time)} className="w-full bg-white text-black py-2.5 rounded-xl font-black text-[10px] shadow-lg hover:bg-gray-100 transition-all active:scale-95">追加</button>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-
-                </div>{/* end 右カラム */}
-              </div>{/* end PC 2カラム */}
+                </div>
+              </div>
             </div>
 
           ) : activeTab === "schedule" ? (
@@ -1024,13 +1140,11 @@ export default function Home() {
               const SNAP = 15;
               const DOW_LABELS = ["日","月","火","水","木","金","土"];
 
-              // ── repeat helpers ──────────────────────────────────────────
               const doesRepeatOnDate = (ev, dateStr) => {
                 if (!ev.repeat || ev.repeat === "none") return ev.date === dateStr;
-                // respect repeatEnd
                 if (ev.repeatEnd && dateStr > ev.repeatEnd) return false;
                 if (dateStr < ev.date) return false;
-                const dow = new Date(dateStr + "T00:00:00").getDay(); // 0=Sun
+                const dow = new Date(dateStr + "T00:00:00").getDay();
                 if (ev.repeat === "daily")    return true;
                 if (ev.repeat === "weekly")   return new Date(ev.date + "T00:00:00").getDay() === dow;
                 if (ev.repeat === "weekdays") return dow >= 1 && dow <= 5;
@@ -1039,12 +1153,10 @@ export default function Home() {
                 return false;
               };
 
-              // build visible events for current date (base + repeat instances)
               const todayEventsForDate = scheduleEvents
                 .filter(ev => doesRepeatOnDate(ev, scheduleDate))
                 .sort((a,b) => (parseInt(a.startHour)*60+parseInt(a.startMin)) - (parseInt(b.startHour)*60+parseInt(b.startMin)));
 
-              // ── geometry ────────────────────────────────────────────────
               const minsToTop  = (m) => (m / 60) * HOUR_HEIGHT;
               const topToMins  = (px) => Math.round(px / HOUR_HEIGHT * 60 / SNAP) * SNAP;
               const clamp      = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -1052,7 +1164,6 @@ export default function Home() {
               const getTop     = (ev) => minsToTop(parseInt(ev.startHour)*60+parseInt(ev.startMin));
               const getHeight  = (ev) => Math.max(minsToTop(parseInt(ev.endHour)*60+parseInt(ev.endMin)) - getTop(ev), HOUR_HEIGHT/4);
 
-              // ── persistence ─────────────────────────────────────────────
               const saveEvents = (evs) => { setScheduleEvents(evs); saveToFirebase({ scheduleEvents: evs }); };
 
               const REPEAT_OPTS = [
@@ -1076,10 +1187,8 @@ export default function Home() {
                 setShowEventForm(false); setEditingEvent(null); setNewEvent(blankEvent());
               };
 
-              // delete options: this day only (exception) or all
               const deleteEvent = (id, onlyToday = false) => {
                 if (onlyToday) {
-                  // add exception date
                   saveEvents(scheduleEvents.map(e => e.id === id
                     ? { ...e, exceptions: [...(e.exceptions||[]), scheduleDate] }
                     : e));
@@ -1097,16 +1206,13 @@ export default function Home() {
                 setShowEventForm(true);
               };
 
-              // filter exceptions
-              const visibleEvents = todayEventsForDate.filter(ev =>
-                !(ev.exceptions||[]).includes(scheduleDate));
+              const visibleEvents = todayEventsForDate.filter(ev => !(ev.exceptions||[]).includes(scheduleDate));
 
               const prevDay = () => { const d=new Date(scheduleDate); d.setDate(d.getDate()-1); setScheduleDate(d.toISOString().split('T')[0]); };
               const nextDay = () => { const d=new Date(scheduleDate); d.setDate(d.getDate()+1); setScheduleDate(d.toISOString().split('T')[0]); };
               const isToday = scheduleDate === today;
               const currentNowMins = now.getHours()*60+now.getMinutes();
 
-              // ── tap timeline ────────────────────────────────────────────
               const handleTimelineTap = (e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
@@ -1118,7 +1224,6 @@ export default function Home() {
                 setShowEventForm(true);
               };
 
-              // ── drag move ───────────────────────────────────────────────
               const handleMoveStart = (e, ev) => {
                 e.stopPropagation(); e.preventDefault();
                 const startY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -1139,7 +1244,6 @@ export default function Home() {
                 document.addEventListener('touchmove',onMove,{passive:false}); document.addEventListener('touchend',onEnd);
               };
 
-              // ── drag resize ─────────────────────────────────────────────
               const handleResizeStart = (e, ev, edge) => {
                 e.stopPropagation(); e.preventDefault();
                 const startY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -1163,7 +1267,6 @@ export default function Home() {
                 document.addEventListener('touchmove',onMove,{passive:false}); document.addEventListener('touchend',onEnd);
               };
 
-              // ── routine strip ───────────────────────────────────────────
               const allRoutineTasks = [
                 ...tasks.morning.map(t=>({t,color:'#3b82f6'})),
                 ...tasks.afternoon.map(t=>({t,color:'#10b981'})),
@@ -1177,7 +1280,6 @@ export default function Home() {
                 showToast(`「${task}」をスケジュールに追加しました`);
               };
 
-              // repeat badge label
               const repeatBadge = (ev) => {
                 if (!ev.repeat || ev.repeat==="none") return null;
                 if (ev.repeat==="daily")    return "毎日";
@@ -1192,45 +1294,39 @@ export default function Home() {
 
               return (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-                  {/* ── Date nav ── */}
+                  {/* 日付ナビ */}
                   <div className="flex items-center justify-between mb-5 px-1">
-                    <button onClick={prevDay} className="w-10 h-10 bg-white/5 rounded-xl border border-white/10 font-black flex items-center justify-center text-lg">‹</button>
+                    <button onClick={prevDay} className="w-10 h-10 glass rounded-xl font-black flex items-center justify-center text-lg hover:bg-white/15 transition-all">‹</button>
                     <div className="text-center">
                       <p className="text-lg font-black">{new Date(scheduleDate+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'})}</p>
                       {isToday && <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">TODAY</p>}
                     </div>
-                    <button onClick={nextDay} className="w-10 h-10 bg-white/5 rounded-xl border border-white/10 font-black flex items-center justify-center text-lg">›</button>
+                    <button onClick={nextDay} className="w-10 h-10 glass rounded-xl font-black flex items-center justify-center text-lg hover:bg-white/15 transition-all">›</button>
                   </div>
 
-                  {/* ══ PC: タイムライン左 / サイドパネル右 ══ */}
                   <div className="flex flex-col lg:flex-row gap-6 items-start">
-
                     {/* タイムライン */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest text-center mb-3">タイムラインをタップして追加 · ドラッグで移動 · 中央↕でリサイズ</p>
-                      <div className="bg-white/5 rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
+                      <p className="text-[9px] font-medium text-gray-600 text-center mb-3 tracking-wide">タップで追加 · ドラッグで移動 · 中央↕でリサイズ</p>
+                      <div className="glass rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <div className="overflow-y-auto" style={{maxHeight:'78vh'}}>
                           <div className="relative select-none" style={{height:`${26*HOUR_HEIGHT}px`}} onClick={handleTimelineTap}>
-
                             {Array.from({length:27},(_,h)=>(
-                              <div key={h} className="absolute w-full border-t border-white/5 flex pointer-events-none" style={{top:`${h*HOUR_HEIGHT}px`,height:`${HOUR_HEIGHT}px`}}>
+                              <div key={h} className="absolute w-full flex pointer-events-none" style={{top:`${h*HOUR_HEIGHT}px`,height:`${HOUR_HEIGHT}px`,borderTop:'1px solid rgba(255,255,255,0.04)'}}>
                                 <div className="w-16 shrink-0 flex items-start pt-1.5 justify-end pr-3">
-                                  <span className="text-[11px] font-black text-gray-500 tabular-nums">{h < 24 ? h.toString().padStart(2,'0') : `+${h-24}`}:00</span>
+                                  <span className="text-[11px] font-bold text-gray-600 tabular-nums">{h < 24 ? h.toString().padStart(2,'0') : `+${h-24}`}:00</span>
                                 </div>
-                                <div className="flex-1 border-l border-white/5">
-                                  <div className="border-t border-white/[0.03] mt-[50%]"></div>
+                                <div className="flex-1" style={{borderLeft:'1px solid rgba(255,255,255,0.04)'}}>
+                                  <div style={{marginTop:'50%',borderTop:'1px solid rgba(255,255,255,0.02)'}}></div>
                                 </div>
                               </div>
                             ))}
-
                             {isToday && (
                               <div className="absolute left-0 right-0 z-20 flex items-center pointer-events-none" style={{top:`${minsToTop(currentNowMins)}px`}}>
-                                <div className="w-16 flex justify-end pr-2"><div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-red-500/60 shadow-lg"></div></div>
-                                <div className="flex-1 h-[2px] bg-red-500/80"></div>
+                                <div className="w-16 flex justify-end pr-2"><div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div></div>
+                                <div className="flex-1 h-[2px] bg-red-500/70"></div>
                               </div>
                             )}
-
                             <div className="absolute left-16 right-2 top-0 bottom-0">
                               {visibleEvents.map(ev => {
                                 const top = getTop(ev); const height = getHeight(ev);
@@ -1238,30 +1334,28 @@ export default function Home() {
                                 const handleH = Math.min(10, Math.floor(height / 4));
                                 return (
                                   <div key={ev.id} className="absolute left-0 right-0 rounded-xl overflow-visible shadow-lg group" style={{top:`${top}px`,height:`${height}px`,zIndex:10}}>
-                                    {/* 上リサイズハンドル（中央） */}
                                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-10 cursor-ns-resize z-30 touch-none flex items-start justify-center pt-1"
                                       style={{height:`${handleH}px`}}
                                       onMouseDown={e=>handleResizeStart(e,ev,'top')} onTouchStart={e=>handleResizeStart(e,ev,'top')}>
-                                      <div className="w-6 h-1 rounded-full bg-white/60 group-hover:bg-white transition-colors"></div>
+                                      <div className="w-6 h-1 rounded-full bg-white/40 group-hover:bg-white transition-colors"></div>
                                     </div>
                                     <div className="absolute inset-0 rounded-xl cursor-grab active:cursor-grabbing touch-none overflow-hidden"
-                                      style={{backgroundColor:ev.color+'2e', borderLeft:`4px solid ${ev.color}`}}
+                                      style={{backgroundColor:ev.color+'22', borderLeft:`3px solid ${ev.color}`}}
                                       onMouseDown={e=>handleMoveStart(e,ev)} onTouchStart={e=>handleMoveStart(e,ev)}
                                       onClick={e=>{e.stopPropagation(); openEdit(ev);}}>
                                       <div className="px-3 pt-2 pb-1">
                                         <div className="flex items-start gap-1.5">
-                                          <p className="text-[13px] font-black truncate flex-1 leading-tight" style={{color:ev.color}}>{ev.title}</p>
-                                          {badge && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0 mt-0.5" style={{backgroundColor:ev.color+'44',color:ev.color}}>🔁{badge}</span>}
+                                          <p className="text-[13px] font-bold truncate flex-1 leading-tight" style={{color:ev.color}}>{ev.title}</p>
+                                          {badge && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0 mt-0.5" style={{backgroundColor:ev.color+'33',color:ev.color}}>🔁{badge}</span>}
                                         </div>
-                                        {height > 32 && <p className="text-[11px] font-bold opacity-60 text-white tabular-nums mt-0.5">{ev.startHour}:{ev.startMin}–{ev.endHour}:{ev.endMin}</p>}
+                                        {height > 32 && <p className="text-[11px] font-medium opacity-50 text-white tabular-nums mt-0.5">{ev.startHour}:{ev.startMin}–{ev.endHour}:{ev.endMin}</p>}
                                         {height > 52 && ev.memo && <p className="text-[10px] text-gray-400 mt-1 truncate">{ev.memo}</p>}
                                       </div>
                                     </div>
-                                    {/* 下リサイズハンドル（中央） */}
                                     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 cursor-ns-resize z-30 touch-none flex items-end justify-center pb-1"
                                       style={{height:`${handleH}px`}}
                                       onMouseDown={e=>handleResizeStart(e,ev,'bottom')} onTouchStart={e=>handleResizeStart(e,ev,'bottom')}>
-                                      <div className="w-6 h-1 rounded-full bg-white/60 group-hover:bg-white transition-colors"></div>
+                                      <div className="w-6 h-1 rounded-full bg-white/40 group-hover:bg-white transition-colors"></div>
                                     </div>
                                   </div>
                                 );
@@ -1271,46 +1365,40 @@ export default function Home() {
                         </div>
                       </div>
                       {visibleEvents.length > 0 && (
-                        <p className="text-center text-[10px] font-black text-gray-600 mt-3 uppercase tracking-widest">{visibleEvents.length} 件の予定</p>
+                        <p className="text-center text-[10px] font-medium text-gray-600 mt-3">{visibleEvents.length} 件の予定</p>
                       )}
                     </div>
 
-                    {/* ── サイドパネル (PC: 右固定 / SP: 下) ── */}
+                    {/* サイドパネル */}
                     <div className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-4">
-
-                      {/* 追加ボタン */}
                       <button onClick={() => { setEditingEvent(null); setNewEvent({ ...blankEvent() }); setShowEventForm(true); }}
-                        className="w-full py-3 bg-white text-black rounded-2xl font-black text-[11px] shadow-xl flex items-center justify-center gap-2">
+                        className="w-full py-3.5 bg-white text-black rounded-2xl font-black text-[11px] shadow-xl flex items-center justify-center gap-2 hover:bg-gray-100 transition-all active:scale-95">
                         <span className="text-lg leading-none">＋</span> 予定を追加
                       </button>
-
-                      {/* ルーティン追加 */}
                       {allRoutineTasks.length > 0 && (
-                        <div className="bg-white/5 rounded-2xl border border-white/10 p-4">
+                        <div className="glass rounded-2xl p-4">
                           <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">ルーティンを追加</p>
                           <div className="flex flex-col gap-2">
                             {allRoutineTasks.map(({t,color},i) => (
                               <button key={i} onClick={() => addRoutineToSchedule(t,color)}
-                                className="px-3 py-2 rounded-xl text-[11px] font-black border border-white/10 flex items-center gap-2 hover:scale-[1.02] transition-all text-left"
-                                style={{backgroundColor:color+'22', color}}>
+                                className="px-3 py-2 rounded-xl text-[11px] font-semibold border border-white/8 flex items-center gap-2 hover:scale-[1.02] transition-all text-left"
+                                style={{backgroundColor:color+'18', color}}>
                                 <span>＋</span><span className="truncate">{t}</span>
                               </button>
                             ))}
                           </div>
                         </div>
                       )}
-
-                      {/* 当日の予定一覧 */}
                       {visibleEvents.length > 0 && (
-                        <div className="bg-white/5 rounded-2xl border border-white/10 p-4">
+                        <div className="glass rounded-2xl p-4">
                           <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">本日の予定</p>
                           <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-hide">
                             {visibleEvents.map(ev => (
                               <button key={ev.id} onClick={() => openEdit(ev)}
-                                className="w-full flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-white/5 transition-colors text-left"
+                                className="w-full flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-white/8 transition-colors text-left"
                                 style={{borderLeft:`3px solid ${ev.color}`}}>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-[11px] font-black truncate" style={{color:ev.color}}>{ev.title}</p>
+                                  <p className="text-[11px] font-bold truncate" style={{color:ev.color}}>{ev.title}</p>
                                   <p className="text-[9px] text-gray-500 tabular-nums">{ev.startHour}:{ev.startMin}–{ev.endHour}:{ev.endMin}</p>
                                 </div>
                                 {repeatBadge(ev) && <span className="text-[8px] font-black shrink-0" style={{color:ev.color}}>🔁</span>}
@@ -1320,35 +1408,26 @@ export default function Home() {
                         </div>
                       )}
                     </div>
+                  </div>
 
-                  </div>{/* end PC 2カラム */}
-
-                  {/* ── Event form modal ── */}
+                  {/* イベントフォームモーダル */}
                   {showEventForm && (
                     <div className="fixed inset-0 z-[400] flex items-end justify-center bg-black/70 backdrop-blur-md p-4" onClick={()=>{setShowEventForm(false);setEditingEvent(null);}}>
-                      <div className="bg-zinc-900 w-full max-w-md rounded-[2.5rem] border border-white/10 shadow-2xl mb-4 max-h-[92vh] overflow-y-auto scrollbar-hide" onClick={e=>e.stopPropagation()}>
-
-                        {/* header bar with color accent */}
+                      <div className="bg-zinc-900/95 backdrop-blur-2xl w-full max-w-md rounded-[2.5rem] border border-white/10 shadow-2xl mb-4 max-h-[92vh] overflow-y-auto scrollbar-hide" onClick={e=>e.stopPropagation()}>
                         <div className="h-1.5 rounded-t-[2.5rem]" style={{backgroundColor: newEvent.color}}></div>
-
                         <div className="p-6">
-                          {/* title row */}
                           <div className="flex justify-between items-center mb-5">
                             <h3 className="font-black text-base">{editingEvent ? "✏️ 予定を編集" : "＋ 予定を追加"}</h3>
                             <button onClick={()=>{setShowEventForm(false);setEditingEvent(null);}} className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center text-gray-400 hover:text-white font-black">✕</button>
                           </div>
-
                           <div className="space-y-4">
-                            {/* title input */}
                             <input value={newEvent.title} onChange={e=>setNewEvent({...newEvent,title:e.target.value})}
-                              className="w-full bg-black/40 text-base font-bold px-4 py-3.5 rounded-2xl border border-white/10 outline-none placeholder:text-gray-600"
+                              className="w-full bg-black/40 text-base font-semibold px-4 py-3.5 rounded-2xl border border-white/10 outline-none placeholder:text-gray-600 focus:border-white/25 transition-colors"
                               placeholder="予定のタイトル" autoFocus />
-
-                            {/* time block */}
-                            <div className="bg-black/30 rounded-2xl border border-white/5 overflow-hidden">
+                            <div className="bg-black/30 rounded-2xl border border-white/8 overflow-hidden">
                               {[['開始','startHour','startMin'],['終了','endHour','endMin']].map(([label,hk,mk], li)=>(
                                 <div key={label} className={`flex items-center gap-3 px-4 py-3 ${li===0?'border-b border-white/5':''}`}>
-                                  <span className="text-sm font-black text-gray-400 w-10 shrink-0">{label}</span>
+                                  <span className="text-sm font-bold text-gray-400 w-10 shrink-0">{label}</span>
                                   <div className="flex items-center gap-2 flex-1">
                                     <select value={newEvent[hk]} onChange={e=>setNewEvent({...newEvent,[hk]:e.target.value})}
                                       className="flex-1 bg-white/10 text-base font-black py-2 px-2 rounded-xl border border-white/10 outline-none text-center">
@@ -1363,31 +1442,26 @@ export default function Home() {
                                 </div>
                               ))}
                             </div>
-
-                            {/* color row */}
                             <div className="flex items-center gap-3">
-                              <span className="text-sm font-black text-gray-400 w-10 shrink-0">色</span>
+                              <span className="text-sm font-bold text-gray-400 w-10 shrink-0">色</span>
                               <div className="flex gap-2.5 flex-wrap flex-1">
                                 {EVENT_COLORS.map(c=>(
                                   <button key={c} onClick={()=>setNewEvent({...newEvent,color:c})}
-                                    className={`w-9 h-9 rounded-full transition-all shadow-md ${newEvent.color===c?'scale-125 ring-2 ring-white ring-offset-1 ring-offset-zinc-900':'opacity-60 hover:opacity-100'}`}
+                                    className={`w-9 h-9 rounded-full transition-all shadow-md ${newEvent.color===c?'scale-125 ring-2 ring-white ring-offset-1 ring-offset-zinc-900':'opacity-50 hover:opacity-80'}`}
                                     style={{backgroundColor:c}}></button>
                                 ))}
                               </div>
                             </div>
-
-                            {/* repeat block */}
-                            <div className="bg-black/30 rounded-2xl border border-white/5 p-4 space-y-3">
-                              <p className="text-sm font-black text-gray-300 flex items-center gap-2">🔁 <span>繰り返し</span></p>
+                            <div className="bg-black/30 rounded-2xl border border-white/8 p-4 space-y-3">
+                              <p className="text-sm font-bold text-gray-300 flex items-center gap-2">🔁 繰り返し</p>
                               <div className="grid grid-cols-2 gap-2">
                                 {REPEAT_OPTS.map(opt=>(
                                   <button key={opt.value} onClick={()=>setNewEvent({...newEvent,repeat:opt.value})}
-                                    className={`py-3 px-3 rounded-xl text-sm font-black transition-all border ${newEvent.repeat===opt.value?'bg-white text-black border-transparent shadow-lg':'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}>
+                                    className={`py-2.5 px-3 rounded-xl text-[12px] font-bold transition-all border ${newEvent.repeat===opt.value?'bg-white text-black border-transparent shadow-lg':'bg-white/5 text-gray-400 border-white/8 hover:bg-white/10'}`}>
                                     {opt.label}
                                   </button>
                                 ))}
                               </div>
-
                               {newEvent.repeat==="custom" && (
                                 <div className="flex gap-2 justify-center pt-1">
                                   {DOW_LABELS.map((d,i)=>{
@@ -1396,38 +1470,32 @@ export default function Home() {
                                       <button key={i} onClick={()=>{
                                         const cur=newEvent.repeatDays||[];
                                         setNewEvent({...newEvent,repeatDays:active?cur.filter(x=>x!==i):[...cur,i].sort()});
-                                      }} className={`w-10 h-10 rounded-xl text-sm font-black transition-all border ${active?'bg-white text-black border-transparent':'bg-white/5 text-gray-500 border-white/5'}`}>
+                                      }} className={`w-10 h-10 rounded-xl text-sm font-black transition-all border ${active?'bg-white text-black border-transparent':'bg-white/5 text-gray-500 border-white/8'}`}>
                                         {d}
                                       </button>
                                     );
                                   })}
                                 </div>
                               )}
-
                               {newEvent.repeat && newEvent.repeat!=="none" && (
                                 <div className="flex items-center gap-3">
-                                  <span className="text-sm font-black text-gray-400 shrink-0">終了日</span>
+                                  <span className="text-sm font-bold text-gray-400 shrink-0">終了日</span>
                                   <input type="date" value={newEvent.repeatEnd||""} onChange={e=>setNewEvent({...newEvent,repeatEnd:e.target.value})}
-                                    className="flex-1 bg-white/10 text-sm font-black p-2.5 rounded-xl border border-white/10 outline-none" />
+                                    className="flex-1 bg-white/10 text-sm font-semibold p-2.5 rounded-xl border border-white/10 outline-none" />
                                   {newEvent.repeatEnd && (
                                     <button onClick={()=>setNewEvent({...newEvent,repeatEnd:""})} className="text-gray-500 font-black">✕</button>
                                   )}
                                 </div>
                               )}
                             </div>
-
-                            {/* memo */}
                             <textarea value={newEvent.memo} onChange={e=>setNewEvent({...newEvent,memo:e.target.value})}
-                              className="w-full bg-black/40 text-sm font-bold px-4 py-3 rounded-2xl border border-white/10 outline-none resize-none h-16 placeholder:text-gray-600"
+                              className="w-full bg-black/40 text-sm font-medium px-4 py-3 rounded-2xl border border-white/10 outline-none resize-none h-16 placeholder:text-gray-600 focus:border-white/20 transition-colors"
                               placeholder="メモ（任意）" />
-
-                            {/* action buttons */}
                             <button onClick={addOrUpdateEvent}
-                              className="w-full py-4 rounded-2xl font-black text-base shadow-xl text-white transition-all active:scale-95"
+                              className="w-full py-4 rounded-2xl font-black text-base shadow-xl text-white transition-all active:scale-95 hover:opacity-90"
                               style={{backgroundColor: newEvent.color}}>
                               {editingEvent ? "更新する" : "追加する"}
                             </button>
-
                             {editingEvent && (
                               isRepeatEvent(editingEvent) ? (
                                 <div className="grid grid-cols-2 gap-2">
@@ -1449,26 +1517,22 @@ export default function Home() {
                 </div>
               );
             })()
+
           ) : activeTab === "social" ? (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-              {/* ══ PC: 左Log / 右Friends ══ */}
               <div className="flex flex-col lg:flex-row gap-6 items-start">
-
-                {/* ── 左: Achievement Log ── */}
+                {/* Achievement Log */}
                 <div className="w-full lg:w-96 shrink-0">
-                  <button
-                    onClick={() => setIsLogOpen(v => !v)}
-                    className="flex items-center gap-3 mb-4 px-2 w-full group">
+                  <button onClick={() => setIsLogOpen(v => !v)} className="flex items-center gap-3 mb-4 px-2 w-full group">
                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0"></div>
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] flex-1 text-left">Achievement Log</p>
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.25em] flex-1 text-left">Achievement Log</p>
                     <span className={`text-gray-600 font-black text-xs transition-transform duration-300 ${isLogOpen ? 'rotate-180' : ''}`}>▲</span>
                   </button>
                   {isLogOpen && (
-                    <div className="bg-white/5 rounded-[2.5rem] border border-white/10 p-6 shadow-2xl">
+                    <div className="glass rounded-[2.5rem] p-6 shadow-2xl">
                       <div className="space-y-4 max-h-[600px] overflow-y-auto scrollbar-hide">
                         {timeline.length === 0 && (
-                          <p className="text-center text-[10px] font-black text-gray-600 py-8">まだログがありません</p>
+                          <p className="text-center text-[10px] font-medium text-gray-600 py-8">まだログがありません</p>
                         )}
                         {timeline.map((log) => (
                           <div key={log.id} className="flex gap-4 items-start bg-white/[0.03] p-4 rounded-2xl border border-white/5">
@@ -1482,10 +1546,10 @@ export default function Home() {
                             </div>
                             <div className="flex-1">
                               <div className="flex justify-between items-center mb-1">
-                                <span className="text-[10px] font-black text-gray-400">{log.displayName} <span className="text-gray-600 font-bold ml-1">@{log.shortId}</span></span>
-                                <span className="text-[8px] text-gray-700 font-black">{log.timestamp?.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="text-[10px] font-bold text-gray-400">{log.displayName} <span className="text-gray-600 font-medium ml-1">@{log.shortId}</span></span>
+                                <span className="text-[8px] text-gray-700 font-medium">{log.timestamp?.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
                               </div>
-                              <p className="text-xs font-bold text-gray-200">{log.message}</p>
+                              <p className="text-xs font-semibold text-gray-200">{log.message}</p>
                             </div>
                           </div>
                         ))}
@@ -1494,14 +1558,14 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* ── 右: Friends ── */}
+                {/* Friends */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-4 px-2">
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Friends</p>
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.25em]">Friends</p>
                   </div>
-                  <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 flex gap-2 mb-6">
+                  <div className="glass p-5 rounded-[2.5rem] flex gap-2 mb-5">
                     <input value={friendIdInput} onChange={(e) => setFriendIdInput(e.target.value)}
-                      className="flex-1 bg-black/40 text-[11px] p-4 rounded-xl border border-white/5 outline-none font-bold" placeholder="友達の8桁IDを入力..." />
+                      className="flex-1 bg-black/30 text-[11px] font-medium p-4 rounded-xl border border-white/8 outline-none focus:border-white/20 transition-colors" placeholder="友達の8桁IDを入力..." />
                     <button onClick={async () => {
                       const id = friendIdInput.trim();
                       if (!id || id === myDisplayId) return;
@@ -1516,7 +1580,7 @@ export default function Home() {
                         setFriendIdInput("");
                         showToast("友達を追加しました！");
                       }
-                    }} className="bg-white text-black px-6 rounded-xl font-black text-[10px]">追加</button>
+                    }} className="bg-white text-black px-6 rounded-xl font-black text-[10px] hover:bg-gray-100 transition-all">追加</button>
                   </div>
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                     {friendsData.map((f, i) => {
@@ -1526,8 +1590,8 @@ export default function Home() {
                       const friendAward = DAILY_AWARDS.find(a => (f.percent || 0) >= a.min) || DAILY_AWARDS[4];
                       const charColor = CHARACTERS[f.charIndex || 0];
                       return (
-                        <div key={i} className="bg-white/5 p-6 rounded-[3rem] border border-white/10 relative shadow-2xl transition-transform hover:scale-[1.02] overflow-hidden">
-                          <div className={`absolute top-0 left-0 w-2 h-full bg-gradient-to-b ${charColor.accent} opacity-80`}></div>
+                        <div key={i} className="glass rounded-[3rem] p-6 relative shadow-2xl hover:scale-[1.02] transition-all overflow-hidden task-card">
+                          <div className={`absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b ${charColor.accent} opacity-80`}></div>
                           <div className="flex items-center gap-4">
                             <div className={`w-16 h-16 rounded-full ${charColor.color} flex items-center justify-center shadow-lg relative overflow-hidden shrink-0`}>
                               {f.photoURL ? <img src={f.photoURL} alt="icon" className="w-full h-full object-cover" />
@@ -1545,17 +1609,17 @@ export default function Home() {
                               </div>
                               <div className="flex items-end gap-3 mt-1">
                                 <span className="text-3xl font-black">{f.percent || 0}%</span>
-                                <span className="text-[8px] font-black text-gray-500 mb-1">AVG: {f.avg || 0}%</span>
+                                <span className="text-[8px] font-medium text-gray-500 mb-1">AVG: {f.avg || 0}%</span>
                               </div>
                             </div>
                             <div className="flex flex-col gap-2 shrink-0">
-                              <button onClick={() => setSelectedChatFriend(f)} className="bg-white text-black w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-xl">💬</button>
+                              <button onClick={() => setSelectedChatFriend(f)} className="bg-white text-black w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-xl hover:bg-gray-100 transition-all">💬</button>
                               <button onClick={async () => {
                                 const nl = friendsList.filter(id => id !== f.shortId);
                                 setFriendsList(nl); await saveToFirebase({ friendsList: nl });
                                 await updateDoc(doc(db, "users", f.uid), { friends: arrayRemove(myDisplayId) });
                                 showToast("友達を削除しました");
-                              }} className="bg-red-500/20 text-red-500 w-10 h-10 rounded-xl text-xs flex items-center justify-center">✕</button>
+                              }} className="bg-red-500/15 text-red-500 w-10 h-10 rounded-xl text-xs flex items-center justify-center hover:bg-red-500/25 transition-all">✕</button>
                             </div>
                           </div>
                         </div>
@@ -1563,9 +1627,9 @@ export default function Home() {
                     })}
                   </div>
                 </div>
-
-              </div>{/* end PC 2カラム */}
+              </div>
             </div>
+
           ) : activeTab === "diary" ? (
             (() => {
               const diaryDates = Object.keys(diaryEntries).sort((a,b) => b.localeCompare(a));
@@ -1596,60 +1660,54 @@ export default function Home() {
               return (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex flex-col lg:flex-row gap-6 items-start">
-
-                    {/* 左: 入力エリア */}
+                    {/* 左：入力エリア */}
                     <div className="flex-1 min-w-0">
-                      {/* 日付ナビ */}
                       <div className="flex items-center justify-between mb-5 px-1">
-                        <button onClick={prevDiaryDay} className="w-10 h-10 bg-white/5 rounded-xl border border-white/10 font-black flex items-center justify-center text-lg">‹</button>
+                        <button onClick={prevDiaryDay} className="w-10 h-10 glass rounded-xl font-black flex items-center justify-center text-lg hover:bg-white/15 transition-all">‹</button>
                         <div className="text-center">
                           <p className="text-lg font-black">{new Date(diaryDate+'T00:00:00').toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'})}</p>
                           {diaryDate === today && <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">TODAY</p>}
                         </div>
-                        <button onClick={nextDiaryDay} className="w-10 h-10 bg-white/5 rounded-xl border border-white/10 font-black flex items-center justify-center text-lg">›</button>
+                        <button onClick={nextDiaryDay} className="w-10 h-10 glass rounded-xl font-black flex items-center justify-center text-lg hover:bg-white/15 transition-all">›</button>
                       </div>
-
-                      {/* 気分セレクタ */}
-                      <div className="bg-white/5 rounded-[2rem] border border-white/10 p-5 mb-4">
+                      <div className="glass rounded-[2rem] p-5 mb-4">
                         <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">今日の気分</p>
                         <div className="flex gap-2 justify-around">
                           {MOODS.map(m => (
                             <button key={m.emoji} onClick={() => saveDiary(diaryInput, m.emoji)}
-                              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all border ${currentEntry.mood === m.emoji ? 'bg-white/20 border-white/40 scale-110' : 'bg-white/5 border-white/5 opacity-50 hover:opacity-100'}`}>
+                              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all border ${currentEntry.mood === m.emoji ? 'bg-white/20 border-white/30 scale-110' : 'bg-white/5 border-white/5 opacity-50 hover:opacity-80'}`}>
                               <span className="text-2xl">{m.emoji}</span>
-                              <span className="text-[8px] font-black text-gray-400">{m.label}</span>
+                              <span className="text-[8px] font-bold text-gray-400">{m.label}</span>
                             </button>
                           ))}
                         </div>
                       </div>
-
-                      {/* テキストエリア */}
-                      <div className="bg-white/5 rounded-[2rem] border border-white/10 p-5">
+                      <div className="glass rounded-[2rem] p-5">
                         <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">📝 日記</p>
                         <textarea
                           value={diaryInput}
                           onChange={e => setDiaryInput(e.target.value)}
                           rows={10}
-                          className="w-full bg-black/30 text-sm font-bold px-4 py-3 rounded-2xl border border-white/10 outline-none resize-none placeholder:text-gray-700 leading-relaxed"
+                          className="w-full bg-black/25 text-sm font-medium px-4 py-3 rounded-2xl border border-white/8 outline-none resize-none placeholder:text-gray-700 leading-relaxed focus:border-white/20 transition-colors"
                           placeholder={`${new Date(diaryDate+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric'})}の日記を書こう...`}
                         />
                         <div className="flex gap-2 mt-3">
                           <button onClick={() => { saveDiary(diaryInput, currentEntry.mood); }}
-                            className="flex-1 bg-white text-black py-3 rounded-2xl font-black text-[11px] shadow-lg">保存</button>
+                            className="flex-1 bg-white text-black py-3 rounded-2xl font-black text-[11px] shadow-lg hover:bg-gray-100 transition-all active:scale-95">保存</button>
                           {diaryEntries[diaryDate] && (
                             <button onClick={() => deleteDiary(diaryDate)}
-                              className="bg-red-500/15 text-red-400 px-5 py-3 rounded-2xl font-black text-[11px] border border-red-500/20">削除</button>
+                              className="bg-red-500/15 text-red-400 px-5 py-3 rounded-2xl font-black text-[11px] border border-red-500/20 hover:bg-red-500/25 transition-all">削除</button>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    {/* 右: 過去の日記リスト */}
+                    {/* 右：日記一覧 */}
                     <div className="w-full lg:w-72 xl:w-80 shrink-0">
                       <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4 px-1">過去の日記</p>
                       {diaryDates.length === 0 ? (
-                        <div className="bg-white/5 rounded-[2rem] border border-white/10 p-8 text-center">
-                          <p className="text-[10px] font-black text-gray-600">まだ日記がありません</p>
+                        <div className="glass rounded-[2rem] p-8 text-center">
+                          <p className="text-[10px] font-medium text-gray-600">まだ日記がありません</p>
                         </div>
                       ) : (
                         <div className="space-y-2 max-h-[70vh] overflow-y-auto scrollbar-hide pr-1">
@@ -1658,19 +1716,18 @@ export default function Home() {
                             const isSelected = date === diaryDate;
                             return (
                               <button key={date} onClick={() => setDiaryDate(date)}
-                                className={`w-full text-left p-4 rounded-2xl border transition-all ${isSelected ? 'bg-white/15 border-white/30' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
+                                className={`w-full text-left p-4 rounded-2xl border transition-all ${isSelected ? 'bg-white/15 border-white/25' : 'bg-white/5 border-white/8 hover:bg-white/8'}`}>
                                 <div className="flex items-center justify-between mb-1">
-                                  <span className="text-[10px] font-black text-gray-300">{new Date(date+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'})}</span>
+                                  <span className="text-[10px] font-bold text-gray-300">{new Date(date+'T00:00:00').toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'})}</span>
                                   {entry.mood && <span className="text-lg">{entry.mood}</span>}
                                 </div>
-                                <p className="text-[10px] text-gray-500 font-bold line-clamp-2 leading-relaxed">{entry.text || "（内容なし）"}</p>
+                                <p className="text-[10px] text-gray-500 font-medium line-clamp-2 leading-relaxed">{entry.text || "（内容なし）"}</p>
                               </button>
                             );
                           })}
                         </div>
                       )}
                     </div>
-
                   </div>
                 </div>
               );
@@ -1679,26 +1736,26 @@ export default function Home() {
         </div>
       </main>
 
-      {/* ② チャット画面：インライン入力欄 + クイック返信 */}
+      {/* チャット画面 */}
       {selectedChatFriend && (
-        <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-xl flex flex-col animate-in fade-in duration-300">
-          <header className="p-6 flex items-center justify-between border-b border-white/10 shrink-0">
-            <button onClick={() => setSelectedChatFriend(null)} className="text-xl">←</button>
+        <div className="fixed inset-0 z-[300] bg-black/85 backdrop-blur-2xl flex flex-col animate-in fade-in duration-300">
+          <header className="p-6 flex items-center justify-between border-b border-white/8 shrink-0">
+            <button onClick={() => setSelectedChatFriend(null)} className="w-9 h-9 glass rounded-xl flex items-center justify-center hover:bg-white/15 transition-all">←</button>
             <div className="text-center">
               <span className="font-black block">{selectedChatFriend.displayName}</span>
               {selectedChatFriend.lastActive && (Date.now() - selectedChatFriend.lastActive < 120000) && (
                 <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">● Active Now</span>
               )}
             </div>
-            <div className="w-6"></div>
+            <div className="w-9"></div>
           </header>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {userMessages.filter(m => m.chatId === [myDisplayId, selectedChatFriend.shortId].sort().join("_")).map((m, i) => (
               <div key={i} className={`flex ${m.fromId === myDisplayId ? 'justify-end' : 'justify-start'}`}>
                 <div className="group relative max-w-[75%]">
-                  <div className={`p-4 rounded-[1.8rem] text-sm font-bold shadow-md ${m.fromId === myDisplayId ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-zinc-800 text-gray-200 rounded-tl-none'}`}>
+                  <div className={`p-4 rounded-[1.8rem] text-sm font-semibold shadow-md ${m.fromId === myDisplayId ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-zinc-800 text-gray-200 rounded-tl-none'}`}>
                     {m.text}
-                    <p className={`text-[7px] mt-1 opacity-40`}>{m.time}</p>
+                    <p className="text-[7px] mt-1 opacity-40">{m.time}</p>
                   </div>
                   {m.fromId === myDisplayId && (
                     <button onClick={() => deleteMessage(m)} className="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-2 text-red-400">🗑️</button>
@@ -1708,52 +1765,54 @@ export default function Home() {
             ))}
             <div ref={chatBottomRef}></div>
           </div>
-          <footer className="p-4 border-t border-white/10 bg-black/40 shrink-0">
+          <footer className="p-4 border-t border-white/8 bg-black/40 shrink-0">
             <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-hide">
               {["🔥 お疲れ様！", "👏 すごい！", "💪 頑張れ！", "😊 いいね！"].map(q => (
                 <button key={q} onClick={() => sendMessage(q)}
-                  className="shrink-0 bg-white/5 border border-white/10 text-gray-300 px-4 py-2 rounded-xl font-black text-[10px] whitespace-nowrap hover:bg-white/20">{q}</button>
+                  className="shrink-0 glass border-white/8 text-gray-300 px-4 py-2 rounded-xl font-bold text-[10px] whitespace-nowrap hover:bg-white/15 transition-all">{q}</button>
               ))}
             </div>
             <div className="flex gap-2">
               <input value={chatInput} onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                 placeholder="メッセージを入力..."
-                className="flex-1 bg-white/10 text-sm font-bold p-3 rounded-2xl border border-white/10 outline-none placeholder:text-gray-600" />
-              <button onClick={() => sendMessage()} className="bg-white text-black px-5 rounded-2xl font-black text-[10px] shrink-0">送信</button>
+                className="flex-1 bg-white/8 text-sm font-medium p-3 rounded-2xl border border-white/10 outline-none placeholder:text-gray-600 focus:border-white/20 transition-colors" />
+              <button onClick={() => sendMessage()} className="bg-white text-black px-5 rounded-2xl font-black text-[10px] shrink-0 hover:bg-gray-100 transition-all">送信</button>
             </div>
           </footer>
         </div>
       )}
 
-      {/* Settings */}
+      {/* Settings モーダル */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setIsMenuOpen(false)}>
-          <div className="bg-zinc-900 w-full max-w-md rounded-[3rem] border border-white/10 p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setIsMenuOpen(false)} className="absolute top-6 right-6 text-gray-500">✕</button>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setIsMenuOpen(false)}>
+          <div className="bg-zinc-900/95 backdrop-blur-2xl w-full max-w-md rounded-[3rem] border border-white/10 p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setIsMenuOpen(false)} className="absolute top-6 right-6 w-8 h-8 rounded-full bg-white/8 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/15 transition-all">✕</button>
             <h2 className="text-xl font-black italic mb-8 uppercase tracking-widest">Settings</h2>
             <div className="space-y-8 max-h-[70vh] overflow-y-auto pr-2 scrollbar-hide">
               <section>
-                <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase mb-4">Name</p>
+                <p className="text-[9px] font-black text-gray-500 tracking-widest uppercase mb-3">Name</p>
                 <div className="flex gap-2">
-                  <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="flex-1 bg-black/40 text-[11px] p-4 rounded-xl border border-white/5 outline-none font-bold" />
+                  <input value={displayName} onChange={(e) => setDisplayName(e.target.value)}
+                    className="flex-1 bg-black/40 text-[11px] font-medium p-4 rounded-xl border border-white/8 outline-none focus:border-white/20 transition-colors" />
                   <button onClick={async () => {
                     if (!user || !displayName.trim()) return;
                     await updateProfile(auth.currentUser, { displayName: displayName.trim() });
                     await saveToFirebase({ displayName: displayName.trim() });
                     showToast("名前を更新しました");
-                  }} className="bg-white text-black px-6 rounded-xl font-black text-[10px]">保存</button>
+                  }} className="bg-white text-black px-6 rounded-xl font-black text-[10px] hover:bg-gray-100 transition-all">保存</button>
                 </div>
               </section>
               <section>
-                <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase mb-4">Your ID</p>
-                <div className="bg-black/40 p-4 rounded-2xl flex items-center justify-between border border-white/5">
+                <p className="text-[9px] font-black text-gray-500 tracking-widest uppercase mb-3">Your ID</p>
+                <div className="bg-black/40 p-4 rounded-2xl flex items-center justify-between border border-white/8">
                   <span className="font-mono font-black tracking-wider text-blue-400">{myDisplayId}</span>
-                  <button onClick={() => { navigator.clipboard.writeText(myDisplayId); showToast("IDをコピーしました"); }} className="text-[10px] font-black bg-white/5 px-3 py-1 rounded-lg">COPY</button>
+                  <button onClick={() => { navigator.clipboard.writeText(myDisplayId); showToast("IDをコピーしました"); }}
+                    className="text-[10px] font-black bg-white/8 px-3 py-1 rounded-lg hover:bg-white/15 transition-all">COPY</button>
                 </div>
               </section>
               <section>
-                <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase mb-4">Icon</p>
+                <p className="text-[9px] font-black text-gray-500 tracking-widest uppercase mb-3">Icon</p>
                 <div className="flex items-center gap-4 mb-5">
                   <div className={`w-16 h-16 rounded-full ${CHARACTERS[charIndex].color} flex items-center justify-center overflow-hidden shadow-lg shrink-0`}>
                     {photoURL ? <img src={photoURL} alt="icon" className="w-full h-full object-cover" />
@@ -1764,32 +1823,31 @@ export default function Home() {
                     <p className="text-[9px] font-black text-gray-500 mb-2 uppercase tracking-widest">現在のアイコン</p>
                     {(photoURL || emojiIcon) && (
                       <button onClick={() => { setPhotoURL(""); setEmojiIcon(""); saveToFirebase({ photoURL: "", emojiIcon: "" }); showToast("リセットしました"); }}
-                        className="text-[8px] font-black bg-red-500/20 text-red-400 px-3 py-1 rounded-lg">リセット</button>
+                        className="text-[8px] font-black bg-red-500/15 text-red-400 px-3 py-1 rounded-lg hover:bg-red-500/25 transition-all">リセット</button>
                     )}
                   </div>
                 </div>
                 <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2">📷 写真を使う</p>
                 <input ref={iconFileRef} type="file" accept="image/*" className="hidden" onChange={handleIconPhotoUpload} />
-                <button onClick={() => iconFileRef.current?.click()} className="w-full bg-white/5 border border-white/10 py-3 rounded-xl font-black text-[10px] mb-5 hover:bg-white hover:text-black transition-all">カメラロールから選択</button>
+                <button onClick={() => iconFileRef.current?.click()} className="w-full glass border border-white/10 py-3 rounded-xl font-black text-[10px] mb-5 hover:bg-white hover:text-black transition-all">カメラロールから選択</button>
                 <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2">😊 絵文字アイコン</p>
                 <div className="grid grid-cols-8 gap-1.5 mb-5">
                   {EMOJI_ICONS.map((emoji) => (
                     <button key={emoji} onClick={() => { setEmojiIcon(emoji); setPhotoURL(""); saveToFirebase({ emojiIcon: emoji, photoURL: "" }); showToast("アイコンを変更しました"); }}
-                      className={`aspect-square rounded-xl text-lg flex items-center justify-center transition-all ${emojiIcon === emoji && !photoURL ? 'bg-white scale-110 shadow-lg' : 'bg-white/5 hover:bg-white/20'}`}>{emoji}</button>
+                      className={`aspect-square rounded-xl text-lg flex items-center justify-center transition-all ${emojiIcon === emoji && !photoURL ? 'bg-white scale-110 shadow-lg' : 'bg-white/5 hover:bg-white/15'}`}>{emoji}</button>
                   ))}
                 </div>
                 <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2">🎨 カラーキャラクター</p>
                 <div className="grid grid-cols-6 gap-2">
                   {CHARACTERS.map((c, i) => (
                     <button key={c.id} onClick={() => { setCharIndex(i); setPhotoURL(""); setEmojiIcon(""); saveToFirebase({ charIndex: i, photoURL: "", emojiIcon: "" }); }}
-                      className={`aspect-square rounded-full ${c.color} border-2 transition-all ${charIndex === i && !photoURL && !emojiIcon ? 'border-white scale-110' : 'border-transparent opacity-40'}`}></button>
+                      className={`aspect-square rounded-full ${c.color} border-2 transition-all ${charIndex === i && !photoURL && !emojiIcon ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-40 hover:opacity-70'}`}></button>
                   ))}
                 </div>
               </section>
-              {/* ⑦ テーマ：名前ラベル付き */}
               <section>
-                <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase mb-2">Theme</p>
-                <p className="text-[9px] font-black text-gray-400 mb-3 h-4">{hoveredTheme !== null ? THEMES[hoveredTheme].name : themeIndex !== null ? THEMES[themeIndex].name : ""}</p>
+                <p className="text-[9px] font-black text-gray-500 tracking-widest uppercase mb-2">Theme</p>
+                <p className="text-[9px] font-medium text-gray-400 mb-3 h-4">{hoveredTheme !== null ? THEMES[hoveredTheme].name : themeIndex !== null ? THEMES[themeIndex].name : ""}</p>
                 <div className="grid grid-cols-8 gap-2">
                   {THEMES.map((t, i) => (
                     <button key={i}
@@ -1798,13 +1856,13 @@ export default function Home() {
                       onMouseLeave={() => setHoveredTheme(null)}
                       onTouchStart={() => setHoveredTheme(i)}
                       onTouchEnd={() => setHoveredTheme(null)}
-                      className={`aspect-square rounded-lg ${t.bg} border-2 transition-all relative ${themeIndex === i ? 'border-white scale-110' : 'border-transparent opacity-40'}`}>
+                      className={`aspect-square rounded-lg ${t.bg} border-2 transition-all relative ${themeIndex === i ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-40 hover:opacity-70'}`}>
                       {themeIndex === i && <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-black drop-shadow">✓</span>}
                     </button>
                   ))}
                 </div>
               </section>
-              <button onClick={() => signOut(auth)} className="w-full bg-red-500/10 text-red-500 py-4 rounded-2xl font-black text-[11px] uppercase border border-red-500/20">Sign Out</button>
+              <button onClick={() => signOut(auth)} className="w-full bg-red-500/10 text-red-500 py-4 rounded-2xl font-black text-[11px] uppercase border border-red-500/20 hover:bg-red-500/20 transition-all">Sign Out</button>
             </div>
           </div>
         </div>
@@ -1812,31 +1870,31 @@ export default function Home() {
 
       {/* タイマー完了モーダル */}
       {timerFinished && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
+        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/85 backdrop-blur-xl p-6">
           <div className="bg-white text-black p-8 rounded-[3rem] max-w-xs w-full shadow-2xl text-center">
             <span className="text-6xl mb-4 block animate-bounce">⏰</span>
             <h2 className="text-2xl font-black mb-2 italic tracking-tighter">時間です！</h2>
-            <p className="text-[11px] font-black text-gray-400 mb-8 uppercase tracking-widest">タイマーが終了しました</p>
+            <p className="text-[11px] font-medium text-gray-400 mb-8 uppercase tracking-widest">タイマーが終了しました</p>
             <button onClick={() => { setTimerFinished(false); if (audioRef.current) { audioRef.current.pause(); audioRef.current.currentTime = 0; } }}
-              className="w-full bg-black text-white py-4 rounded-2xl font-black text-[11px] tracking-[0.2em] shadow-xl">OK</button>
+              className="w-full bg-black text-white py-4 rounded-2xl font-black text-[11px] tracking-[0.2em] shadow-xl hover:bg-gray-900 transition-all">OK</button>
           </div>
         </div>
       )}
 
       {/* チュートリアル */}
       {showTutorial && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
-          <div className="bg-white text-black p-8 rounded-[3rem] max-w-sm w-full shadow-2xl animate-bounce-rich relative">
-            <button onClick={closeTutorial} className="absolute top-6 right-8 text-2xl font-black text-gray-300 hover:text-black">✕</button>
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/85 backdrop-blur-xl p-6">
+          <div className="bg-white text-black p-8 rounded-[3rem] max-w-sm w-full shadow-2xl relative">
+            <button onClick={closeTutorial} className="absolute top-6 right-8 text-2xl font-black text-gray-300 hover:text-black transition-colors">✕</button>
             <div className="text-center">
               <span className="text-5xl mb-6 block">🚀</span>
               <h2 className="text-2xl font-black mb-4 italic tracking-tighter">ROUTINE MASTERへようこそ！</h2>
-              <div className="space-y-4 text-left text-[11px] font-black text-gray-500 uppercase tracking-widest mb-8 border-y border-gray-100 py-6">
-                <p className="flex items-center gap-3"><span className="text-blue-500">01</span> タスクを追加してチェックしよう</p>
-                <p className="flex items-center gap-3"><span className="text-blue-500">02</span> キャラクターがあなたの頑張りを応援</p>
-                <p className="flex items-center gap-3"><span className="text-blue-500">03</span> 友達をフォローして競い合おう</p>
+              <div className="space-y-4 text-left text-[11px] font-medium text-gray-500 uppercase tracking-widest mb-8 border-y border-gray-100 py-6">
+                <p className="flex items-center gap-3"><span className="text-blue-500 font-black">01</span> タスクを追加してチェックしよう</p>
+                <p className="flex items-center gap-3"><span className="text-blue-500 font-black">02</span> キャラクターがあなたの頑張りを応援</p>
+                <p className="flex items-center gap-3"><span className="text-blue-500 font-black">03</span> 友達をフォローして競い合おう</p>
               </div>
-              <button onClick={closeTutorial} className="w-full bg-black text-white py-4 rounded-2xl font-black text-[10px] tracking-[0.2em] shadow-xl">START TRAINING</button>
+              <button onClick={closeTutorial} className="w-full bg-black text-white py-4 rounded-2xl font-black text-[10px] tracking-[0.2em] shadow-xl hover:bg-gray-900 transition-all">START TRAINING</button>
             </div>
           </div>
         </div>
