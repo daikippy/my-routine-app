@@ -1055,7 +1055,7 @@ export default function Home() {
 
                   {/* タスク3列 */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                    {(["morning", "afternoon", "night"] as const).map((time, ti) => {
+                    {["morning", "afternoon", "night"].map((time, ti) => {
                       const tp = timeProgress[ti];
                       const timeConfig = {
                         morning:   { label: "MORNING",   accent: "#f59e0b", dot: "bg-amber-400" },
