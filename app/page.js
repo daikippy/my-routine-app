@@ -107,17 +107,6 @@ const ALARM_SOUNDS = [
   { id: "gentle",   label: "🎠 オルゴール",  url: "https://soundbible.com/grab.php?id=1619&type=mp3" },
 ];
 
-// --- 自己投資目標カテゴリ ---
-const SELF_INVEST_CATEGORIES = [
-  { key: "health",      label: "健康",       icon: "💪", color: "#10b981" },
-  { key: "relations",   label: "人間関係",   icon: "🤝", color: "#3b82f6" },
-  { key: "knowledge",   label: "情報と知識", icon: "📚", color: "#f59e0b" },
-  { key: "skills",      label: "スキルアップ",icon: "🎯", color: "#8b5cf6" },
-  { key: "experience",  label: "新しい体験", icon: "✨", color: "#ec4899" },
-  { key: "beauty",      label: "美容",       icon: "🌸", color: "#fb7185" },
-  { key: "time",        label: "時間",       icon: "⏱️", color: "#06b6d4" },
-];
-
 const YEAR_SUBS = [
   { key: "yearMotto",     label: "モットー",  icon: "✨", desc: "今年の総合的な目標" },
   { key: "yearSpiritual", label: "霊的",      icon: "🙏", desc: "信仰・精神・内面" },
@@ -164,67 +153,142 @@ function GoalRow({ gkey, placeholder, multiline, goals, editingGoal, setEditingG
   );
 }
 
-// --- 自己投資目標セクション ---
-function SelfInvestSection({ goals, editingGoal, setEditingGoal, saveToFirebase, setGoals, isLight, tx, txMuted }) {
-  const [activePeriod, setActivePeriod] = React.useState("year");
+// --- 旅行バケットリスト セクション ---
+const TRAVEL_SLOT_COLORS = ["#f97316","#3b82f6","#10b981","#a855f7","#ec4899"];
+const TRAVEL_SLOT_ICONS  = ["✈️","🗺️","🏔️","🌊","🌆"];
 
-  const saveGoal = (key, value) => {
+function TravelSection({ goals, saveToFirebase, setGoals, isLight, tx, txMuted }) {
+  const [editingField, setEditingField] = React.useState(null); // "place_N" | "budget_N" | "how_N" | "how_method"
+  const [tempVal, setTempVal] = React.useState("");
+
+  const get = (key) => goals[key] || "";
+  const save = (key, value) => {
     const next = { ...goals, [key]: value };
     setGoals(next);
     saveToFirebase({ goals: next });
-    setEditingGoal(null);
+    setEditingField(null);
   };
 
-  const periodConfig = {
-    year:  { label: "今年",  suffix: "Year",  grad: "from-violet-500 to-indigo-500" },
-    month: { label: "今月",  suffix: "Month", grad: "from-blue-500 to-cyan-500" },
-    week:  { label: "今週",  suffix: "Week",  grad: "from-emerald-500 to-teal-500" },
+  const startEdit = (key, currentVal) => {
+    setEditingField(key);
+    setTempVal(currentVal || "");
   };
+
+  const cardBg   = isLight ? "rgba(0,0,0,0.04)"  : "rgba(255,255,255,0.04)";
+  const cardBd   = isLight ? "rgba(0,0,0,0.08)"  : "rgba(255,255,255,0.1)";
+  const innerBg  = isLight ? "rgba(0,0,0,0.04)"  : "rgba(0,0,0,0.2)";
+  const inputCls = `w-full text-sm font-medium px-3 py-2 rounded-xl border outline-none resize-none transition-colors ${tx} ${isLight ? "bg-black/5 border-black/12 placeholder:text-gray-400 focus:border-black/25" : "bg-white/8 border-white/10 placeholder:text-gray-600 focus:border-white/25"}`;
+
+  // 合計予算
+  const totalBudget = [0,1,2,3,4].reduce((sum, i) => {
+    const raw = get(`travel_budget_${i}`).replace(/[^0-9]/g, '');
+    return sum + (parseInt(raw) || 0);
+  }, 0);
+  const fmtYen = (n) => n > 0 ? `¥${n.toLocaleString()}` : "";
 
   return (
-    <div className="rounded-[2rem] overflow-hidden shadow-xl" style={{background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", border: isLight ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.1)"}}>
-      {/* ヘッダー */}
+    <div className="rounded-[2rem] overflow-hidden shadow-xl" style={{background: cardBg, border: `1px solid ${cardBd}`}}>
       <div className="px-5 pt-5 pb-3">
-        <p className={`text-[9px] font-black uppercase tracking-widest mb-3 ${txMuted}`}>🌱 SELF INVESTMENT</p>
-        {/* 期間タブ */}
-        <div className="flex gap-1 bg-black/30 p-1 rounded-xl">
-          {Object.entries(periodConfig).map(([k, v]) => (
-            <button key={k} onClick={() => setActivePeriod(k)}
-              className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all ${activePeriod === k ? (isLight ? "bg-black/80 text-white shadow-md" : "bg-white text-black shadow-md") : (isLight ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-gray-300")}`}>
-              {v.label}
-            </button>
-          ))}
+        <div className="flex items-center justify-between mb-1">
+          <p className={`text-[9px] font-black uppercase tracking-widest ${txMuted}`}>✈️ BUCKET LIST TRAVEL</p>
+          {totalBudget > 0 && (
+            <span className="text-[9px] font-black text-amber-400">合計 {fmtYen(totalBudget)}</span>
+          )}
         </div>
+        <p className={`text-[8px] font-medium mb-4 ${txMuted}`}>行きたい場所トップ5・予算・稼ぎ方を記入</p>
       </div>
 
-      {/* カテゴリ一覧 */}
-      <div className="px-4 pb-5 space-y-2.5">
-        {SELF_INVEST_CATEGORIES.map(({ key, label, icon, color }) => {
-          const goalKey = `si_${key}_${activePeriod}`;
-          const val = goals[goalKey] || "";
-          const isEditing = editingGoal === goalKey;
+      {/* 場所リスト */}
+      <div className="px-4 pb-4 space-y-3">
+        {[0,1,2,3,4].map((i) => {
+          const placeKey  = `travel_place_${i}`;
+          const budgetKey = `travel_budget_${i}`;
+          const howKey    = `travel_how_${i}`;
+          const place  = get(placeKey);
+          const budget = get(budgetKey);
+          const how    = get(howKey);
+          const color  = TRAVEL_SLOT_COLORS[i];
+          const icon   = TRAVEL_SLOT_ICONS[i];
+          const filled = place || budget || how;
+
           return (
-            <div key={goalKey} className="rounded-xl border border-white/8 overflow-hidden transition-all hover:border-white/15"
-              style={{background:`${color}10`}}>
-              <div className="px-3 py-2.5">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-sm">{icon}</span>
-                  <span className="text-[11px] font-black" style={{color}}>{label}</span>
-                  {val && <span className="ml-auto text-[8px] text-green-400 font-black">✓</span>}
-                </div>
-                {isEditing ? (
-                  <GoalInputField gkey={goalKey} placeholder={`${label}の目標`} multiline={false}
-                    currentValue={val} onSave={saveGoal} onCancel={() => setEditingGoal(null)} />
+            <div key={i} className="rounded-2xl overflow-hidden transition-all"
+              style={{background: innerBg, border: `1px solid ${isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.07)"}`, borderLeft: `3px solid ${color}`}}>
+              {/* 行き先ヘッダー行 */}
+              <div className="px-3 pt-3 pb-2 flex items-center gap-2">
+                <span className="text-base shrink-0">{icon}</span>
+                <span className="text-[10px] font-black shrink-0" style={{color}}>#{i+1}</span>
+                {editingField === placeKey ? (
+                  <input autoFocus value={tempVal} onChange={e => setTempVal(e.target.value)}
+                    className={inputCls + " flex-1 text-[13px]"}
+                    placeholder="行きたい場所を入力..."
+                    onKeyDown={e => { if (e.key === 'Enter') save(placeKey, tempVal); if (e.key === 'Escape') setEditingField(null); }}
+                    onBlur={() => save(placeKey, tempVal)} />
                 ) : (
-                  <p onClick={() => setEditingGoal(goalKey)}
-                    className={`text-[12px] leading-snug cursor-text rounded px-1 py-0.5 -mx-1 transition-all ${isLight ? "hover:bg-black/5" : "hover:bg-white/5"} ${val ? (isLight ? "text-gray-800 font-medium" : "text-white/80 font-medium") : (isLight ? "text-gray-400 italic" : "text-gray-600 italic")}`}>
-                    {val || "タップして入力..."}
+                  <p onClick={() => startEdit(placeKey, place)}
+                    className={`flex-1 text-[13px] font-bold cursor-text rounded-lg px-2 py-0.5 -mx-1 transition-all ${isLight ? "hover:bg-black/5" : "hover:bg-white/5"} ${place ? tx : (isLight ? "text-gray-400 italic" : "text-gray-600 italic")}`}>
+                    {place || "タップして入力..."}
                   </p>
                 )}
+                {filled && <span className="text-[8px] text-green-400 font-black shrink-0">✓</span>}
+              </div>
+
+              {/* 予算 + 稼ぎ方 */}
+              <div className="px-3 pb-3 grid grid-cols-2 gap-2">
+                {/* 予算 */}
+                <div>
+                  <p className={`text-[8px] font-black uppercase tracking-widest mb-1 ${txMuted}`}>💰 予算</p>
+                  {editingField === budgetKey ? (
+                    <input autoFocus value={tempVal} onChange={e => setTempVal(e.target.value)}
+                      className={inputCls + " text-[12px]"}
+                      placeholder="例: 300000"
+                      onKeyDown={e => { if (e.key === 'Enter') save(budgetKey, tempVal); if (e.key === 'Escape') setEditingField(null); }}
+                      onBlur={() => save(budgetKey, tempVal)} />
+                  ) : (
+                    <p onClick={() => startEdit(budgetKey, budget)}
+                      className={`text-[12px] font-bold cursor-text rounded px-2 py-1.5 transition-all ${isLight ? "hover:bg-black/5" : "hover:bg-white/5"} ${budget ? "text-amber-400" : (isLight ? "text-gray-400 italic" : "text-gray-600 italic")}`}>
+                      {budget ? (budget.replace(/[^0-9]/g,'') ? `¥${parseInt(budget.replace(/[^0-9]/g,'')).toLocaleString()}` : budget) : "未設定"}
+                    </p>
+                  )}
+                </div>
+
+                {/* 稼ぎ方 */}
+                <div>
+                  <p className={`text-[8px] font-black uppercase tracking-widest mb-1 ${txMuted}`}>🔑 稼ぎ方</p>
+                  {editingField === howKey ? (
+                    <textarea autoFocus value={tempVal} onChange={e => setTempVal(e.target.value)}
+                      className={inputCls + " text-[12px]"} rows={2}
+                      placeholder="例: 副業・節約..."
+                      onKeyDown={e => { if (e.key === 'Escape') setEditingField(null); }}
+                      onBlur={() => save(howKey, tempVal)} />
+                  ) : (
+                    <p onClick={() => startEdit(howKey, how)}
+                      className={`text-[12px] font-medium cursor-text rounded px-2 py-1.5 leading-snug transition-all ${isLight ? "hover:bg-black/5" : "hover:bg-white/5"} ${how ? tx : (isLight ? "text-gray-400 italic" : "text-gray-600 italic")}`}>
+                      {how || "未設定"}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           );
         })}
+
+        {/* 共通の稼ぎ方メモ */}
+        <div className="rounded-2xl p-4 mt-1" style={{background: innerBg, border: `1px solid ${isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.07)"}`}}>
+          <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${txMuted}`}>📋 稼ぎ方・資金計画メモ</p>
+          {editingField === "travel_plan" ? (
+            <textarea autoFocus value={tempVal} onChange={e => setTempVal(e.target.value)}
+              className={inputCls} rows={4}
+              placeholder="全体的な資金計画・稼ぎ方の戦略を書こう..."
+              onKeyDown={e => { if (e.key === 'Escape') setEditingField(null); }}
+              onBlur={() => save("travel_plan", tempVal)} />
+          ) : (
+            <p onClick={() => startEdit("travel_plan", get("travel_plan"))}
+              className={`text-sm font-medium cursor-text rounded-lg px-2 py-2 leading-relaxed transition-all ${isLight ? "hover:bg-black/5" : "hover:bg-white/5"} ${get("travel_plan") ? tx : (isLight ? "text-gray-400 italic" : "text-gray-600 italic")}`}>
+              {get("travel_plan") || "タップして資金計画・稼ぎ方を記入..."}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -266,7 +330,7 @@ function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, se
         </button>
         <button onClick={() => setGoalTab("invest")}
           className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${goalTab === "invest" ? (isLight ? "bg-black/80 text-white shadow-md" : "bg-white text-black shadow-md") : (isLight ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-gray-300")}`}>
-          🌱 自己投資
+          ✈️ 旅行計画
         </button>
       </div>
 
@@ -320,8 +384,8 @@ function GoalSection({ now, goals, editingGoal, setEditingGoal, yearGoalOpen, se
           </div>
         </div>
       ) : (
-        <SelfInvestSection goals={goals} editingGoal={editingGoal} setEditingGoal={setEditingGoal}
-          saveToFirebase={saveToFirebase} setGoals={setGoals} isLight={isLight} tx={tx} txMuted={txMuted} />
+        <TravelSection goals={goals} saveToFirebase={saveToFirebase}
+          setGoals={setGoals} isLight={isLight} tx={tx} txMuted={txMuted} />
       )}
     </div>
   );
