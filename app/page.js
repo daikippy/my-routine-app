@@ -967,10 +967,10 @@ export default function Home() {
           <div className="flex p-1 rounded-2xl my-6 w-full gap-1" style={{background: isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)", border: isLight ? "1px solid rgba(0,0,0,0.1)" : "1px solid rgba(255,255,255,0.1)"}}>
             {NAV_TABS.map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-2.5 rounded-xl text-[10px] font-black transition-all whitespace-nowrap flex items-center justify-center gap-1.5
+                className={`flex-1 min-w-0 py-2.5 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1 overflow-hidden
                   ${activeTab === tab.id ? (isLight ? "bg-black/85 text-white shadow-lg" : "bg-white text-black shadow-lg") : (isLight ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-gray-300")}`}>
-                <span className={activeTab === tab.id ? "" : "opacity-50"}>{tab.icon}</span>
-                {tab.label}
+                <span className={`shrink-0 ${activeTab === tab.id ? "" : "opacity-50"}`}>{tab.icon}</span>
+                <span className="truncate">{tab.label}</span>
               </button>
             ))}
           </div>
