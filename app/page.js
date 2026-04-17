@@ -8,12 +8,12 @@ import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPop
 
 // --- Firebase Config ---
 const firebaseConfig = {
-  apiKey: "AIzaSyDNkvB6F_niXtk3SmmgTVm1wK418Fq7t9Q",
-  authDomain: "routine-app-94afe.firebaseapp.com",
-  projectId: "routine-app-94afe",
-  storageBucket: "routine-app-94afe.firebasestorage.app",
-  messagingSenderId: "1091003523795",
-  appId: "1:1091003523795:web:2d8720af00587551e02a26"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
@@ -569,7 +569,7 @@ export default function Home() {
         message: `${message} (称号: ${currentAward.name})`,
         timestamp: serverTimestamp()
       });
-    } catch (e) { console.error("Timeline post error:", e); }
+    } catch (e) { /* Timeline post error */ }
   };
 
   const removeFromTimeline = async (taskName) => {
@@ -582,7 +582,7 @@ export default function Home() {
         if (d.data().message?.startsWith(`${taskName} を完了！`)) batch.delete(d.ref);
       });
       await batch.commit();
-    } catch (e) { console.error("Timeline remove error:", e); }
+    } catch (e) { /* Timeline remove error */ }
   };
 
   const saveToFirebase = async (updatedData = {}) => {
@@ -634,7 +634,7 @@ export default function Home() {
       if (u) {
         setDisplayName(u.displayName || "");
         const docRef = doc(db, "users", u.uid);
-        onSnapshot(docRef, (snap) => {
+        const unsubDoc = onSnapshot(docRef, (snap) => {
           if (snap.exists()) {
             const d = snap.data();
             setTasks(d.tasks || { morning: [], afternoon: [], night: [] });
@@ -691,7 +691,7 @@ export default function Home() {
         const activeInterval = setInterval(() => {
           updateDoc(doc(db, "users", u.uid), { lastActive: Date.now() });
         }, 60000);
-        return () => clearInterval(activeInterval);
+        return () => { clearInterval(activeInterval); unsubDoc(); };
       } else {
         setLoading(false);
       }
